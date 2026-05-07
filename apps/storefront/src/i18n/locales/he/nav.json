@@ -1,0 +1,10 @@
+{
+  "home": "בית",
+  "cart": "עגלה",
+  "checkout": "תשלום",
+  "login": "התחברות",
+  "register": "הרשמה",
+  "logout": "התנתקות",
+  "greeting": "שלום, {{name}}",
+  "language": "שפה"
+}

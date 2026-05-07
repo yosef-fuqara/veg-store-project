@@ -1,26 +1,30 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import * as orderService from "../services/orderService";
+import { formatPrice } from "../utils/formatPrice";
 
-const paymentStatusMessage = (status) => {
+const paymentStatusMessage = (status, t) => {
   switch (status) {
     case "pending_payment":
-      return "Awaiting payment confirmation.";
+      return t("paymentStatusMessage.pending_payment");
     case "bank_transfer_pending":
-      return "Please complete the bank transfer; an admin will confirm.";
+      return t("paymentStatusMessage.bank_transfer_pending");
     case "paid":
     case "bank_transfer_approved":
-      return "Payment received.";
+      return t("paymentStatusMessage.paid");
     case "failed":
-      return "Payment failed.";
+      return t("paymentStatusMessage.failed");
     case "cancelled":
-      return "Payment was cancelled.";
+      return t("paymentStatusMessage.cancelled");
     default:
       return null;
   }
 };
 
 const OrderConfirmationPage = () => {
+  const { t, i18n } = useTranslation("order");
+  const lang = (i18n.language || "he").split("-")[0];
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [error, setError] = useState("");
@@ -35,53 +39,53 @@ const OrderConfirmationPage = () => {
       setOrder(data);
     } catch (err) {
       setOrder(null);
-      setError(err.userMessage || "Could not load order.");
+      setError(err.userMessage || t("loadError"));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   if (loading) {
-    return <p>Loading order...</p>;
+    return <p>{t("loading")}</p>;
   }
 
   if (error || !order) {
     return (
       <section>
-        <h2>Order</h2>
-        <p style={{ color: "crimson" }}>{error || "Order not found."}</p>
-        <Link to="/">Home</Link>
+        <h2>{t("title")}</h2>
+        <p style={{ color: "crimson" }}>{error || t("notFound")}</p>
+        <Link to="/">{t("home")}</Link>
       </section>
     );
   }
 
-  const statusNote = paymentStatusMessage(order.paymentStatus);
+  const statusNote = paymentStatusMessage(order.paymentStatus, t);
 
   return (
     <section>
-      <h2>Order confirmation</h2>
+      <h2>{t("confirmationTitle")}</h2>
       <p>
-        <strong>Order ID:</strong> {order._id}
+        <strong>{t("orderId")}:</strong> {order._id}
       </p>
       <p>
-        <strong>Status:</strong> {order.orderStatus}
+        <strong>{t("status")}:</strong> {order.orderStatus}
       </p>
       <p>
-        <strong>Payment:</strong> {order.paymentStatus}
+        <strong>{t("payment")}:</strong> {order.paymentStatus}
       </p>
       {statusNote ? <p>{statusNote}</p> : null}
       <p>
-        <strong>Payment method:</strong> {order.paymentMethod}
+        <strong>{t("paymentMethod")}:</strong> {order.paymentMethod}
       </p>
       <p>
-        <strong>Phone:</strong> {order.customerPhone}
+        <strong>{t("phone")}:</strong> {order.customerPhone}
       </p>
 
-      <h3>Delivery</h3>
+      <h3>{t("delivery")}</h3>
       <p style={{ whiteSpace: "pre-wrap" }}>
         {order.deliveryAddress
           ? [
@@ -97,35 +101,42 @@ const OrderConfirmationPage = () => {
           : "—"}
       </p>
       <p>
-        <strong>Zone:</strong> {order.deliveryZone}
+        <strong>{t("zone")}:</strong> {order.deliveryZone}
       </p>
       {order.notes ? (
         <p>
-          <strong>Your notes:</strong> {order.notes}
+          <strong>{t("yourNotes")}:</strong> {order.notes}
         </p>
       ) : null}
 
-      <h3>Items</h3>
+      <h3>{t("items")}</h3>
       <ul>
         {(order.items || []).map((item, index) => (
           <li key={`${item.product}-${index}`}>
-            {item.name} x {item.quantity} @ {item.price} = {item.price * item.quantity}
+            {item.name} x {item.quantity} @ {formatPrice(item.price, lang)} ={" "}
+            {formatPrice(item.price * item.quantity, lang)}
           </li>
         ))}
       </ul>
-      <p>Subtotal: {order.subtotal}</p>
-      <p>Delivery: {order.deliveryFee}</p>
       <p>
-        <strong>Total: {order.total}</strong>
+        {t("subtotal")}: {formatPrice(order.subtotal, lang)}
+      </p>
+      <p>
+        {t("deliveryFee")}: {formatPrice(order.deliveryFee, lang)}
+      </p>
+      <p>
+        <strong>
+          {t("total")}: {formatPrice(order.total, lang)}
+        </strong>
       </p>
 
       <p style={{ marginTop: 16 }}>
         <button type="button" onClick={load}>
-          Refresh status
+          {t("refreshStatus")}
         </button>
       </p>
       <p>
-        <Link to="/">Continue shopping</Link>
+        <Link to="/">{t("continueShopping")}</Link>
       </p>
     </section>
   );

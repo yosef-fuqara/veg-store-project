@@ -1,0 +1,37 @@
+{
+  "title": "Checkout",
+  "loading": "Loading checkout...",
+  "previewLoadError": "Could not load cart preview.",
+  "backToCart": "Back to cart",
+  "cartEmpty": "Your cart is empty.",
+  "continueShopping": "Continue shopping",
+  "deliveryAddress": "Delivery address",
+  "labelOptional": "Label (optional)",
+  "cityRequired": "City *",
+  "streetRequired": "Street *",
+  "building": "Building",
+  "apartment": "Apartment",
+  "addressNotes": "Address notes",
+  "deliveryZoneRequired": "Delivery zone *",
+  "fee": "fee",
+  "phoneRequired": "Phone *",
+  "orderNotes": "Order notes",
+  "paymentMethodRequired": "Payment method *",
+  "placeOrder": "Place order",
+  "placingOrder": "Placing order...",
+  "placeOrderError": "Could not place order.",
+  "orderSummary": "Order summary",
+  "subtotal": "Subtotal",
+  "deliveryFee": "Delivery fee",
+  "total": "Total",
+  "zones": {
+    "zone_a": "Zone A",
+    "zone_b": "Zone B",
+    "zone_c": "Zone C"
+  },
+  "paymentMethods": {
+    "credit_card": "Credit card",
+    "bit": "Bit",
+    "bank_transfer": "Bank transfer"
+  }
+}

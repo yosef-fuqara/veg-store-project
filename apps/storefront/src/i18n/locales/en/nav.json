@@ -1,0 +1,10 @@
+{
+  "home": "Home",
+  "cart": "Cart",
+  "checkout": "Checkout",
+  "login": "Login",
+  "register": "Register",
+  "logout": "Logout",
+  "greeting": "Hi, {{name}}",
+  "language": "Language"
+}

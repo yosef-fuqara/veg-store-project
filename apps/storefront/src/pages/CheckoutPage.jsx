@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { DELIVERY_ZONES, PAYMENT_METHODS, getDeliveryFee } from "../config/delivery";
 import * as cartService from "../services/cartService";
 import * as orderService from "../services/orderService";
+import { formatPrice } from "../utils/formatPrice";
 
 const initialForm = {
   deliveryAddress: {
@@ -31,6 +33,8 @@ const fieldErrorsFromResponse = (err) => {
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation("checkout");
+  const lang = (i18n.language || "he").split("-")[0];
 
   const [preview, setPreview] = useState(null);
   const [previewError, setPreviewError] = useState("");
@@ -53,7 +57,7 @@ const CheckoutPage = () => {
       } catch (err) {
         if (cancelled) return;
         setPreview(null);
-        setPreviewError(err.userMessage || "Could not load cart preview.");
+        setPreviewError(err.userMessage || t("previewLoadError"));
       } finally {
         if (!cancelled) setPreviewLoading(false);
       }
@@ -61,7 +65,7 @@ const CheckoutPage = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const subtotal = preview?.subtotal ?? 0;
   const deliveryFee = useMemo(() => getDeliveryFee(form.deliveryZone), [form.deliveryZone]);
@@ -101,7 +105,7 @@ const CheckoutPage = () => {
       if (Object.keys(fields).length > 0) {
         setFieldErrors(fields);
       } else {
-        setSubmitError(err.userMessage || "Could not place order.");
+        setSubmitError(err.userMessage || t("placeOrderError"));
       }
     } finally {
       setSubmitting(false);
@@ -109,16 +113,16 @@ const CheckoutPage = () => {
   };
 
   if (previewLoading) {
-    return <p>Loading checkout...</p>;
+    return <p>{t("loading")}</p>;
   }
 
   if (previewError) {
     return (
       <section>
-        <h2>Checkout</h2>
+        <h2>{t("title")}</h2>
         <p style={{ color: "crimson" }}>{previewError}</p>
         <p>
-          <Link to="/cart">Back to cart</Link>
+          <Link to="/cart">{t("backToCart")}</Link>
         </p>
       </section>
     );
@@ -127,10 +131,10 @@ const CheckoutPage = () => {
   if (!preview || !preview.items?.length) {
     return (
       <section>
-        <h2>Checkout</h2>
-        <p>Your cart is empty.</p>
+        <h2>{t("title")}</h2>
+        <p>{t("cartEmpty")}</p>
         <p>
-          <Link to="/">Continue shopping</Link>
+          <Link to="/">{t("continueShopping")}</Link>
         </p>
       </section>
     );
@@ -143,7 +147,7 @@ const CheckoutPage = () => {
 
   return (
     <section>
-      <h2>Checkout</h2>
+      <h2>{t("title")}</h2>
 
       <div
         style={{
@@ -155,9 +159,9 @@ const CheckoutPage = () => {
       >
         <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, maxWidth: 520 }}>
           <fieldset style={{ display: "grid", gap: 8, border: "1px solid #ccc", padding: 12 }}>
-            <legend>Delivery address</legend>
+            <legend>{t("deliveryAddress")}</legend>
             <label>
-              Label (optional)
+              {t("labelOptional")}
               <input
                 value={form.deliveryAddress.label}
                 onChange={updateAddress("label")}
@@ -167,7 +171,7 @@ const CheckoutPage = () => {
               {fieldError("deliveryAddress.label")}
             </label>
             <label>
-              City *
+              {t("cityRequired")}
               <input
                 value={form.deliveryAddress.city}
                 onChange={updateAddress("city")}
@@ -178,7 +182,7 @@ const CheckoutPage = () => {
               {fieldError("deliveryAddress.city")}
             </label>
             <label>
-              Street *
+              {t("streetRequired")}
               <input
                 value={form.deliveryAddress.street}
                 onChange={updateAddress("street")}
@@ -189,7 +193,7 @@ const CheckoutPage = () => {
               {fieldError("deliveryAddress.street")}
             </label>
             <label>
-              Building
+              {t("building")}
               <input
                 value={form.deliveryAddress.building}
                 onChange={updateAddress("building")}
@@ -199,7 +203,7 @@ const CheckoutPage = () => {
               {fieldError("deliveryAddress.building")}
             </label>
             <label>
-              Apartment
+              {t("apartment")}
               <input
                 value={form.deliveryAddress.apartment}
                 onChange={updateAddress("apartment")}
@@ -209,7 +213,7 @@ const CheckoutPage = () => {
               {fieldError("deliveryAddress.apartment")}
             </label>
             <label>
-              Address notes
+              {t("addressNotes")}
               <textarea
                 value={form.deliveryAddress.notes}
                 onChange={updateAddress("notes")}
@@ -222,7 +226,7 @@ const CheckoutPage = () => {
           </fieldset>
 
           <label>
-            Delivery zone *
+            {t("deliveryZoneRequired")}
             <select
               value={form.deliveryZone}
               onChange={updateField("deliveryZone")}
@@ -231,7 +235,7 @@ const CheckoutPage = () => {
             >
               {DELIVERY_ZONES.map((zone) => (
                 <option key={zone.key} value={zone.key}>
-                  {zone.label} (fee {zone.fee})
+                  {t(`zones.${zone.key}`)} ({t("fee")} {formatPrice(zone.fee, lang)})
                 </option>
               ))}
             </select>
@@ -239,7 +243,7 @@ const CheckoutPage = () => {
           </label>
 
           <label>
-            Phone *
+            {t("phoneRequired")}
             <input
               value={form.customerPhone}
               onChange={updateField("customerPhone")}
@@ -252,7 +256,7 @@ const CheckoutPage = () => {
           </label>
 
           <label>
-            Order notes
+            {t("orderNotes")}
             <textarea
               value={form.notes}
               onChange={updateField("notes")}
@@ -264,7 +268,7 @@ const CheckoutPage = () => {
           </label>
 
           <fieldset style={{ display: "grid", gap: 6, border: "1px solid #ccc", padding: 12 }}>
-            <legend>Payment method *</legend>
+            <legend>{t("paymentMethodRequired")}</legend>
             {PAYMENT_METHODS.map((method) => (
               <label key={method.value} style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <input
@@ -274,7 +278,7 @@ const CheckoutPage = () => {
                   checked={form.paymentMethod === method.value}
                   onChange={updateField("paymentMethod")}
                 />
-                {method.label}
+                {t(`paymentMethods.${method.value}`)}
               </label>
             ))}
             {fieldError("paymentMethod")}
@@ -283,12 +287,12 @@ const CheckoutPage = () => {
           {submitError ? <p style={{ color: "crimson" }}>{submitError}</p> : null}
 
           <button type="submit" disabled={submitting}>
-            {submitting ? "Placing order..." : "Place order"}
+            {submitting ? t("placingOrder") : t("placeOrder")}
           </button>
         </form>
 
         <aside style={{ background: "#f4f4f4", padding: 16 }}>
-          <h3 style={{ marginTop: 0 }}>Order summary</h3>
+          <h3 style={{ marginTop: 0 }}>{t("orderSummary")}</h3>
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {preview.items.map((item) => (
               <li
@@ -298,18 +302,18 @@ const CheckoutPage = () => {
                 <span>
                   {item.name} x {item.quantity}
                 </span>
-                <span>{item.lineTotal}</span>
+                <span>{formatPrice(item.lineTotal, lang)}</span>
               </li>
             ))}
           </ul>
           <hr />
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>Subtotal</span>
-            <span>{subtotal}</span>
+            <span>{t("subtotal")}</span>
+            <span>{formatPrice(subtotal, lang)}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>Delivery fee</span>
-            <span>{deliveryFee}</span>
+            <span>{t("deliveryFee")}</span>
+            <span>{formatPrice(deliveryFee, lang)}</span>
           </div>
           <div
             style={{
@@ -319,8 +323,8 @@ const CheckoutPage = () => {
               marginTop: 8
             }}
           >
-            <span>Total</span>
-            <span>{total}</span>
+            <span>{t("total")}</span>
+            <span>{formatPrice(total, lang)}</span>
           </div>
         </aside>
       </div>

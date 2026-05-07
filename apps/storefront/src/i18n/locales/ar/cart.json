@@ -1,0 +1,10 @@
+{
+  "title": "السلة",
+  "quantity": "الكمية",
+  "price": "السعر",
+  "subtotal": "المجموع الفرعي",
+  "remove": "حذف",
+  "clearCart": "تفريغ السلة",
+  "proceedToCheckout": "المتابعة إلى الدفع",
+  "empty": "سلتك فارغة."
+}

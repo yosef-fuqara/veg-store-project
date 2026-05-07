@@ -1,0 +1,10 @@
+{
+  "title": "Cart",
+  "quantity": "Qty",
+  "price": "Price",
+  "subtotal": "Subtotal",
+  "remove": "Remove",
+  "clearCart": "Clear cart",
+  "proceedToCheckout": "Proceed to checkout",
+  "empty": "Your cart is empty."
+}

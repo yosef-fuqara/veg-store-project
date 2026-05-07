@@ -1,0 +1,30 @@
+{
+  "title": "Order",
+  "confirmationTitle": "Order confirmation",
+  "loading": "Loading order...",
+  "loadError": "Could not load order.",
+  "notFound": "Order not found.",
+  "home": "Home",
+  "orderId": "Order ID",
+  "status": "Status",
+  "payment": "Payment",
+  "paymentMethod": "Payment method",
+  "phone": "Phone",
+  "delivery": "Delivery",
+  "zone": "Zone",
+  "yourNotes": "Your notes",
+  "items": "Items",
+  "subtotal": "Subtotal",
+  "deliveryFee": "Delivery",
+  "total": "Total",
+  "refreshStatus": "Refresh status",
+  "continueShopping": "Continue shopping",
+  "paymentStatusMessage": {
+    "pending_payment": "Awaiting payment confirmation.",
+    "bank_transfer_pending": "Please complete the bank transfer; an admin will confirm.",
+    "paid": "Payment received.",
+    "bank_transfer_approved": "Payment received.",
+    "failed": "Payment failed.",
+    "cancelled": "Payment was cancelled."
+  }
+}

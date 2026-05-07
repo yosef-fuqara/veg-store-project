@@ -1,0 +1,30 @@
+{
+  "title": "הזמנה",
+  "confirmationTitle": "אישור הזמנה",
+  "loading": "טוען הזמנה...",
+  "loadError": "לא ניתן לטעון הזמנה.",
+  "notFound": "הזמנה לא נמצאה.",
+  "home": "בית",
+  "orderId": "מספר הזמנה",
+  "status": "סטטוס",
+  "payment": "תשלום",
+  "paymentMethod": "אמצעי תשלום",
+  "phone": "טלפון",
+  "delivery": "משלוח",
+  "zone": "אזור",
+  "yourNotes": "הערות שלך",
+  "items": "פריטים",
+  "subtotal": "סכום ביניים",
+  "deliveryFee": "משלוח",
+  "total": "סך הכל",
+  "refreshStatus": "רענן סטטוס",
+  "continueShopping": "המשך קניה",
+  "paymentStatusMessage": {
+    "pending_payment": "ממתין לאישור תשלום.",
+    "bank_transfer_pending": "יש להשלים העברה בנקאית; מנהל יאשר בהמשך.",
+    "paid": "התשלום התקבל.",
+    "bank_transfer_approved": "התשלום התקבל.",
+    "failed": "התשלום נכשל.",
+    "cancelled": "התשלום בוטל."
+  }
+}

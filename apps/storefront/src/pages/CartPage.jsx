@@ -1,9 +1,13 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useCart } from "../features/cart/CartContext";
+import { formatPrice } from "../utils/formatPrice";
 
 const CartPage = () => {
   const { cart, loading, error, refreshCart, updateItem, removeItem, clear } = useCart();
+  const { t, i18n } = useTranslation(["cart", "common"]);
+  const lang = (i18n.language || "he").split("-")[0];
 
   useEffect(() => {
     refreshCart();
@@ -11,14 +15,15 @@ const CartPage = () => {
 
   return (
     <section>
-      <h2>Cart</h2>
+      <h2>{t("cart:title")}</h2>
       {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
+      {cart.items.length === 0 ? <p>{t("cart:empty")}</p> : null}
       <ul>
         {cart.items.map((item) => (
           <li key={item.product} style={{ marginBottom: 8 }}>
             <div>
-              {item.productSnapshot?.name || item.product} - qty: {item.quantity} - price:{" "}
-              {item.unitPriceSnapshot}
+              {item.productSnapshot?.name || item.product} - {t("cart:quantity")}: {item.quantity} -{" "}
+              {t("cart:price")}: {formatPrice(item.unitPriceSnapshot, lang)}
             </div>
             <button onClick={() => updateItem(item.product, item.quantity + 1)} disabled={loading}>
               +
@@ -30,24 +35,26 @@ const CartPage = () => {
               -
             </button>
             <button onClick={() => removeItem(item.product)} disabled={loading}>
-              Remove
+              {t("cart:remove")}
             </button>
           </li>
         ))}
       </ul>
-      <p>Subtotal: {cart.subtotal || 0}</p>
+      <p>
+        {t("cart:subtotal")}: {formatPrice(cart.subtotal || 0, lang)}
+      </p>
       <button onClick={() => clear()} disabled={loading}>
-        Clear Cart
+        {t("cart:clearCart")}
       </button>
       {cart.items.length === 0 ? (
-        <button type="button" disabled style={{ marginLeft: 8 }}>
-          Proceed to checkout
+        <button type="button" disabled style={{ marginInlineStart: 8 }}>
+          {t("cart:proceedToCheckout")}
         </button>
       ) : (
         <Link
           to="/checkout"
           style={{
-            marginLeft: 8,
+            marginInlineStart: 8,
             display: "inline-block",
             padding: "2px 8px",
             border: "1px solid #333",
@@ -56,7 +63,7 @@ const CartPage = () => {
             textDecoration: "none"
           }}
         >
-          Proceed to checkout
+          {t("cart:proceedToCheckout")}
         </Link>
       )}
     </section>

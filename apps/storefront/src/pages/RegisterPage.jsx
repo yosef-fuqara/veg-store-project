@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../features/auth/AuthContext";
 
 const fieldErrorsFromResponse = (err) => {
@@ -14,6 +15,7 @@ const fieldErrorsFromResponse = (err) => {
 
 const RegisterPage = () => {
   const { register } = useAuth();
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -39,7 +41,7 @@ const RegisterPage = () => {
       if (Object.keys(fields).length > 0) {
         setFieldErrors(fields);
       } else {
-        setError(err.userMessage || "Registration failed. Please try again.");
+        setError(err.userMessage || t("registerFailed"));
       }
     } finally {
       setSubmitting(false);
@@ -48,10 +50,10 @@ const RegisterPage = () => {
 
   return (
     <section style={{ maxWidth: 420 }}>
-      <h2>Create account</h2>
+      <h2>{t("registerTitle")}</h2>
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: 8 }}>
         <label>
-          Name
+          {t("name")}
           <input
             value={form.name}
             onChange={update("name")}
@@ -65,7 +67,7 @@ const RegisterPage = () => {
           ) : null}
         </label>
         <label>
-          Phone
+          {t("phone")}
           <input
             value={form.phone}
             onChange={update("phone")}
@@ -79,7 +81,7 @@ const RegisterPage = () => {
           ) : null}
         </label>
         <label>
-          Email
+          {t("email")}
           <input
             type="email"
             value={form.email}
@@ -93,7 +95,7 @@ const RegisterPage = () => {
           ) : null}
         </label>
         <label>
-          Password
+          {t("password")}
           <input
             type="password"
             value={form.password}
@@ -109,13 +111,13 @@ const RegisterPage = () => {
           ) : null}
         </label>
         <button type="submit" disabled={submitting}>
-          {submitting ? "Creating..." : "Create account"}
+          {submitting ? t("creating") : t("register")}
         </button>
       </form>
       {error ? <p style={{ color: "crimson", marginTop: 12 }}>{error}</p> : null}
       <p style={{ marginTop: 16 }}>
-        Already have an account?{" "}
-        <Link to={`/login?redirect=${encodeURIComponent(redirectTo)}`}>Login</Link>
+        {t("alreadyHaveAccount")}{" "}
+        <Link to={`/login?redirect=${encodeURIComponent(redirectTo)}`}>{t("login")}</Link>
       </p>
     </section>
   );

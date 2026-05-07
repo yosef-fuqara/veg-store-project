@@ -1,41 +1,49 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
+import { USER_ROLES } from "../constants/roles";
+import { useToast } from "../features/toast/ToastContext";
 
 const LoginPage = () => {
   const { login } = useAuth();
-  const { t } = useTranslation("auth");
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/products";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const redirectTo = searchParams.get("redirect") || "/";
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
     setSubmitting(true);
     try {
-      await login({ email, password });
+      const user = await login({ email, password });
+      if (user.role !== USER_ROLES.ADMIN) {
+        showToast("This account is not an admin account.", "error");
+        navigate("/unauthorized", { replace: true });
+        return;
+      }
+      showToast("Signed in successfully.");
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError(err.userMessage || t("loginFailed"));
+      const message = err.userMessage || "Login failed";
+      setError(message);
+      showToast(message, "error");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <section style={{ maxWidth: 420 }}>
-      <h2>{t("loginTitle")}</h2>
+    <section style={{ maxWidth: 420, margin: "2rem auto" }}>
+      <h1>Admin Login</h1>
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: 8 }}>
         <label>
-          {t("email")}
+          Email
           <input
             type="email"
             value={email}
@@ -46,7 +54,7 @@ const LoginPage = () => {
           />
         </label>
         <label>
-          {t("password")}
+          Password
           <input
             type="password"
             value={password}
@@ -58,14 +66,10 @@ const LoginPage = () => {
           />
         </label>
         <button type="submit" disabled={submitting}>
-          {submitting ? t("loggingIn") : t("login")}
+          {submitting ? "Signing in..." : "Sign in"}
         </button>
       </form>
       {error ? <p style={{ color: "crimson", marginTop: 12 }}>{error}</p> : null}
-      <p style={{ marginTop: 16 }}>
-        {t("noAccount")}{" "}
-        <Link to={`/register?redirect=${encodeURIComponent(redirectTo)}`}>{t("createOne")}</Link>
-      </p>
     </section>
   );
 };

@@ -1,0 +1,30 @@
+{
+  "title": "الطلب",
+  "confirmationTitle": "تأكيد الطلب",
+  "loading": "جار تحميل الطلب...",
+  "loadError": "تعذر تحميل الطلب.",
+  "notFound": "الطلب غير موجود.",
+  "home": "الرئيسية",
+  "orderId": "رقم الطلب",
+  "status": "الحالة",
+  "payment": "الدفع",
+  "paymentMethod": "طريقة الدفع",
+  "phone": "الهاتف",
+  "delivery": "التوصيل",
+  "zone": "المنطقة",
+  "yourNotes": "ملاحظاتك",
+  "items": "العناصر",
+  "subtotal": "المجموع الفرعي",
+  "deliveryFee": "التوصيل",
+  "total": "الإجمالي",
+  "refreshStatus": "تحديث الحالة",
+  "continueShopping": "متابعة التسوق",
+  "paymentStatusMessage": {
+    "pending_payment": "بانتظار تأكيد الدفع.",
+    "bank_transfer_pending": "يرجى إتمام التحويل البنكي، وسيقوم المشرف بالتأكيد.",
+    "paid": "تم استلام الدفع.",
+    "bank_transfer_approved": "تم استلام الدفع.",
+    "failed": "فشل الدفع.",
+    "cancelled": "تم إلغاء الدفع."
+  }
+}

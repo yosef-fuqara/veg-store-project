@@ -1,0 +1,37 @@
+{
+  "title": "תשלום",
+  "loading": "טוען עמוד תשלום...",
+  "previewLoadError": "לא ניתן לטעון תצוגת עגלה.",
+  "backToCart": "חזרה לעגלה",
+  "cartEmpty": "העגלה שלך ריקה.",
+  "continueShopping": "המשך קניה",
+  "deliveryAddress": "כתובת משלוח",
+  "labelOptional": "תווית (אופציונלי)",
+  "cityRequired": "עיר *",
+  "streetRequired": "רחוב *",
+  "building": "בניין",
+  "apartment": "דירה",
+  "addressNotes": "הערות לכתובת",
+  "deliveryZoneRequired": "אזור משלוח *",
+  "fee": "דמי משלוח",
+  "phoneRequired": "טלפון *",
+  "orderNotes": "הערות להזמנה",
+  "paymentMethodRequired": "אמצעי תשלום *",
+  "placeOrder": "בצע הזמנה",
+  "placingOrder": "מבצע הזמנה...",
+  "placeOrderError": "לא ניתן לבצע הזמנה.",
+  "orderSummary": "סיכום הזמנה",
+  "subtotal": "סכום ביניים",
+  "deliveryFee": "דמי משלוח",
+  "total": "סך הכל",
+  "zones": {
+    "zone_a": "אזור א",
+    "zone_b": "אזור ב",
+    "zone_c": "אזור ג"
+  },
+  "paymentMethods": {
+    "credit_card": "כרטיס אשראי",
+    "bit": "ביט",
+    "bank_transfer": "העברה בנקאית"
+  }
+}
