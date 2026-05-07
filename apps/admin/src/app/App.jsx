@@ -6,6 +6,8 @@ import LoginPage from "../pages/LoginPage";
 import UnauthorizedPage from "../pages/UnauthorizedPage";
 import AdminProductsPage from "../pages/AdminProductsPage";
 import ProductFormPage from "../pages/ProductFormPage";
+import AdminOrdersPage from "../pages/AdminOrdersPage";
+import AdminOrderDetailsPage from "../pages/AdminOrderDetailsPage";
 
 const AppNav = () => {
   const { user, logout } = useAuth();
@@ -22,6 +24,7 @@ const AppNav = () => {
       }}
     >
       <Link to="/products">Products</Link>
+      <Link to="/orders">Orders</Link>
       {user ? (
         <>
           <span style={{ marginInlineStart: "auto" }}>
@@ -86,6 +89,26 @@ const App = () => {
             <RequireAuth>
               <RequireAdmin>
                 <ProductFormPage />
+              </RequireAdmin>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            <RequireAuth>
+              <RequireAdmin>
+                <AdminOrdersPage />
+              </RequireAdmin>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/orders/:id"
+          element={
+            <RequireAuth>
+              <RequireAdmin>
+                <AdminOrderDetailsPage />
               </RequireAdmin>
             </RequireAuth>
           }
