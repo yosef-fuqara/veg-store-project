@@ -10,7 +10,7 @@ const RequireAuth = ({ children }) => {
   }
 
   if (!user) {
-    const redirect = encodeURIComponent(`${location.pathname}${location.search}`);
+    const redirect = encodeURIComponent(`${location.pathname}${location.search}${location.hash}`);
     return <Navigate to={`/login?redirect=${redirect}`} replace />;
   }
 

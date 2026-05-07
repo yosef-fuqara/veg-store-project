@@ -1,4 +1,4 @@
-import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Link, Navigate, Route, Routes } from "react-router-dom";
 import RequireAuth from "../components/RequireAuth";
 import RequireAdmin from "../components/RequireAdmin";
 import { useAuth } from "../features/auth/AuthContext";
@@ -11,7 +11,6 @@ import AdminOrderDetailsPage from "../pages/AdminOrderDetailsPage";
 
 const AppNav = () => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
   return (
     <nav
@@ -34,7 +33,6 @@ const AppNav = () => {
             type="button"
             onClick={() => {
               logout();
-              navigate("/login", { replace: true });
             }}
           >
             Logout

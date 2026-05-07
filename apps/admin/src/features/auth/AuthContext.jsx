@@ -1,12 +1,26 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import * as authService from "../../services/authService";
-import { clearAccessToken, getAccessToken, setAccessToken } from "../../services/authStorage";
+import { getAccessToken, setAccessToken } from "../../services/authStorage";
+import { AUTH_SESSION_CLEARED_EVENT, clearAuthSession } from "../../services/authSession";
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
+
+  useEffect(() => {
+    const handleSessionCleared = () => {
+      setUser(null);
+      setInitializing(false);
+    };
+
+    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, handleSessionCleared);
+
+    return () => {
+      window.removeEventListener(AUTH_SESSION_CLEARED_EVENT, handleSessionCleared);
+    };
+  }, []);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -22,7 +36,7 @@ export const AuthProvider = ({ children }) => {
         if (!cancelled) setUser(current);
       } catch (err) {
         if (err.response?.status === 401) {
-          clearAccessToken();
+          clearAuthSession();
         }
       } finally {
         if (!cancelled) setInitializing(false);
@@ -42,8 +56,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const logout = useCallback(() => {
-    clearAccessToken();
-    setUser(null);
+    clearAuthSession({ redirectToLogin: true, preserveRedirect: false });
   }, []);
 
   const value = useMemo(

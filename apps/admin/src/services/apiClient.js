@@ -1,6 +1,7 @@
 import axios from "axios";
 import { formatApiError } from "../utils/formatApiError";
 import { getAccessToken } from "./authStorage";
+import { clearAuthSession } from "./authSession";
 
 function resolveBaseURL() {
   const fromEnv = import.meta.env.VITE_API_URL;
@@ -34,6 +35,16 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error.response?.status;
+    const code = String(error.response?.data?.code || "").toUpperCase();
+    if (status === 401 || code === "UNAUTHENTICATED" || code === "TOKEN_INVALID") {
+      clearAuthSession({
+        redirectToLogin: true,
+        preserveRedirect: true,
+        reason: "session_expired"
+      });
+    }
+
     error.userMessage = formatApiError(error);
     return Promise.reject(error);
   }

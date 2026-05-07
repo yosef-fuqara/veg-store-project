@@ -73,6 +73,7 @@ const AdminOrderDetailsPage = () => {
 
   const handleOrderStatusUpdate = async () => {
     if (!order || !nextOrderStatus || nextOrderStatus === order.orderStatus) return;
+    setError("");
     setUpdating(true);
     try {
       const updated = await updateAdminOrderStatus(order._id, nextOrderStatus);
@@ -90,6 +91,7 @@ const AdminOrderDetailsPage = () => {
 
   const handlePaymentStatusUpdate = async () => {
     if (!order || !nextPaymentStatus || nextPaymentStatus === order.paymentStatus) return;
+    setError("");
     setUpdating(true);
     try {
       const updated = await updateAdminOrderPaymentStatus(order._id, nextPaymentStatus);
@@ -124,7 +126,12 @@ const AdminOrderDetailsPage = () => {
     <section style={{ display: "grid", gap: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1>Order Details</h1>
-        <Link to="/orders">Back to orders</Link>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" onClick={load} disabled={loading || updating}>
+            Refresh
+          </button>
+          <Link to="/orders">Back to orders</Link>
+        </div>
       </div>
 
       {error ? <p style={{ color: "crimson", margin: 0 }}>{error}</p> : null}

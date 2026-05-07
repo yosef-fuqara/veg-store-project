@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
 import { USER_ROLES } from "../constants/roles";
@@ -9,12 +9,24 @@ const LoginPage = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/products";
+  const requestedRedirect = searchParams.get("redirect");
+  const redirectTo =
+    requestedRedirect && requestedRedirect.startsWith("/") ? requestedRedirect : "/products";
+  const reason = searchParams.get("reason");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (reason !== "session_expired") return;
+    showToast("Session expired. Please sign in again.", "error");
+    const next = new URLSearchParams(searchParams);
+    next.delete("reason");
+    const nextQuery = next.toString();
+    navigate(`/login${nextQuery ? `?${nextQuery}` : ""}`, { replace: true });
+  }, [navigate, reason, searchParams, showToast]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
