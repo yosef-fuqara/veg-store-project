@@ -30,6 +30,18 @@ const buildOrderMessage = (order, user) => {
   if (order?.hasPreorderItems) {
     lines.push("⚠ Contains preorder/custom platter items");
   }
+  const wrapTotal = typeof order?.wrapTotal === "number" ? order.wrapTotal : 0;
+  if (wrapTotal > 0) {
+    // Surface the wrap requirement so the packer knows to grab cling-film
+    // before they start picking the order.
+    const wrappedItems = (order.items || [])
+      .filter((line) => line?.wrap)
+      .map((line) => `${line.name} x${line.quantity}${line.unit ? ` ${line.unit}` : ""}`);
+    lines.push(`Wrap fees: ${wrapTotal} ILS`);
+    if (wrappedItems.length) {
+      lines.push(`Wrap (cling-film): ${wrappedItems.join(", ")}`);
+    }
+  }
   if (adminLink) {
     lines.push(`Admin: ${adminLink}`);
   }

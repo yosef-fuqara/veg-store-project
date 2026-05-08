@@ -4,7 +4,7 @@ import * as cartService from "../../services/cartService";
 const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState({ items: [], subtotal: 0 });
+  const [cart, setCart] = useState({ items: [], subtotal: 0, wrapTotal: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -38,9 +38,19 @@ export const CartProvider = ({ children }) => {
   );
 
   const updateItem = useCallback(
-    async (productId, quantity) => {
+    async (productId, updates) => {
       await withLoading(async () => {
-        const next = await cartService.updateCartItem(productId, quantity);
+        const next = await cartService.updateCartItem(productId, updates);
+        setCart(next);
+      });
+    },
+    [withLoading]
+  );
+
+  const setWrap = useCallback(
+    async (productId, wrap) => {
+      await withLoading(async () => {
+        const next = await cartService.updateCartItem(productId, { wrap });
         setCart(next);
       });
     },
@@ -80,11 +90,23 @@ export const CartProvider = ({ children }) => {
       refreshCart,
       addItem,
       updateItem,
+      setWrap,
       removeItem,
       clear,
       revalidateCheckout
     }),
-    [cart, loading, error, refreshCart, addItem, updateItem, removeItem, clear, revalidateCheckout]
+    [
+      cart,
+      loading,
+      error,
+      refreshCart,
+      addItem,
+      updateItem,
+      setWrap,
+      removeItem,
+      clear,
+      revalidateCheckout
+    ]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -142,12 +142,36 @@ const OrderConfirmationPage = () => {
           <li key={`${item.product}-${index}`}>
             {item.name} x {item.quantity} @ {formatPrice(item.price, lang)} ={" "}
             {formatPrice(item.price * item.quantity, lang)}
+            {item.wrap ? (
+              <span
+                style={{
+                  marginInlineStart: 6,
+                  padding: "1px 6px",
+                  borderRadius: 999,
+                  fontSize: 11,
+                  background: "#f0fdf4",
+                  color: "#166534",
+                  border: "1px solid #bbf7d0"
+                }}
+                title={t("wrapBadge")}
+              >
+                {t("wrapBadge")}
+                {Number(item.wrapFee) > 0
+                  ? ` (+${formatPrice(item.wrapFee, lang)})`
+                  : ""}
+              </span>
+            ) : null}
           </li>
         ))}
       </ul>
       <p>
         {t("subtotal")}: {formatPrice(order.subtotal, lang)}
       </p>
+      {Number(order.wrapTotal) > 0 ? (
+        <p>
+          {t("wrapFees")}: {formatPrice(order.wrapTotal, lang)}
+        </p>
+      ) : null}
       <p>
         {t("deliveryFee")}: {formatPrice(order.deliveryFee, lang)}
       </p>

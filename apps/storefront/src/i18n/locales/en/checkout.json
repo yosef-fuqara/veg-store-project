@@ -25,6 +25,8 @@
   "orderSummary": "Order summary",
   "subtotal": "Subtotal",
   "deliveryFee": "Delivery fee",
+  "wrapFees": "Wrap fees",
+  "wrapBadge": "Wrapped",
   "total": "Total",
   "preorderNotice": "Your cart contains preorder items (e.g. fruit platters).",
   "preorderHelper": "Fruit platters require at least {{hours}} hours advance notice. Pick a delivery/preparation date.",

@@ -8,6 +8,7 @@ const {
   assertProductPurchasable,
   getEffectiveUnitPrice
 } = require("../services/cart.service");
+const { isWrapAllowedForUnit, WRAP_PRICE_PER_KG } = require("../constants/product");
 
 const getOrCreateCart = async (userId) => {
   let cart = await Cart.findOne({ user: userId });
@@ -19,12 +20,15 @@ const getOrCreateCart = async (userId) => {
 };
 
 const formatCartResponse = async (cart) => {
-  const { items, subtotal } = await computeCartTotals(cart.items);
+  const { items, subtotal, wrapTotal } = await computeCartTotals(cart.items);
 
-  cart.items = items.map(({ product, quantity, unitPriceSnapshot }) => ({
+  // Persist the normalized rows (incl. coerced wrap flag) so a stale toggle
+  // for a now-non-kg product can't sneak back on a future request.
+  cart.items = items.map(({ product, quantity, unitPriceSnapshot, wrap }) => ({
     product,
     quantity,
-    unitPriceSnapshot
+    unitPriceSnapshot,
+    wrap
   }));
   await cart.save();
 
@@ -35,9 +39,13 @@ const formatCartResponse = async (cart) => {
       product: item.product,
       quantity: item.quantity,
       unitPriceSnapshot: item.unitPriceSnapshot,
+      wrap: item.wrap,
+      wrapFee: item.wrapFee,
       productSnapshot: item.productSnapshot
     })),
     subtotal,
+    wrapTotal,
+    wrapPricePerKg: WRAP_PRICE_PER_KG,
     updatedAt: cart.updatedAt
   };
 };
@@ -54,28 +62,36 @@ const getCart = async (req, res, next) => {
 
 const addCartItem = async (req, res, next) => {
   try {
-    const { productId, quantity } = req.body;
+    const { productId, quantity, wrap } = req.body;
     const product = await Product.findOne({
       _id: productId,
       isActive: true,
       isFrozen: false,
       isDeleted: { $ne: true }
-    }).select("price salePrice stockStatus");
+    }).select("price salePrice stockStatus unit");
 
     assertProductPurchasable(product);
 
     const unitPrice = getEffectiveUnitPrice(product);
+    const wrapRequested = typeof wrap === "boolean" ? wrap : undefined;
+    const wrapAllowed = isWrapAllowedForUnit(product.unit);
     const cart = await getOrCreateCart(req.user._id);
     const existingItem = cart.items.find((item) => String(item.product) === productId);
 
     if (existingItem) {
       existingItem.quantity += quantity;
       existingItem.unitPriceSnapshot = unitPrice;
+      // Adding more of an existing item only changes the wrap flag if the
+      // client explicitly opted in/out this time around.
+      if (wrapRequested !== undefined) {
+        existingItem.wrap = wrapAllowed && wrapRequested;
+      }
     } else {
       cart.items.push({
         product: product._id,
         quantity,
-        unitPriceSnapshot: unitPrice
+        unitPriceSnapshot: unitPrice,
+        wrap: wrapAllowed && Boolean(wrapRequested)
       });
     }
 
@@ -104,11 +120,18 @@ const updateCartItemQuantity = async (req, res, next) => {
       isActive: true,
       isFrozen: false,
       isDeleted: { $ne: true }
-    }).select("price salePrice stockStatus");
+    }).select("price salePrice stockStatus unit");
 
     assertProductPurchasable(product);
 
-    item.quantity = req.body.quantity;
+    if (typeof req.body.quantity === "number") {
+      item.quantity = req.body.quantity;
+    }
+    if (typeof req.body.wrap === "boolean") {
+      // Wrap is silently dropped for non-kg products so the customer is never
+      // surprised by a wrap charge on something we can't actually wrap.
+      item.wrap = isWrapAllowedForUnit(product.unit) && req.body.wrap;
+    }
     item.unitPriceSnapshot = getEffectiveUnitPrice(product);
     await cart.save();
 
@@ -149,9 +172,11 @@ const clearCart = async (req, res, next) => {
     cart.items = [];
     await cart.save();
 
-    return res
-      .status(StatusCodes.OK)
-      .json({ success: true, message: "Cart cleared", data: { cart: { items: [], subtotal: 0 } } });
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Cart cleared",
+      data: { cart: { items: [], subtotal: 0, wrapTotal: 0, wrapPricePerKg: WRAP_PRICE_PER_KG } }
+    });
   } catch (error) {
     return next(error);
   }

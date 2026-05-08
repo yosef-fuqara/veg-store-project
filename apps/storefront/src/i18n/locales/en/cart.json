@@ -6,5 +6,15 @@
   "remove": "Remove",
   "clearCart": "Clear cart",
   "proceedToCheckout": "Proceed to checkout",
-  "empty": "Your cart is empty."
+  "empty": "Your cart is empty.",
+  "wrap": {
+    "sectionTitle": "Cling-film wrapping (optional)",
+    "explanation": "We arrange your selected vegetables and fruits in a container and wrap them in cling film, so they reach you neat, clean, fresh and protected on the way. Available only for items sold by weight (kg).",
+    "priceHint": "₪{{price}} per kg",
+    "toggleLabel": "Wrap this item in cling film",
+    "fee": "Wrap fee",
+    "lineFee": "Wrap: {{amount}}",
+    "summaryLabel": "Wrap fees",
+    "unavailable": "Wrapping is only available for products sold by the kilogram."
+  }
 }

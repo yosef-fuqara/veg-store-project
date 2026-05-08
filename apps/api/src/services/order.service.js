@@ -15,7 +15,9 @@ const buildOrderItemsFromPreview = (previewItems) =>
     quantity: line.quantity,
     unit: line.unit,
     isPreorderOnly: Boolean(line.isPreorderOnly),
-    minAdvanceHours: Number(line.minAdvanceHours) || 0
+    minAdvanceHours: Number(line.minAdvanceHours) || 0,
+    wrap: Boolean(line.wrap),
+    wrapFee: Number(line.wrapFee) || 0
   }));
 
 const getInitialPaymentStatus = (method) => {

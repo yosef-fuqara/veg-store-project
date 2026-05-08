@@ -46,10 +46,13 @@ const createOrder = async (req, res, next) => {
 
     const preview = await buildCheckoutPreview(cart.items);
     const subtotal = preview.subtotal;
+    const wrapTotal = Number(preview.wrapTotal) || 0;
 
-    // Backend is the source of truth for delivery fees.
+    // Delivery fee thresholds are evaluated against item subtotal only —
+    // wrap is a service surcharge and shouldn't push an order over the
+    // "free delivery" line.
     const deliveryFee = calculateDeliveryFee(deliveryArea, subtotal);
-    const total = subtotal + deliveryFee;
+    const total = subtotal + wrapTotal + deliveryFee;
 
     const { hasPreorderItems, preferredDeliveryAt } = assertPreorderTiming(
       preview.items,
@@ -75,6 +78,7 @@ const createOrder = async (req, res, next) => {
       user: req.user._id,
       items,
       subtotal,
+      wrapTotal,
       deliveryFee,
       total,
       deliveryAddress,

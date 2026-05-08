@@ -16,6 +16,13 @@ const cartItemSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0
+    },
+    // Optional cling-film wrapping service. Only meaningful for kg-based
+    // produce; the cart service will silently ignore it for other units so a
+    // stale toggle never charges the customer.
+    wrap: {
+      type: Boolean,
+      default: false
     }
   },
   { _id: false }

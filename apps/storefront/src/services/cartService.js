@@ -5,13 +5,19 @@ export const fetchCart = async () => {
   return data.data.cart;
 };
 
-export const addCartItem = async (productId, quantity = 1) => {
-  const { data } = await apiClient.post("/cart/items", { productId, quantity });
+export const addCartItem = async (productId, quantity = 1, options = {}) => {
+  const payload = { productId, quantity };
+  if (typeof options.wrap === "boolean") payload.wrap = options.wrap;
+  const { data } = await apiClient.post("/cart/items", payload);
   return data.data.cart;
 };
 
-export const updateCartItem = async (productId, quantity) => {
-  const { data } = await apiClient.patch(`/cart/items/${productId}`, { quantity });
+// `updates` may be either a number (legacy: quantity-only) or an object
+// `{ quantity?, wrap? }` so the cart UI can toggle the wrap service without
+// touching the quantity.
+export const updateCartItem = async (productId, updates) => {
+  const payload = typeof updates === "number" ? { quantity: updates } : { ...updates };
+  const { data } = await apiClient.patch(`/cart/items/${productId}`, payload);
   return data.data.cart;
 };
 

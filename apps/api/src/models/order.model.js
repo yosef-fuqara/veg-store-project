@@ -26,7 +26,11 @@ const orderItemSchema = new mongoose.Schema(
     quantity: { type: Number, required: true, min: 1 },
     unit: { type: String, required: true, trim: true },
     isPreorderOnly: { type: Boolean, default: false },
-    minAdvanceHours: { type: Number, default: 0, min: 0 }
+    minAdvanceHours: { type: Number, default: 0, min: 0 },
+    // Snapshot of the wrap selection at order time so re-pricing is stable
+    // even if the wrap rate changes later. wrapFee is the line-level cost.
+    wrap: { type: Boolean, default: false },
+    wrapFee: { type: Number, default: 0, min: 0 }
   },
   { _id: false }
 );
@@ -41,6 +45,10 @@ const orderSchema = new mongoose.Schema(
     },
     items: { type: [orderItemSchema], required: true },
     subtotal: { type: Number, required: true, min: 0 },
+    // Aggregated cling-film wrap surcharge across all items. Tracked
+    // separately from `subtotal` so it never affects the free-delivery
+    // threshold (wrap is a service, not an item).
+    wrapTotal: { type: Number, default: 0, min: 0 },
     deliveryFee: { type: Number, required: true, min: 0 },
     total: { type: Number, required: true, min: 0 },
     deliveryAddress: { type: deliveryAddressSchema, required: true },

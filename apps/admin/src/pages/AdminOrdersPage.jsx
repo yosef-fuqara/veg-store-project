@@ -77,6 +77,17 @@ const PREORDER_BADGE_STYLE = {
   marginInlineStart: 6
 };
 
+const WRAP_BADGE_STYLE = {
+  ...BADGE_BASE_STYLE,
+  background: "#f0fdf4",
+  color: "#166534",
+  border: "1px solid #bbf7d0",
+  marginInlineStart: 6
+};
+
+const orderHasWrappedItems = (order) =>
+  Array.isArray(order?.items) && order.items.some((item) => item?.wrap);
+
 const AdminOrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -215,6 +226,11 @@ const AdminOrdersPage = () => {
                 {order.hasPreorderItems ? (
                   <span style={PREORDER_BADGE_STYLE} title="Contains preorder/custom platter items">
                     Preorder
+                  </span>
+                ) : null}
+                {orderHasWrappedItems(order) ? (
+                  <span style={WRAP_BADGE_STYLE} title="Contains items to wrap in cling-film">
+                    Wrap
                   </span>
                 ) : null}
               </td>

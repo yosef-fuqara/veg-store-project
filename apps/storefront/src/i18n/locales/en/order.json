@@ -19,6 +19,8 @@
   "items": "Items",
   "subtotal": "Subtotal",
   "deliveryFee": "Delivery",
+  "wrapFees": "Wrap fees",
+  "wrapBadge": "Wrapped",
   "total": "Total",
   "refreshStatus": "Refresh status",
   "continueShopping": "Continue shopping",

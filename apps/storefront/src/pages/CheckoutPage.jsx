@@ -107,6 +107,7 @@ const CheckoutPage = () => {
   }, [t]);
 
   const subtotal = preview?.subtotal ?? 0;
+  const wrapTotal = Number(preview?.wrapTotal) || 0;
   const hasPreorderItems = Boolean(preview?.hasPreorderItems);
   // Strictest minimum (default 24h) across preorder items in the cart.
   const minAdvanceHours = useMemo(() => {
@@ -121,7 +122,9 @@ const CheckoutPage = () => {
     () => estimateDeliveryFee(form.deliveryArea, subtotal, rules),
     [form.deliveryArea, subtotal, rules]
   );
-  const total = subtotal + deliveryFeeEstimate;
+  // Wrap charges are billed on top of the items + delivery; they don't
+  // qualify for free-delivery thresholds.
+  const total = subtotal + wrapTotal + deliveryFeeEstimate;
 
   const updateAddress = (key) => (event) => {
     const value = event.target.value;
@@ -414,15 +417,43 @@ const CheckoutPage = () => {
           <h3 style={{ marginTop: 0 }}>{t("orderSummary")}</h3>
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {preview.items.map((item) => (
-              <li
-                key={item.product}
-                style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, gap: 8 }}
-              >
-                <span>
-                  {item.name} x {item.quantity}
-                  {item.isPreorderOnly ? " ⏱" : ""}
-                </span>
-                <span>{formatPrice(item.lineTotal, lang)}</span>
+              <li key={item.product} style={{ marginBottom: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                  <span>
+                    {item.name} x {item.quantity}
+                    {item.isPreorderOnly ? " ⏱" : ""}
+                    {item.wrap ? (
+                      <span
+                        style={{
+                          marginInlineStart: 6,
+                          padding: "1px 6px",
+                          borderRadius: 999,
+                          fontSize: 11,
+                          background: "#f0fdf4",
+                          color: "#166534",
+                          border: "1px solid #bbf7d0"
+                        }}
+                      >
+                        {t("wrapBadge")}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span>{formatPrice(item.lineTotal, lang)}</span>
+                </div>
+                {item.wrap && Number(item.wrapFee) > 0 ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 8,
+                      fontSize: "0.8rem",
+                      color: "#166534"
+                    }}
+                  >
+                    <span>↳ {t("wrapFees")}</span>
+                    <span>+{formatPrice(item.wrapFee, lang)}</span>
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -431,6 +462,12 @@ const CheckoutPage = () => {
             <span>{t("subtotal")}</span>
             <span>{formatPrice(subtotal, lang)}</span>
           </div>
+          {wrapTotal > 0 ? (
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>{t("wrapFees")}</span>
+              <span>{formatPrice(wrapTotal, lang)}</span>
+            </div>
+          ) : null}
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>{t("deliveryFee")}</span>
             <span>{formatPrice(deliveryFeeEstimate, lang)}</span>

@@ -66,6 +66,7 @@ const AdminOrderDetailsPage = () => {
     if (!order) return null;
     return {
       subtotal: formatCurrency(order.subtotal),
+      wrapTotal: formatCurrency(order.wrapTotal || 0),
       deliveryFee: formatCurrency(order.deliveryFee),
       total: formatCurrency(order.total)
     };
@@ -240,6 +241,26 @@ const AdminOrderDetailsPage = () => {
                       Preorder
                     </span>
                   ) : null}
+                  {item.wrap ? (
+                    <span
+                      style={{
+                        marginInlineStart: 6,
+                        padding: "2px 6px",
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        background: "#f0fdf4",
+                        color: "#166534",
+                        border: "1px solid #bbf7d0"
+                      }}
+                      title="Wrap in cling-film before delivery"
+                    >
+                      Wrap
+                      {Number(item.wrapFee) > 0
+                        ? ` (+${formatCurrency(item.wrapFee)})`
+                        : ""}
+                    </span>
+                  ) : null}
                 </td>
                 <td style={{ borderBottom: "1px solid #f1f5f9", padding: "8px 6px" }}>
                   {item.quantity} {item.unit}
@@ -255,6 +276,11 @@ const AdminOrderDetailsPage = () => {
         <p>
           <strong>Subtotal:</strong> {totals?.subtotal}
         </p>
+        {Number(order.wrapTotal) > 0 ? (
+          <p>
+            <strong>Wrap Fees:</strong> {totals?.wrapTotal}
+          </p>
+        ) : null}
         <p>
           <strong>Delivery Fee:</strong> {totals?.deliveryFee}
         </p>
