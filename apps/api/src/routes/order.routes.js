@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   createOrder,
+  getDeliveryAreas,
   listMyOrders,
   getMyOrder,
   adminListOrders,
@@ -21,6 +22,9 @@ const {
 } = require("../validators/order.validator");
 
 const router = express.Router();
+
+// Public — allowed delivery areas and pricing rules for the storefront.
+router.get("/delivery-areas", getDeliveryAreas);
 
 router.get(
   "/admin/all",

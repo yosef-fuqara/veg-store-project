@@ -12,11 +12,10 @@ const { PAYMENT_METHOD } = require("../../src/constants/order");
 
 const addressOrderBase = {
   deliveryAddress: {
-    city: "Tel Aviv",
     street: "Herzl",
     building: "1"
   },
-  deliveryZone: "zone_a",
+  deliveryArea: "nazareth",
   customerPhone: "0501234567"
 };
 

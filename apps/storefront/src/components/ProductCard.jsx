@@ -33,6 +33,8 @@ const ProductCard = ({ product, lang }) => {
 
   const stockStatus = product.stockStatus;
   const inStock = stockStatus === "in_stock";
+  const isPreorderOnly = Boolean(product.isPreorderOnly);
+  const minAdvanceHours = Number(product.minAdvanceHours) || 24;
 
   const handleAdd = () => {
     if (!id || !inStock) return;
@@ -83,6 +85,24 @@ const ProductCard = ({ product, lang }) => {
       </div>
       <div style={{ padding: "12px 14px", flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
         <h3 style={{ margin: 0, fontSize: "1.05rem", lineHeight: 1.3 }}>{name || "—"}</h3>
+        {isPreorderOnly ? (
+          <span
+            style={{
+              alignSelf: "flex-start",
+              display: "inline-block",
+              padding: "2px 8px",
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 600,
+              background: "#fffbeb",
+              color: "#92400e",
+              border: "1px solid #fde68a"
+            }}
+            title={t("preorderHint", { hours: minAdvanceHours })}
+          >
+            {t("preorderBadge")}
+          </span>
+        ) : null}
         <p style={{ margin: 0, fontSize: "0.9rem", color: "#555" }}>
           {hasSale ? (
             <>

@@ -1,6 +1,10 @@
 const { StatusCodes } = require("http-status-codes");
 const { ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHOD } = require("../constants/order");
-const { getDeliveryFee } = require("../constants/delivery");
+const {
+  calculateDeliveryFee,
+  getDeliveryArea,
+  isAllowedDeliveryArea
+} = require("../constants/delivery");
 const AppError = require("../utils/app-error");
 
 const buildOrderItemsFromPreview = (previewItems) =>
@@ -9,7 +13,9 @@ const buildOrderItemsFromPreview = (previewItems) =>
     name: line.name,
     price: line.unitPrice,
     quantity: line.quantity,
-    unit: line.unit
+    unit: line.unit,
+    isPreorderOnly: Boolean(line.isPreorderOnly),
+    minAdvanceHours: Number(line.minAdvanceHours) || 0
   }));
 
 const getInitialPaymentStatus = (method) => {
@@ -48,9 +54,65 @@ const assertOrderStatusTransition = (current, next) => {
   }
 };
 
+const assertDeliveryAreaAllowed = (areaKey) => {
+  if (!isAllowedDeliveryArea(areaKey)) {
+    throw new AppError(
+      "Unsupported delivery area",
+      StatusCodes.BAD_REQUEST
+    );
+  }
+};
+
+/**
+ * Validate that any preorder-only items in the cart can be prepared in time.
+ *
+ * If at least one item is preorder-only, the customer must provide
+ * `preferredDeliveryAt` and it must be at least `minAdvanceHours` from now
+ * (defaulting to 24h, taking the strictest item's requirement).
+ */
+const assertPreorderTiming = (previewItems, preferredDeliveryAt) => {
+  const preorderItems = previewItems.filter((line) => line.isPreorderOnly);
+  if (preorderItems.length === 0) {
+    return { hasPreorderItems: false, preferredDeliveryAt: null };
+  }
+
+  if (!preferredDeliveryAt) {
+    throw new AppError(
+      "This product requires at least 24 hours advance notice.",
+      StatusCodes.BAD_REQUEST
+    );
+  }
+
+  const target = new Date(preferredDeliveryAt);
+  if (Number.isNaN(target.getTime())) {
+    throw new AppError(
+      "Invalid preferred delivery time.",
+      StatusCodes.BAD_REQUEST
+    );
+  }
+
+  const requiredHours = preorderItems.reduce(
+    (max, line) => Math.max(max, Number(line.minAdvanceHours) || 24),
+    24
+  );
+  const minMs = requiredHours * 60 * 60 * 1000;
+  const diffMs = target.getTime() - Date.now();
+  if (diffMs < minMs) {
+    throw new AppError(
+      `This product requires at least ${requiredHours} hours advance notice.`,
+      StatusCodes.BAD_REQUEST
+    );
+  }
+
+  return { hasPreorderItems: true, preferredDeliveryAt: target };
+};
+
 module.exports = {
-  getDeliveryFee,
+  calculateDeliveryFee,
+  getDeliveryArea,
   buildOrderItemsFromPreview,
   getInitialPaymentStatus,
-  assertOrderStatusTransition
+  assertOrderStatusTransition,
+  assertDeliveryAreaAllowed,
+  assertPreorderTiming
 };

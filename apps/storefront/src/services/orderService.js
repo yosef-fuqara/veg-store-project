@@ -9,3 +9,8 @@ export const getOrder = async (id) => {
   const { data } = await apiClient.get(`/orders/${id}`);
   return data.data.order;
 };
+
+export const getDeliveryAreas = async () => {
+  const { data } = await apiClient.get("/orders/delivery-areas");
+  return data.data;
+};

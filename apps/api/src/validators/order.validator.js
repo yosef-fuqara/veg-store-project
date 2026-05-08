@@ -1,6 +1,6 @@
 const Joi = require("joi");
 const { ORDER_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } = require("../constants/order");
-const { DELIVERY_ZONE_KEYS } = require("../constants/delivery");
+const { ALLOWED_DELIVERY_AREA_KEYS } = require("../constants/delivery");
 
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
@@ -8,25 +8,31 @@ const orderIdParamSchema = Joi.object({
   id: Joi.string().pattern(objectIdRegex).required()
 });
 
+// City is optional from the client: the backend derives it from the selected
+// delivery area. If the client sends one, we accept it for compatibility.
 const deliveryAddressSchema = Joi.object({
   label: Joi.string().trim().max(50).allow("").optional(),
-  city: Joi.string().trim().min(1).max(80).required(),
+  city: Joi.string().trim().max(80).allow("").optional(),
   street: Joi.string().trim().min(1).max(120).required(),
   building: Joi.string().trim().max(50).allow("").optional(),
   apartment: Joi.string().trim().max(50).allow("").optional(),
   notes: Joi.string().trim().max(500).allow("").optional()
 });
 
+// ISO timestamp only allowed if at least one preorder item is in the cart.
+// Backend validates the actual time threshold (>= minAdvanceHours).
 const createOrderSchema = Joi.object({
   deliveryAddress: deliveryAddressSchema.required(),
-  deliveryZone: Joi.string()
-    .valid(...DELIVERY_ZONE_KEYS)
+  deliveryArea: Joi.string()
+    .valid(...ALLOWED_DELIVERY_AREA_KEYS)
     .required(),
   customerPhone: Joi.string().trim().min(7).max(20).required(),
   notes: Joi.string().trim().max(1000).allow("").optional(),
   paymentMethod: Joi.string()
     .valid(...Object.values(PAYMENT_METHOD))
-    .required()
+    .required(),
+  preferredDeliveryAt: Joi.date().iso().optional(),
+  customRequest: Joi.string().trim().max(1000).allow("").optional()
 });
 
 const updateOrderStatusSchema = Joi.object({

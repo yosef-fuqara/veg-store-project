@@ -6,6 +6,8 @@
   "errorTitle": "לא ניתן לטעון את המוצרים",
   "addToCart": "הוסף לעגלה",
   "outOfStock": "אזל מהמלאי",
+  "preorderBadge": "הזמנה מראש בלבד",
+  "preorderHint": "נדרשת התראה של {{hours}} שעות",
   "pricePerUnit": "ליחידה",
   "units": {
     "kg": "ק״ג",

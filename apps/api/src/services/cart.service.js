@@ -35,7 +35,7 @@ const computeCartTotals = async (items) => {
 
   const ids = items.map((item) => item.product);
   const products = await Product.find(buildCartProductQuery(ids)).select(
-    "name price salePrice unit stockStatus isActive isFrozen isDeleted"
+    "name price salePrice unit stockStatus isActive isFrozen isDeleted isPreorderOnly minAdvanceHours"
   );
   const productMap = new Map(products.map((p) => [String(p._id), p]));
 
@@ -57,7 +57,9 @@ const computeCartTotals = async (items) => {
       productSnapshot: {
         id: product._id,
         name: product.name,
-        unit: product.unit
+        unit: product.unit,
+        isPreorderOnly: Boolean(product.isPreorderOnly),
+        minAdvanceHours: Number(product.minAdvanceHours) || 0
       }
     };
   });
@@ -80,9 +82,12 @@ const buildCheckoutPreview = async (cartItems) => {
       unit: item.productSnapshot.unit,
       quantity: item.quantity,
       unitPrice: item.unitPriceSnapshot,
-      lineTotal: item.quantity * item.unitPriceSnapshot
+      lineTotal: item.quantity * item.unitPriceSnapshot,
+      isPreorderOnly: item.productSnapshot.isPreorderOnly,
+      minAdvanceHours: item.productSnapshot.minAdvanceHours
     })),
-    subtotal
+    subtotal,
+    hasPreorderItems: items.some((item) => item.productSnapshot.isPreorderOnly)
   };
 };
 

@@ -6,6 +6,8 @@
   "errorTitle": "تعذر تحميل المنتجات",
   "addToCart": "أضف إلى السلة",
   "outOfStock": "غير متوفر",
+  "preorderBadge": "طلب مسبق فقط",
+  "preorderHint": "يتطلب إشعار قبل {{hours}} ساعة",
   "pricePerUnit": "للوحدة",
   "units": {
     "kg": "كغ",

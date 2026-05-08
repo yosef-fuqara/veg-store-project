@@ -69,6 +69,14 @@ const customerText = (order) => {
   return user.name || user.email || user.phone || "-";
 };
 
+const PREORDER_BADGE_STYLE = {
+  ...BADGE_BASE_STYLE,
+  background: "#fffbeb",
+  color: "#92400e",
+  border: "1px solid #fde68a",
+  marginInlineStart: 6
+};
+
 const AdminOrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -204,6 +212,11 @@ const AdminOrdersPage = () => {
             <tr key={order._id}>
               <td style={{ borderBottom: "1px solid #f1f5f9", padding: "8px 6px" }}>
                 <Link to={`/orders/${order._id}`}>{order._id}</Link>
+                {order.hasPreorderItems ? (
+                  <span style={PREORDER_BADGE_STYLE} title="Contains preorder/custom platter items">
+                    Preorder
+                  </span>
+                ) : null}
               </td>
               <td style={{ borderBottom: "1px solid #f1f5f9", padding: "8px 6px" }}>{customerText(order)}</td>
               <td style={{ borderBottom: "1px solid #f1f5f9", padding: "8px 6px" }}>{formatCurrency(order.total)}</td>

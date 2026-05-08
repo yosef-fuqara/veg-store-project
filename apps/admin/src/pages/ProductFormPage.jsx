@@ -15,7 +15,10 @@ const EMPTY_FORM = {
   category: "",
   unit: "kg",
   stockStatus: "in_stock",
-  isFeatured: false
+  isFeatured: false,
+  isPreorderOnly: false,
+  minAdvanceHours: 24,
+  preparationNotes: ""
 };
 
 const ProductFormPage = () => {
@@ -55,7 +58,12 @@ const ProductFormPage = () => {
           category: current.category?._id || "",
           unit: current.unit || "kg",
           stockStatus: current.stockStatus || "in_stock",
-          isFeatured: Boolean(current.isFeatured)
+          isFeatured: Boolean(current.isFeatured),
+          isPreorderOnly: Boolean(current.isPreorderOnly),
+          minAdvanceHours: Number.isFinite(current.minAdvanceHours)
+            ? current.minAdvanceHours
+            : 24,
+          preparationNotes: current.preparationNotes || ""
         });
         setExistingImageUrl(current.imageUrl || "");
       } else if (categoryList.length) {
@@ -75,8 +83,10 @@ const ProductFormPage = () => {
     loadInitialData();
   }, [loadInitialData]);
 
+  const BOOLEAN_FIELDS = new Set(["isFeatured", "isPreorderOnly"]);
+
   const onChange = (field) => (event) => {
-    const value = field === "isFeatured" ? event.target.checked : event.target.value;
+    const value = BOOLEAN_FIELDS.has(field) ? event.target.checked : event.target.value;
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -94,6 +104,13 @@ const ProductFormPage = () => {
       payload.append("unit", form.unit);
       payload.append("stockStatus", form.stockStatus);
       payload.append("isFeatured", String(form.isFeatured));
+      payload.append("isPreorderOnly", String(form.isPreorderOnly));
+      if (form.isPreorderOnly) {
+        payload.append("minAdvanceHours", String(form.minAdvanceHours || 24));
+        if (String(form.preparationNotes).trim() !== "") {
+          payload.append("preparationNotes", String(form.preparationNotes));
+        }
+      }
 
       if (String(form.salePrice).trim() !== "") {
         payload.append("salePrice", String(form.salePrice));
@@ -246,6 +263,55 @@ const ProductFormPage = () => {
           <input type="checkbox" checked={form.isFeatured} onChange={onChange("isFeatured")} />
           Featured product
         </label>
+
+        <fieldset
+          style={{
+            display: "grid",
+            gap: 8,
+            border: "1px solid #fde68a",
+            background: "#fffbeb",
+            padding: 12,
+            borderRadius: 6
+          }}
+        >
+          <legend style={{ color: "#92400e" }}>Preorder / fruit platter</legend>
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={form.isPreorderOnly}
+              onChange={onChange("isPreorderOnly")}
+            />
+            Preorder only (custom fruit platter / advance-notice product)
+          </label>
+
+          {form.isPreorderOnly ? (
+            <>
+              <label>
+                Minimum advance notice (hours)
+                <input
+                  type="number"
+                  min="1"
+                  max="720"
+                  step="1"
+                  value={form.minAdvanceHours}
+                  onChange={onChange("minAdvanceHours")}
+                  required
+                  style={{ width: "100%", boxSizing: "border-box" }}
+                />
+              </label>
+              <label>
+                Preparation notes (shown internally)
+                <textarea
+                  value={form.preparationNotes}
+                  onChange={onChange("preparationNotes")}
+                  maxLength={1000}
+                  rows={3}
+                  style={{ width: "100%", boxSizing: "border-box" }}
+                />
+              </label>
+            </>
+          ) : null}
+        </fieldset>
 
         {isEditMode && existingImageUrl ? (
           <p>

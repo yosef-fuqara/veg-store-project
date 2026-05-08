@@ -66,8 +66,23 @@ const productSchema = new mongoose.Schema(
     isDeleted: {
       type: Boolean,
       default: false
+    },
+    // Preorder-only items (e.g. fruit platters) require advance notice and
+    // cannot be ordered for same-day delivery.
+    isPreorderOnly: {
+      type: Boolean,
+      default: false
+    },
+    minAdvanceHours: {
+      type: Number,
+      default: 24,
+      min: 0
+    },
+    preparationNotes: {
+      type: String,
+      trim: true,
+      maxlength: 1000
     }
-
   },
   { timestamps: true }
 );

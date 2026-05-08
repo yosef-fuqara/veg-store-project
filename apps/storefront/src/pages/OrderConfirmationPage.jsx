@@ -101,8 +101,35 @@ const OrderConfirmationPage = () => {
           : "—"}
       </p>
       <p>
-        <strong>{t("zone")}:</strong> {order.deliveryZone}
+        <strong>{t("area")}:</strong> {order.deliveryArea || order.deliveryZone || "—"}
       </p>
+      {order.hasPreorderItems ? (
+        <p>
+          <span
+            style={{
+              display: "inline-block",
+              padding: "2px 8px",
+              borderRadius: 999,
+              background: "#fffbeb",
+              color: "#92400e",
+              fontWeight: 600,
+              marginInlineEnd: 8
+            }}
+          >
+            {t("preorderBadge")}
+          </span>
+          {order.preferredDeliveryAt ? (
+            <span>
+              <strong>{t("preferredAt")}:</strong> {new Date(order.preferredDeliveryAt).toLocaleString()}
+            </span>
+          ) : null}
+        </p>
+      ) : null}
+      {order.customRequest ? (
+        <p>
+          <strong>{t("customRequest")}:</strong> {order.customRequest}
+        </p>
+      ) : null}
       {order.notes ? (
         <p>
           <strong>{t("yourNotes")}:</strong> {order.notes}

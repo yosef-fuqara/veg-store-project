@@ -136,6 +136,41 @@ const AdminOrderDetailsPage = () => {
 
       {error ? <p style={{ color: "crimson", margin: 0 }}>{error}</p> : null}
 
+      {order.hasPreorderItems ? (
+        <div
+          style={{
+            border: "1px solid #fde68a",
+            background: "#fffbeb",
+            color: "#92400e",
+            padding: 12,
+            borderRadius: 8,
+            display: "flex",
+            gap: 10,
+            alignItems: "center",
+            flexWrap: "wrap"
+          }}
+        >
+          <span
+            style={{
+              padding: "2px 8px",
+              borderRadius: 999,
+              background: "#fef3c7",
+              fontWeight: 700
+            }}
+          >
+            Preorder
+          </span>
+          <span>
+            This order contains custom/platter items requiring advance preparation.
+          </span>
+          {order.preferredDeliveryAt ? (
+            <span>
+              <strong>Preferred date:</strong> {formatDate(order.preferredDeliveryAt)}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
       <section style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 12 }}>
         <p>
           <strong>Order ID:</strong> {order._id}
@@ -152,6 +187,16 @@ const AdminOrderDetailsPage = () => {
         <p>
           <strong>Updated:</strong> {formatDate(order.updatedAt)}
         </p>
+        {order.notes ? (
+          <p>
+            <strong>Customer notes:</strong> {order.notes}
+          </p>
+        ) : null}
+        {order.customRequest ? (
+          <p>
+            <strong>Custom request:</strong> {order.customRequest}
+          </p>
+        ) : null}
       </section>
 
       <section style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 12 }}>
@@ -176,7 +221,26 @@ const AdminOrderDetailsPage = () => {
           <tbody>
             {order.items?.map((item, idx) => (
               <tr key={`${item.product || item.name}-${idx}`}>
-                <td style={{ borderBottom: "1px solid #f1f5f9", padding: "8px 6px" }}>{item.name}</td>
+                <td style={{ borderBottom: "1px solid #f1f5f9", padding: "8px 6px" }}>
+                  {item.name}
+                  {item.isPreorderOnly ? (
+                    <span
+                      style={{
+                        marginInlineStart: 6,
+                        padding: "2px 6px",
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        background: "#fffbeb",
+                        color: "#92400e",
+                        border: "1px solid #fde68a"
+                      }}
+                      title={`Requires ${item.minAdvanceHours || 24}h advance notice`}
+                    >
+                      Preorder
+                    </span>
+                  ) : null}
+                </td>
                 <td style={{ borderBottom: "1px solid #f1f5f9", padding: "8px 6px" }}>
                   {item.quantity} {item.unit}
                 </td>
@@ -209,8 +273,13 @@ const AdminOrderDetailsPage = () => {
         {order.deliveryAddress?.label ? <p>Label: {order.deliveryAddress.label}</p> : null}
         {order.deliveryAddress?.notes ? <p>Address Notes: {order.deliveryAddress.notes}</p> : null}
         <p>
-          <strong>Delivery Zone:</strong> {order.deliveryZone || "-"}
+          <strong>Delivery Area:</strong> {order.deliveryArea || order.deliveryZone || "-"}
         </p>
+        {order.preferredDeliveryAt ? (
+          <p>
+            <strong>Preferred delivery / preparation date:</strong> {formatDate(order.preferredDeliveryAt)}
+          </p>
+        ) : null}
       </section>
 
       <section style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 12, display: "grid", gap: 10 }}>

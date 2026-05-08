@@ -27,7 +27,16 @@ const env = {
   paymentWebhookSecret: process.env.PAYMENT_WEBHOOK_SECRET || "",
   paymentCallbackUrl: process.env.PAYMENT_CALLBACK_URL || "",
   paymentSuccessUrl: process.env.PAYMENT_SUCCESS_URL || "",
-  paymentCancelUrl: process.env.PAYMENT_CANCEL_URL || ""
+  paymentCancelUrl: process.env.PAYMENT_CANCEL_URL || "",
+  // Admin notifications
+  adminBaseUrl: process.env.ADMIN_BASE_URL || "",
+  whatsappNotificationsEnabled: process.env.WHATSAPP_NOTIFICATIONS_ENABLED || "false",
+  whatsappProvider: process.env.WHATSAPP_PROVIDER || "",
+  whatsappApiToken: process.env.WHATSAPP_API_TOKEN || "",
+  whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
+  whatsappTwilioAccountSid: process.env.WHATSAPP_TWILIO_ACCOUNT_SID || "",
+  whatsappTwilioFrom: process.env.WHATSAPP_TWILIO_FROM || "",
+  adminWhatsappPhone: process.env.ADMIN_WHATSAPP_PHONE || ""
 };
 
 module.exports = env;

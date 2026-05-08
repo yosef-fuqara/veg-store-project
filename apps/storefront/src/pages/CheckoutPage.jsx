@@ -1,24 +1,33 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
-import { DELIVERY_ZONES, PAYMENT_METHODS, getDeliveryFee } from "../config/delivery";
+import {
+  ALLOWED_DELIVERY_AREAS as FALLBACK_AREAS,
+  LOCAL_DELIVERY_AREA as FALLBACK_LOCAL_AREA,
+  LOCAL_FREE_DELIVERY_MIN,
+  LOCAL_DELIVERY_FEE,
+  OUTSIDE_FREE_DELIVERY_MIN,
+  OUTSIDE_DELIVERY_FEE,
+  PAYMENT_METHODS,
+  estimateDeliveryFee
+} from "../config/delivery";
 import * as cartService from "../services/cartService";
 import * as orderService from "../services/orderService";
 import { formatPrice } from "../utils/formatPrice";
 
 const initialForm = {
   deliveryAddress: {
-    label: "",
-    city: "",
     street: "",
     building: "",
     apartment: "",
     notes: ""
   },
-  deliveryZone: DELIVERY_ZONES[0].key,
+  deliveryArea: "",
   customerPhone: "",
   notes: "",
-  paymentMethod: PAYMENT_METHODS[0].value
+  paymentMethod: PAYMENT_METHODS[0].value,
+  preferredDeliveryAt: "",
+  customRequest: ""
 };
 
 const fieldErrorsFromResponse = (err) => {
@@ -31,6 +40,15 @@ const fieldErrorsFromResponse = (err) => {
   }, {});
 };
 
+// HTML datetime-local needs `YYYY-MM-DDTHH:mm`. Default to "now + hours" hours.
+const minDateTimeLocal = (hoursAhead) => {
+  const target = new Date(Date.now() + hoursAhead * 60 * 60 * 1000);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${target.getFullYear()}-${pad(target.getMonth() + 1)}-${pad(target.getDate())}T${pad(
+    target.getHours()
+  )}:${pad(target.getMinutes())}`;
+};
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation("checkout");
@@ -39,6 +57,15 @@ const CheckoutPage = () => {
   const [preview, setPreview] = useState(null);
   const [previewError, setPreviewError] = useState("");
   const [previewLoading, setPreviewLoading] = useState(true);
+
+  const [areas, setAreas] = useState(FALLBACK_AREAS);
+  const [localAreaKey, setLocalAreaKey] = useState(FALLBACK_LOCAL_AREA);
+  const [rules, setRules] = useState({
+    localFreeDeliveryMin: LOCAL_FREE_DELIVERY_MIN,
+    outsideFreeDeliveryMin: OUTSIDE_FREE_DELIVERY_MIN,
+    localDeliveryFee: LOCAL_DELIVERY_FEE,
+    outsideDeliveryFee: OUTSIDE_DELIVERY_FEE
+  });
 
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
@@ -51,9 +78,21 @@ const CheckoutPage = () => {
       setPreviewLoading(true);
       setPreviewError("");
       try {
-        const checkout = await cartService.prepareCheckout();
+        const [checkout, deliveryInfo] = await Promise.all([
+          cartService.prepareCheckout(),
+          orderService.getDeliveryAreas().catch(() => null)
+        ]);
         if (cancelled) return;
         setPreview(checkout);
+        if (deliveryInfo?.areas?.length) {
+          setAreas(deliveryInfo.areas);
+        }
+        if (deliveryInfo?.localAreaKey) {
+          setLocalAreaKey(deliveryInfo.localAreaKey);
+        }
+        if (deliveryInfo?.rules) {
+          setRules(deliveryInfo.rules);
+        }
       } catch (err) {
         if (cancelled) return;
         setPreview(null);
@@ -68,8 +107,21 @@ const CheckoutPage = () => {
   }, [t]);
 
   const subtotal = preview?.subtotal ?? 0;
-  const deliveryFee = useMemo(() => getDeliveryFee(form.deliveryZone), [form.deliveryZone]);
-  const total = subtotal + deliveryFee;
+  const hasPreorderItems = Boolean(preview?.hasPreorderItems);
+  // Strictest minimum (default 24h) across preorder items in the cart.
+  const minAdvanceHours = useMemo(() => {
+    if (!preview?.items?.length) return 24;
+    const hours = preview.items
+      .filter((item) => item.isPreorderOnly)
+      .map((item) => Number(item.minAdvanceHours) || 24);
+    return hours.length ? Math.max(...hours) : 24;
+  }, [preview]);
+
+  const deliveryFeeEstimate = useMemo(
+    () => estimateDeliveryFee(form.deliveryArea, subtotal, rules),
+    [form.deliveryArea, subtotal, rules]
+  );
+  const total = subtotal + deliveryFeeEstimate;
 
   const updateAddress = (key) => (event) => {
     const value = event.target.value;
@@ -83,19 +135,62 @@ const CheckoutPage = () => {
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
   };
 
+  const validateClientSide = () => {
+    if (!form.deliveryArea) {
+      return { ok: false, fields: { deliveryArea: t("deliveryAreaRequired") } };
+    }
+    if (hasPreorderItems) {
+      if (!form.preferredDeliveryAt) {
+        return {
+          ok: false,
+          fields: {
+            preferredDeliveryAt: t("preorderDateRequired")
+          }
+        };
+      }
+      const target = new Date(form.preferredDeliveryAt);
+      const minMs = minAdvanceHours * 60 * 60 * 1000;
+      if (
+        Number.isNaN(target.getTime()) ||
+        target.getTime() - Date.now() < minMs
+      ) {
+        return {
+          ok: false,
+          fields: {
+            preferredDeliveryAt: t("preorderDateTooSoon", { hours: minAdvanceHours })
+          }
+        };
+      }
+    }
+    return { ok: true };
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitting(true);
     setSubmitError("");
     setFieldErrors({});
 
+    const clientCheck = validateClientSide();
+    if (!clientCheck.ok) {
+      setFieldErrors(clientCheck.fields);
+      setSubmitting(false);
+      return;
+    }
+
     const payload = {
       deliveryAddress: { ...form.deliveryAddress },
-      deliveryZone: form.deliveryZone,
+      deliveryArea: form.deliveryArea,
       customerPhone: form.customerPhone,
       notes: form.notes,
       paymentMethod: form.paymentMethod
     };
+    if (hasPreorderItems && form.preferredDeliveryAt) {
+      payload.preferredDeliveryAt = new Date(form.preferredDeliveryAt).toISOString();
+    }
+    if (form.customRequest) {
+      payload.customRequest = form.customRequest;
+    }
 
     try {
       const order = await orderService.createOrder(payload);
@@ -161,27 +256,6 @@ const CheckoutPage = () => {
           <fieldset style={{ display: "grid", gap: 8, border: "1px solid #ccc", padding: 12 }}>
             <legend>{t("deliveryAddress")}</legend>
             <label>
-              {t("labelOptional")}
-              <input
-                value={form.deliveryAddress.label}
-                onChange={updateAddress("label")}
-                maxLength={50}
-                style={{ width: "100%", boxSizing: "border-box" }}
-              />
-              {fieldError("deliveryAddress.label")}
-            </label>
-            <label>
-              {t("cityRequired")}
-              <input
-                value={form.deliveryAddress.city}
-                onChange={updateAddress("city")}
-                maxLength={80}
-                required
-                style={{ width: "100%", boxSizing: "border-box" }}
-              />
-              {fieldError("deliveryAddress.city")}
-            </label>
-            <label>
               {t("streetRequired")}
               <input
                 value={form.deliveryAddress.street}
@@ -226,21 +300,66 @@ const CheckoutPage = () => {
           </fieldset>
 
           <label>
-            {t("deliveryZoneRequired")}
+            {t("deliveryAreaRequired")}
             <select
-              value={form.deliveryZone}
-              onChange={updateField("deliveryZone")}
+              value={form.deliveryArea}
+              onChange={updateField("deliveryArea")}
               required
               style={{ width: "100%", boxSizing: "border-box" }}
             >
-              {DELIVERY_ZONES.map((zone) => (
-                <option key={zone.key} value={zone.key}>
-                  {t(`zones.${zone.key}`)} ({t("fee")} {formatPrice(zone.fee, lang)})
+              <option value="" disabled>
+                {t("deliveryAreaPlaceholder")}
+              </option>
+              {areas.map((area) => (
+                <option key={area.key} value={area.key}>
+                  {t(`areas.${area.key}`, { defaultValue: area.label })}
+                  {area.key === localAreaKey ? " ★" : ""}
                 </option>
               ))}
             </select>
-            {fieldError("deliveryZone")}
+            <small style={{ color: "#555", display: "block", whiteSpace: "pre-line" }}>
+              {t("deliveryAreaHelper", {
+                localMin: rules.localFreeDeliveryMin,
+                localFee: rules.localDeliveryFee,
+                outsideMin: rules.outsideFreeDeliveryMin,
+                outsideFee: rules.outsideDeliveryFee
+              })}
+            </small>
+            {fieldError("deliveryArea")}
           </label>
+
+          {hasPreorderItems ? (
+            <fieldset style={{ display: "grid", gap: 6, border: "1px solid #f59e0b", padding: 12, background: "#fffbeb" }}>
+              <legend style={{ color: "#92400e" }}>{t("preorderNotice")}</legend>
+              <p style={{ margin: 0, color: "#92400e" }}>
+                {t("preorderHelper", { hours: minAdvanceHours })}
+              </p>
+              <label>
+                {t("preorderDateRequired")}
+                <input
+                  type="datetime-local"
+                  value={form.preferredDeliveryAt}
+                  onChange={updateField("preferredDeliveryAt")}
+                  min={minDateTimeLocal(minAdvanceHours)}
+                  required
+                  style={{ width: "100%", boxSizing: "border-box" }}
+                />
+                {fieldError("preferredDeliveryAt")}
+              </label>
+              <label>
+                {t("customRequest")}
+                <textarea
+                  value={form.customRequest}
+                  onChange={updateField("customRequest")}
+                  placeholder={t("customRequestPlaceholder")}
+                  maxLength={1000}
+                  rows={3}
+                  style={{ width: "100%", boxSizing: "border-box" }}
+                />
+                {fieldError("customRequest")}
+              </label>
+            </fieldset>
+          ) : null}
 
           <label>
             {t("phoneRequired")}
@@ -301,6 +420,7 @@ const CheckoutPage = () => {
               >
                 <span>
                   {item.name} x {item.quantity}
+                  {item.isPreorderOnly ? " ⏱" : ""}
                 </span>
                 <span>{formatPrice(item.lineTotal, lang)}</span>
               </li>
@@ -313,8 +433,9 @@ const CheckoutPage = () => {
           </div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>{t("deliveryFee")}</span>
-            <span>{formatPrice(deliveryFee, lang)}</span>
+            <span>{formatPrice(deliveryFeeEstimate, lang)}</span>
           </div>
+          <small style={{ color: "#666", display: "block" }}>{t("feeEstimateNote")}</small>
           <div
             style={{
               display: "flex",

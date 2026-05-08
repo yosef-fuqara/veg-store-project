@@ -19,7 +19,10 @@ const createProductSchema = Joi.object({
   stockStatus: Joi.string()
     .valid(...Object.values(PRODUCT_STOCK_STATUS))
     .optional(),
-  isFeatured: Joi.boolean().optional()
+  isFeatured: Joi.boolean().optional(),
+  isPreorderOnly: Joi.boolean().optional(),
+  minAdvanceHours: Joi.number().integer().min(0).max(720).optional(),
+  preparationNotes: Joi.string().trim().max(1000).allow("").optional()
 }).custom((value, helper) => {
   if (typeof value.salePrice === "number" && value.salePrice > value.price) {
     return helper.message("salePrice must be less than or equal to price");
@@ -40,7 +43,10 @@ const updateProductSchema = Joi.object({
   stockStatus: Joi.string()
     .valid(...Object.values(PRODUCT_STOCK_STATUS))
     .optional(),
-  isFeatured: Joi.boolean().optional()
+  isFeatured: Joi.boolean().optional(),
+  isPreorderOnly: Joi.boolean().optional(),
+  minAdvanceHours: Joi.number().integer().min(0).max(720).optional(),
+  preparationNotes: Joi.string().trim().max(1000).allow("").optional()
 })
   .or(
     "name",
@@ -50,7 +56,10 @@ const updateProductSchema = Joi.object({
     "category",
     "unit",
     "stockStatus",
-    "isFeatured"
+    "isFeatured",
+    "isPreorderOnly",
+    "minAdvanceHours",
+    "preparationNotes"
   )
   .custom((value, helper) => {
     if (

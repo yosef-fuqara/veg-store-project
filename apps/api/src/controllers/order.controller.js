@@ -4,12 +4,24 @@ const Order = require("../models/order.model");
 const AppError = require("../utils/app-error");
 const { buildCheckoutPreview } = require("../services/cart.service");
 const {
-  getDeliveryFee,
+  calculateDeliveryFee,
+  getDeliveryArea,
   buildOrderItemsFromPreview,
   getInitialPaymentStatus,
-  assertOrderStatusTransition
+  assertOrderStatusTransition,
+  assertDeliveryAreaAllowed,
+  assertPreorderTiming
 } = require("../services/order.service");
 const { adminUpdateBankTransferPayment } = require("../services/payment.service");
+const { notifyAdminOfNewOrder } = require("../services/whatsapp.service");
+const {
+  ALLOWED_DELIVERY_AREAS,
+  LOCAL_DELIVERY_AREA,
+  LOCAL_FREE_DELIVERY_MIN,
+  OUTSIDE_FREE_DELIVERY_MIN,
+  LOCAL_DELIVERY_FEE,
+  OUTSIDE_DELIVERY_FEE
+} = require("../constants/delivery");
 const { ORDER_STATUS } = require("../constants/order");
 
 const getOrCreateCart = async (userId) => {
@@ -27,12 +39,37 @@ const createOrder = async (req, res, next) => {
       throw new AppError("Cart is empty", StatusCodes.BAD_REQUEST);
     }
 
+    const { deliveryArea } = req.body;
+
+    // Reject unsupported delivery areas before doing any expensive work.
+    assertDeliveryAreaAllowed(deliveryArea);
+
     const preview = await buildCheckoutPreview(cart.items);
-    const deliveryFee = getDeliveryFee(req.body.deliveryZone);
     const subtotal = preview.subtotal;
+
+    // Backend is the source of truth for delivery fees.
+    const deliveryFee = calculateDeliveryFee(deliveryArea, subtotal);
     const total = subtotal + deliveryFee;
+
+    const { hasPreorderItems, preferredDeliveryAt } = assertPreorderTiming(
+      preview.items,
+      req.body.preferredDeliveryAt
+    );
+
     const items = buildOrderItemsFromPreview(preview.items);
     const paymentStatus = getInitialPaymentStatus(req.body.paymentMethod);
+
+    // City label is derived from the chosen area, not trusted from client.
+    const area = getDeliveryArea(deliveryArea);
+    const submittedAddress = req.body.deliveryAddress || {};
+    const deliveryAddress = {
+      label: submittedAddress.label || "",
+      city: area.label,
+      street: submittedAddress.street,
+      building: submittedAddress.building || "",
+      apartment: submittedAddress.apartment || "",
+      notes: submittedAddress.notes || ""
+    };
 
     const order = await Order.create({
       user: req.user._id,
@@ -40,10 +77,13 @@ const createOrder = async (req, res, next) => {
       subtotal,
       deliveryFee,
       total,
-      deliveryAddress: req.body.deliveryAddress,
-      deliveryZone: req.body.deliveryZone,
+      deliveryAddress,
+      deliveryArea,
       customerPhone: req.body.customerPhone,
       notes: req.body.notes || "",
+      customRequest: req.body.customRequest || "",
+      preferredDeliveryAt,
+      hasPreorderItems,
       paymentMethod: req.body.paymentMethod,
       paymentStatus,
       orderStatus: ORDER_STATUS.NEW
@@ -52,10 +92,41 @@ const createOrder = async (req, res, next) => {
     cart.items = [];
     await cart.save();
 
+    // Fire-and-forget admin notification. Failure here must NEVER fail the
+    // order itself; the WhatsApp service swallows and logs errors.
+    notifyAdminOfNewOrder(order, req.user).catch((err) => {
+      // Defensive: notifier should already log internally.
+      // eslint-disable-next-line no-console
+      console.warn("[orders] admin notification dispatch error:", err?.message);
+    });
+
     return res.status(StatusCodes.CREATED).json({
       success: true,
       message: "Order created successfully",
       data: { order }
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// Public endpoint exposing the allowed delivery areas + pricing rules so the
+// storefront can render an accurate dropdown and helper text without
+// duplicating constants. Backend is still the source of truth.
+const getDeliveryAreas = async (_req, res, next) => {
+  try {
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      data: {
+        areas: ALLOWED_DELIVERY_AREAS,
+        localAreaKey: LOCAL_DELIVERY_AREA,
+        rules: {
+          localFreeDeliveryMin: LOCAL_FREE_DELIVERY_MIN,
+          outsideFreeDeliveryMin: OUTSIDE_FREE_DELIVERY_MIN,
+          localDeliveryFee: LOCAL_DELIVERY_FEE,
+          outsideDeliveryFee: OUTSIDE_DELIVERY_FEE
+        }
+      }
     });
   } catch (error) {
     return next(error);
@@ -172,6 +243,7 @@ const adminUpdatePaymentStatus = async (req, res, next) => {
 
 module.exports = {
   createOrder,
+  getDeliveryAreas,
   listMyOrders,
   getMyOrder,
   adminListOrders,

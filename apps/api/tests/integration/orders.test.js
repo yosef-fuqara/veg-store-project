@@ -8,23 +8,31 @@ const {
   DEFAULT_PASSWORD
 } = require("../helpers/factories");
 const { ORDER_STATUS } = require("../../src/constants/order");
+const {
+  LOCAL_DELIVERY_AREA,
+  LOCAL_DELIVERY_FEE,
+  OUTSIDE_DELIVERY_FEE,
+  LOCAL_FREE_DELIVERY_MIN,
+  OUTSIDE_FREE_DELIVERY_MIN
+} = require("../../src/constants/delivery");
 
-const orderPayload = {
+const OUTSIDE_AREA = "nazareth";
+
+const baseOrderPayload = {
   deliveryAddress: {
-    city: "Tel Aviv",
-    street: "Herzl",
+    street: "Main",
     building: "1"
   },
-  deliveryZone: "zone_a",
+  deliveryArea: OUTSIDE_AREA,
   customerPhone: "0501234567",
   paymentMethod: "credit_card"
 };
 
-async function seedCart(token, productId) {
+async function seedCart(token, productId, quantity = 1) {
   await request(getApp())
     .post(apiUrl("/cart/items"))
     .set("Authorization", `Bearer ${token}`)
-    .send({ productId, quantity: 1 });
+    .send({ productId, quantity });
 }
 
 describe("Orders", () => {
@@ -37,11 +45,15 @@ describe("Orders", () => {
     const res = await request(getApp())
       .post(apiUrl("/orders"))
       .set("Authorization", `Bearer ${token}`)
-      .send(orderPayload);
+      .send(baseOrderPayload);
 
     expect(res.status).toBe(201);
-    expect(res.body.data.order.total).toBe(20 + 15);
+    // Outside area, subtotal 20 < 200 ⇒ delivery fee = OUTSIDE_DELIVERY_FEE.
+    expect(res.body.data.order.subtotal).toBe(20);
+    expect(res.body.data.order.deliveryFee).toBe(OUTSIDE_DELIVERY_FEE);
+    expect(res.body.data.order.total).toBe(20 + OUTSIDE_DELIVERY_FEE);
     expect(res.body.data.order.items.length).toBe(1);
+    expect(res.body.data.order.deliveryArea).toBe(OUTSIDE_AREA);
 
     const cart = await request(getApp()).get(apiUrl("/cart")).set("Authorization", `Bearer ${token}`);
     expect(cart.body.data.cart.items.length).toBe(0);
@@ -54,12 +66,12 @@ describe("Orders", () => {
     const res = await request(getApp())
       .post(apiUrl("/orders"))
       .set("Authorization", `Bearer ${token}`)
-      .send(orderPayload);
+      .send(baseOrderPayload);
 
     expect(res.status).toBe(400);
   });
 
-  it("returns 400 for invalid delivery zone", async () => {
+  it("rejects unsupported delivery area with 400", async () => {
     const user = await createCustomerUser();
     const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
     const product = await createProduct();
@@ -68,7 +80,7 @@ describe("Orders", () => {
     const res = await request(getApp())
       .post(apiUrl("/orders"))
       .set("Authorization", `Bearer ${token}`)
-      .send({ ...orderPayload, deliveryZone: "zone_invalid" });
+      .send({ ...baseOrderPayload, deliveryArea: "tel_aviv" });
 
     expect(res.status).toBe(400);
   });
@@ -83,11 +95,188 @@ describe("Orders", () => {
       .post(apiUrl("/orders"))
       .set("Authorization", `Bearer ${token}`)
       .send({
-        deliveryAddress: { city: "X", street: "Y" },
-        deliveryZone: "zone_a"
+        deliveryAddress: { street: "Y" },
+        deliveryArea: OUTSIDE_AREA
       });
 
     expect(res.status).toBe(400);
+  });
+
+  describe("delivery fee rules", () => {
+    it("local area subtotal under threshold charges LOCAL_DELIVERY_FEE", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 50 });
+      await seedCart(token, String(product._id), 1);
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ...baseOrderPayload, deliveryArea: LOCAL_DELIVERY_AREA });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.subtotal).toBe(50);
+      expect(res.body.data.order.subtotal).toBeLessThan(LOCAL_FREE_DELIVERY_MIN);
+      expect(res.body.data.order.deliveryFee).toBe(LOCAL_DELIVERY_FEE);
+      expect(res.body.data.order.total).toBe(50 + LOCAL_DELIVERY_FEE);
+    });
+
+    it("local area subtotal at or above threshold is free", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 100 });
+      await seedCart(token, String(product._id), 1);
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ...baseOrderPayload, deliveryArea: LOCAL_DELIVERY_AREA });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.subtotal).toBeGreaterThanOrEqual(LOCAL_FREE_DELIVERY_MIN);
+      expect(res.body.data.order.deliveryFee).toBe(0);
+      expect(res.body.data.order.total).toBe(100);
+    });
+
+    it("outside allowed area subtotal under threshold charges OUTSIDE_DELIVERY_FEE", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 60 });
+      await seedCart(token, String(product._id), 1);
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ...baseOrderPayload, deliveryArea: OUTSIDE_AREA });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.subtotal).toBeLessThan(OUTSIDE_FREE_DELIVERY_MIN);
+      expect(res.body.data.order.deliveryFee).toBe(OUTSIDE_DELIVERY_FEE);
+      expect(res.body.data.order.total).toBe(60 + OUTSIDE_DELIVERY_FEE);
+    });
+
+    it("outside allowed area subtotal at or above threshold is free", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 200 });
+      await seedCart(token, String(product._id), 1);
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ...baseOrderPayload, deliveryArea: OUTSIDE_AREA });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.subtotal).toBeGreaterThanOrEqual(OUTSIDE_FREE_DELIVERY_MIN);
+      expect(res.body.data.order.deliveryFee).toBe(0);
+      expect(res.body.data.order.total).toBe(200);
+    });
+
+    it("backend ignores any delivery fee sent by client", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 60 });
+      await seedCart(token, String(product._id), 1);
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ...baseOrderPayload, deliveryArea: OUTSIDE_AREA, deliveryFee: 0, total: 60 });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.deliveryFee).toBe(OUTSIDE_DELIVERY_FEE);
+      expect(res.body.data.order.total).toBe(60 + OUTSIDE_DELIVERY_FEE);
+    });
+  });
+
+  describe("preorder validation", () => {
+    it("rejects preorder-only product without preferredDeliveryAt", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({
+        price: 250,
+        isPreorderOnly: true,
+        minAdvanceHours: 24
+      });
+      await seedCart(token, String(product._id), 1);
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ...baseOrderPayload, deliveryArea: OUTSIDE_AREA });
+
+      expect(res.status).toBe(400);
+      expect(String(res.body?.message || "")).toMatch(/24 hours/i);
+    });
+
+    it("rejects preorder when preferredDeliveryAt is too soon", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({
+        price: 250,
+        isPreorderOnly: true,
+        minAdvanceHours: 24
+      });
+      await seedCart(token, String(product._id), 1);
+
+      const tooSoon = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // +1h
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ...baseOrderPayload, deliveryArea: OUTSIDE_AREA, preferredDeliveryAt: tooSoon });
+
+      expect(res.status).toBe(400);
+      expect(String(res.body?.message || "")).toMatch(/24 hours/i);
+    });
+
+    it("accepts preorder when preferredDeliveryAt is far enough in the future", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({
+        price: 250,
+        isPreorderOnly: true,
+        minAdvanceHours: 24
+      });
+      await seedCart(token, String(product._id), 1);
+
+      const okTime = new Date(Date.now() + 26 * 60 * 60 * 1000).toISOString(); // +26h
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ...baseOrderPayload, deliveryArea: OUTSIDE_AREA, preferredDeliveryAt: okTime });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.hasPreorderItems).toBe(true);
+      expect(res.body.data.order.preferredDeliveryAt).toBeTruthy();
+    });
+
+    it("non-preorder cart works without preferredDeliveryAt", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 30 });
+      await seedCart(token, String(product._id));
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ...baseOrderPayload, deliveryArea: OUTSIDE_AREA });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.hasPreorderItems).toBe(false);
+    });
+  });
+
+  describe("delivery areas endpoint", () => {
+    it("exposes the allowed areas and pricing rules to the storefront", async () => {
+      const res = await request(getApp()).get(apiUrl("/orders/delivery-areas"));
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.data.areas)).toBe(true);
+      expect(res.body.data.localAreaKey).toBe(LOCAL_DELIVERY_AREA);
+      expect(res.body.data.rules.localFreeDeliveryMin).toBe(LOCAL_FREE_DELIVERY_MIN);
+      expect(res.body.data.rules.outsideFreeDeliveryMin).toBe(OUTSIDE_FREE_DELIVERY_MIN);
+      expect(res.body.data.rules.localDeliveryFee).toBe(LOCAL_DELIVERY_FEE);
+      expect(res.body.data.rules.outsideDeliveryFee).toBe(OUTSIDE_DELIVERY_FEE);
+    });
   });
 
   it("customer lists and views own orders only", async () => {
@@ -99,7 +288,7 @@ describe("Orders", () => {
     const created = await request(getApp())
       .post(apiUrl("/orders"))
       .set("Authorization", `Bearer ${token}`)
-      .send(orderPayload);
+      .send(baseOrderPayload);
     const orderId = created.body.data.order._id;
 
     const list = await request(getApp()).get(apiUrl("/orders")).set("Authorization", `Bearer ${token}`);
@@ -123,7 +312,7 @@ describe("Orders", () => {
     const created = await request(getApp())
       .post(apiUrl("/orders"))
       .set("Authorization", `Bearer ${tokenA}`)
-      .send(orderPayload);
+      .send(baseOrderPayload);
     const orderId = created.body.data.order._id;
 
     const res = await request(getApp())
@@ -144,7 +333,7 @@ describe("Orders", () => {
     const created = await request(getApp())
       .post(apiUrl("/orders"))
       .set("Authorization", `Bearer ${cToken}`)
-      .send(orderPayload);
+      .send(baseOrderPayload);
     const orderId = created.body.data.order._id;
 
     const list = await request(getApp())
@@ -170,7 +359,7 @@ describe("Orders", () => {
     const created = await request(getApp())
       .post(apiUrl("/orders"))
       .set("Authorization", `Bearer ${cToken}`)
-      .send(orderPayload);
+      .send(baseOrderPayload);
     const orderId = created.body.data.order._id;
 
     const res = await request(getApp())
@@ -193,7 +382,7 @@ describe("Orders", () => {
     const created = await request(getApp())
       .post(apiUrl("/orders"))
       .set("Authorization", `Bearer ${cToken}`)
-      .send(orderPayload);
+      .send(baseOrderPayload);
     const orderId = created.body.data.order._id;
 
     const res = await request(getApp())

@@ -6,6 +6,8 @@
   "errorTitle": "Could not load products",
   "addToCart": "Add to cart",
   "outOfStock": "Out of stock",
+  "preorderBadge": "Preorder only",
+  "preorderHint": "Requires {{hours}}h advance notice",
   "pricePerUnit": "per unit",
   "units": {
     "kg": "kg",
