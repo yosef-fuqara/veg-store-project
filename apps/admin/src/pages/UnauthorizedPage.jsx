@@ -73,14 +73,14 @@ const UnauthorizedPage = () => {
             style={{
               width: '100%',
               padding: '13px 24px',
-              borderRadius: '12px',
+              borderRadius: '10px',
               border: 'none',
               background: btnHovered ? colors.primaryHover : colors.primary,
               color: colors.textInverse,
               fontSize: '15px',
               fontWeight: 600,
               cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(30,107,60,0.28)',
+              boxShadow: '0 4px 14px rgba(30,107,60,0.30)',
               transition: 'background 0.15s',
             }}
           >

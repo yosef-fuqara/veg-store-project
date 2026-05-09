@@ -1,12 +1,26 @@
-const AbuAlAnasLogo = ({ className = '', size = 64 }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 200 200"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-  >
+const AbuAlAnasLogo = ({
+  className = '',
+  size = 64,
+  style,
+  title,
+  'aria-hidden': ariaHidden,
+  ...rest
+}) => {
+  const hasAccessibleName = typeof title === 'string' && title.length > 0;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 200 200"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      style={{ display: 'block', flexShrink: 0, ...style }}
+      role={hasAccessibleName ? 'img' : undefined}
+      aria-label={hasAccessibleName ? title : undefined}
+      aria-hidden={ariaHidden ?? (hasAccessibleName ? undefined : true)}
+      {...rest}
+    >
     <circle cx="100" cy="100" r="93" stroke="#9E623B" strokeWidth="2" fill="none" opacity="0.8" />
     <circle cx="100" cy="100" r="85" stroke="#5C7A2A" strokeWidth="1.5" fill="none" opacity="0.5" />
     <path d="M 20 100 Q 30 80, 45 70 Q 55 62, 65 58" stroke="#5C7A2A" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
@@ -52,7 +66,8 @@ const AbuAlAnasLogo = ({ className = '', size = 64 }) => (
     <text x="100" y="166" fontFamily="Georgia, serif" fontSize="7.5" fontWeight="normal" fill="#9E623B" textAnchor="middle" letterSpacing="1.1">FRUIT &amp; VEGETABLES</text>
     <circle cx="55" cy="157" r="1" fill="#9E623B" opacity="0.5" />
     <circle cx="145" cy="157" r="1" fill="#9E623B" opacity="0.5" />
-  </svg>
-);
+    </svg>
+  );
+};
 
 export default AbuAlAnasLogo;

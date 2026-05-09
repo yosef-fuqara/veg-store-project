@@ -1,0 +1,20 @@
+@keyframes admin-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.admin-toast-root {
+  animation: admin-toast-in 0.28s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-toast-root {
+    animation: none;
+  }
+}

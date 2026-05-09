@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import ProductCard from "../components/ProductCard";
+import { CategoryBarMobile, CategorySidebar } from "../components/CategoryNav";
 import { useCart } from "../features/cart/CartContext";
 import * as productService from "../services/productService";
 import { formatApiError } from "../utils/formatApiError";
+import { productMatchesCategoryNav } from "../utils/categoryFilter";
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const colors = {
@@ -24,211 +26,321 @@ const colors = {
   errorBorder:    '#fecaca',
 };
 
-// ─── Marquee data (per language) ─────────────────────────────────────────────
+const shadow = {
+  sm: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+  primary: '0 4px 14px rgba(30,107,60,0.30)',
+};
+
+// ─── Breakpoint ───────────────────────────────────────────────────────────────
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 768
+  );
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+};
+
+// ─── Marquee monoline icons (white, stroke-only) ──────────────────────────────
+const iconProps = {
+  width: 18, height: 18, viewBox: '0 0 24 24',
+  fill: 'none', stroke: 'currentColor',
+  strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round',
+  'aria-hidden': true,
+};
+
+const LeafIcon = () => (
+  <svg {...iconProps}>
+    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+    <path d="M2 21c0-3 1.85-5.36 5.08-6" />
+  </svg>
+);
+
+const TagIcon = () => (
+  <svg {...iconProps}>
+    <path d="M12 2H2v10l9.29 9.29c.78.78 2.05.78 2.83 0l7.18-7.18c.78-.78.78-2.05 0-2.83L12 2Z" />
+    <line x1="7" y1="7" x2="7.01" y2="7" />
+  </svg>
+);
+
+const TruckIcon = () => (
+  <svg {...iconProps}>
+    <rect x="1" y="3" width="15" height="13" />
+    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+    <circle cx="5.5" cy="18.5" r="2.5" />
+    <circle cx="18.5" cy="18.5" r="2.5" />
+  </svg>
+);
+
+const HouseIcon = () => (
+  <svg {...iconProps}>
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-7h-6v7H5a2 2 0 0 1-2-2Z" />
+  </svg>
+);
+
+const AppleIcon = () => (
+  <svg {...iconProps}>
+    <path d="M12 6c-1.5-2-3.5-3-5-3a4 4 0 0 0-4 4c0 6 4 13 9 13s9-7 9-13a4 4 0 0 0-4-4c-1.5 0-3.5 1-5 3Z" />
+    <path d="M12 6c0-2 1-4 3-4" />
+  </svg>
+);
+
+// ─── Marquee data ─────────────────────────────────────────────────────────────
 const MARQUEE = {
   he: [
-    { icon: '🌿', text: 'מהשדה ישר לשולחן שלכם' },
-    { icon: '🏷️', text: 'מחירים נמוכים מהסופרמרקט' },
-    { icon: '🚚', text: 'משלוח מהיר' },
-    { icon: '🏠', text: 'מביאים את השוק עד אליכם' },
-    { icon: '🍎', text: 'תוצרת טרייה מדי יום' },
+    { Icon: LeafIcon,   text: 'מהשדה ישר לשולחן שלכם' },
+    { Icon: TagIcon,    text: 'מחירים נמוכים מהסופרמרקט' },
+    { Icon: TruckIcon,  text: 'משלוח מהיר' },
+    { Icon: HouseIcon,  text: 'מביאים את השוק עד אליכם' },
+    { Icon: AppleIcon,  text: 'תוצרת טרייה מדי יום' },
   ],
   en: [
-    { icon: '🌿', text: 'From the farm straight to your table' },
-    { icon: '🏷️', text: 'Lower prices than supermarkets' },
-    { icon: '🚚', text: 'Fast delivery' },
-    { icon: '🏠', text: 'We bring the market to your door' },
-    { icon: '🍎', text: 'Fresh daily produce' },
+    { Icon: LeafIcon,   text: 'From the farm straight to your table' },
+    { Icon: TagIcon,    text: 'Lower prices than supermarkets' },
+    { Icon: TruckIcon,  text: 'Fast delivery' },
+    { Icon: HouseIcon,  text: 'We bring the market to your door' },
+    { Icon: AppleIcon,  text: 'Fresh daily produce' },
   ],
   ar: [
-    { icon: '🌿', text: 'من المزرعة مباشرة إلى مائدتك' },
-    { icon: '🏷️', text: 'أسعار أقل من المتاجر الأخرى' },
-    { icon: '🚚', text: 'توصيل سريع' },
-    { icon: '🏠', text: 'نجلب السوق إلى بابك' },
-    { icon: '🍎', text: 'منتجات طازجة يومياً' },
+    { Icon: LeafIcon,   text: 'من المزرعة مباشرة إلى مائدتك' },
+    { Icon: TagIcon,    text: 'أسعار أقل من المتاجر الأخرى' },
+    { Icon: TruckIcon,  text: 'توصيل سريع' },
+    { Icon: HouseIcon,  text: 'نجلب السوق إلى بابك' },
+    { Icon: AppleIcon,  text: 'منتجات طازجة يومياً' },
   ],
 };
 
-const AVATAR_COLORS = ['#a8d5b5', '#80cbc4', '#ffcc80', '#ef9a9a'];
+/** Full-width hero background — swap URL or use `/hero.jpg` in public when ready */
+const HERO_BACKGROUND_IMAGE_URL =
+  'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1920&q=85';
 
-// ─── Blob hero image placeholder ─────────────────────────────────────────────
-const HeroBlob = () => (
-  <div style={{ position: 'relative', maxWidth: '500px', margin: '0 auto', width: '100%' }}>
-    {/* Main organic blob */}
-    <div
-      style={{
-        width: '100%',
-        aspectRatio: '1',
-        borderRadius: '62% 38% 55% 45% / 60% 44% 56% 40%',
-        background: 'linear-gradient(145deg, #1a4d2e 0%, #2e7d4f 25%, #52a875 55%, #a8d5b5 78%, #e8f5e9 100%)',
-        overflow: 'hidden',
-        position: 'relative',
-        boxShadow: '0 40px 80px rgba(30,107,60,0.22), 0 16px 40px rgba(30,107,60,0.12)',
-      }}
-    >
-      {/* Inner depth circles */}
-      <div style={{ position: 'absolute', inset: '18%', borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
-      <div style={{ position: 'absolute', inset: '34%', borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
-      {/* Placeholder label */}
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase' }}>
-          hero image
-        </span>
-      </div>
-    </div>
+const HERO_TRUST_KEYS = /** @type {const} */ (['home:hero.trust1', 'home:hero.trust2', 'home:hero.trust3']);
 
-    {/* Floating 100% Organic card */}
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: [0, -10, 0] }}
-      transition={{
-        opacity: { duration: 0.4, delay: 0.6 },
-        y: { repeat: Infinity, duration: 4, ease: 'easeInOut', delay: 0.6 },
-      }}
-      style={{
-        position: 'absolute',
-        bottom: '6%',
-        insetInlineEnd: '-4%',
-        background: colors.surface,
-        borderRadius: '16px',
-        padding: '12px 18px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        minWidth: '176px',
-      }}
-    >
-      <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: colors.primarySurface, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
-        🍏
-      </div>
-      <div>
-        <div style={{ fontSize: '20px', fontWeight: 700, color: colors.textPrimary, lineHeight: 1.1 }}>100%</div>
-        <div style={{ fontSize: '9px', fontWeight: 600, letterSpacing: '1.5px', color: colors.textMuted, textTransform: 'uppercase', marginTop: '2px' }}>
-          Organic Freshness
-        </div>
-      </div>
-    </motion.div>
-  </div>
+// ─── Hero trust bar (localized) ───────────────────────────────────────────────
+const HeroTrustBar = ({ t, isMobile }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 8 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+    style={{
+      display: 'flex',
+      flexDirection: isMobile ? 'column' : 'row',
+      flexWrap: isMobile ? 'nowrap' : 'wrap',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '12px',
+      rowGap: isMobile ? '12px' : '16px',
+      width: '100%',
+      maxWidth: '480px',
+      padding: isMobile ? '12px 16px' : '14px 20px',
+      boxSizing: 'border-box',
+      borderRadius: '14px',
+      border: '1px solid rgba(255,255,255,0.18)',
+      background: 'rgba(255,255,255,0.08)',
+      backdropFilter: 'blur(10px)',
+    }}
+  >
+    {HERO_TRUST_KEYS.map((key, i) => (
+      <Fragment key={key}>
+        {i > 0 && (
+          <span
+            aria-hidden
+            style={{
+              display: isMobile ? 'none' : 'block',
+              width: '1px',
+              height: '16px',
+              flexShrink: 0,
+              alignSelf: 'center',
+              background: 'rgba(255,255,255,0.22)',
+              marginInline: '4px',
+            }}
+          />
+        )}
+        <motion.span
+          whileHover={{ opacity: 0.88 }}
+          transition={{ duration: 0.2 }}
+          style={{
+            fontSize: isMobile ? '13px' : '14px',
+            fontWeight: 500,
+            letterSpacing: '0.02em',
+            lineHeight: 1.45,
+            color: 'rgba(255,255,255,0.94)',
+            textAlign: 'center',
+            textShadow: '0 1px 12px rgba(0,0,0,0.18)',
+          }}
+        >
+          {t(key)}
+        </motion.span>
+      </Fragment>
+    ))}
+  </motion.div>
 );
 
 // ─── Hero section ─────────────────────────────────────────────────────────────
-const HeroSection = ({ t }) => {
+const HeroSection = ({ t, isMobile }) => {
   const scrollToProducts = () => {
     document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const heroOverlay =
+    'linear-gradient(180deg, rgba(18, 56, 36, 0.55) 0%, rgba(10, 38, 26, 0.84) 100%)';
+
   return (
-    <section style={{ background: colors.bg, padding: '72px 0 64px' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
+    <section
+      style={{
+        position: 'relative',
+        isolation: 'isolate',
+        width: '100%',
+        maxWidth: '100%',
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+      }}
+    >
+      <img
+        src={HERO_BACKGROUND_IMAGE_URL}
+        alt=""
+        loading="eager"
+        decoding="async"
+        fetchPriority="high"
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: 'center',
+          zIndex: 0,
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 1,
+          pointerEvents: 'none',
+          background: heroOverlay,
+          boxShadow: 'inset 0 0 64px rgba(0,0,0,0.18)',
+        }}
+      />
+
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 2,
+          maxWidth: '1200px',
+          margin: '0 auto',
+          padding: isMobile ? '48px 24px 56px' : '72px 24px 80px',
+          boxSizing: 'border-box',
+          width: '100%',
+          minWidth: 0,
+        }}
+      >
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '64px',
+            display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
+            gap: '20px',
+            maxWidth: 'min(100%, 560px)',
+            marginInline: 'auto',
+            width: '100%',
+            boxSizing: 'border-box',
           }}
         >
-          {/* Text column — first in DOM → right in RTL (start), left in LTR */}
           <motion.div
-            initial={{ opacity: 0, y: 28 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
-            style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '20px',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
           >
-            {/* Badge */}
             <span style={{
-              alignSelf: 'flex-start',
-              padding: '5px 14px',
+              padding: '6px 16px',
               borderRadius: '9999px',
-              border: `1px solid ${colors.primaryBorder}`,
-              background: colors.primarySurface,
-              color: colors.primary,
+              border: '1px solid rgba(255,255,255,0.32)',
+              background: 'rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(8px)',
+              color: colors.textInverse,
               fontSize: '13px',
               fontWeight: 600,
               letterSpacing: '0.3px',
+              textAlign: 'center',
             }}>
-              {t("home:hero.badge")}
+              {t('home:hero.badge')}
             </span>
 
-            {/* Heading */}
             <h1 style={{
               margin: 0,
-              fontSize: 'clamp(32px, 4vw, 52px)',
-              fontWeight: 700,
-              lineHeight: 1.15,
-              color: colors.textPrimary,
+              fontSize: isMobile ? 'clamp(28px, 8vw, 40px)' : 'clamp(32px, 4vw, 52px)',
+              fontWeight: 800,
+              lineHeight: 1.12,
+              color: colors.textInverse,
               letterSpacing: '-0.5px',
+              textShadow: '0 2px 24px rgba(0,0,0,0.28)',
+              textAlign: 'center',
+              width: '100%',
+              boxSizing: 'border-box',
             }}>
-              {t("home:hero.heading")}
+              {t('home:hero.heading')}
             </h1>
 
-            {/* Subtitle */}
             <p style={{
               margin: 0,
-              fontSize: '17px',
+              fontSize: isMobile ? '16px' : '18px',
               lineHeight: 1.65,
-              color: colors.textSecondary,
+              color: 'rgba(255,255,255,0.90)',
               maxWidth: '400px',
+              width: '100%',
+              textAlign: 'center',
+              textShadow: '0 1px 16px rgba(0,0,0,0.22)',
+              boxSizing: 'border-box',
             }}>
-              {t("home:hero.subtitle")}
+              {t('home:hero.subtitle')}
             </p>
 
-            {/* Customers row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                {AVATAR_COLORS.map((color, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      width: '34px',
-                      height: '34px',
-                      borderRadius: '50%',
-                      background: color,
-                      border: `2.5px solid ${colors.bg}`,
-                      marginInlineStart: i === 0 ? 0 : '-10px',
-                      flexShrink: 0,
-                    }}
-                  />
-                ))}
-              </div>
-              <div style={{ fontSize: '14px', color: colors.textSecondary }}>
-                <strong style={{ color: colors.textPrimary }}>{t("home:hero.customersCount")}</strong>
-                {' '}{t("home:hero.customersLabel")}
-              </div>
-            </div>
+            <HeroTrustBar t={t} isMobile={isMobile} />
 
-            {/* CTA */}
             <motion.button
+              type="button"
               onClick={scrollToProducts}
-              whileHover={{ scale: 1.03, background: colors.primaryHover }}
+              animate={{ y: [0, -8, 0] }}
+              transition={{
+                y: { repeat: Infinity, duration: 4, ease: 'easeInOut', delay: 0.5 },
+                scale: { duration: 0.15 },
+                background: { duration: 0.15 },
+              }}
+              whileHover={{ scale: 1.03, background: 'rgba(255,255,255,0.94)' }}
               whileTap={{ scale: 0.97 }}
-              transition={{ duration: 0.15 }}
               style={{
-                alignSelf: 'flex-start',
-                padding: '14px 32px',
-                borderRadius: '12px',
-                border: 'none',
-                background: colors.primary,
-                color: colors.textInverse,
+                width: '100%',
+                maxWidth: 'min(100%, 400px)',
+                boxSizing: 'border-box',
+                padding: isMobile ? '12px 28px' : '14px 32px',
+                borderRadius: '10px',
+                border: '1px solid rgba(255,255,255,0.55)',
+                background: colors.surface,
+                color: colors.primary,
                 fontSize: '15px',
                 fontWeight: 600,
                 cursor: 'pointer',
-                boxShadow: '0 4px 20px rgba(30,107,60,0.30)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)',
                 letterSpacing: '0.2px',
               }}
             >
-              {t("home:hero.cta")}
+              {t('home:hero.cta')}
             </motion.button>
-          </motion.div>
-
-          {/* Image column — second in DOM → left in RTL (end), right in LTR */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.93 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.65, delay: 0.12, ease: [0.25, 0.1, 0.25, 1] }}
-          >
-            <HeroBlob />
           </motion.div>
         </div>
       </div>
@@ -237,87 +349,234 @@ const HeroSection = ({ t }) => {
 };
 
 // ─── Marquee bar ──────────────────────────────────────────────────────────────
+const marqueeCellStyle = {
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: '10px',
+  padding: '0 28px',
+  whiteSpace: 'nowrap',
+  direction: 'ltr',
+};
+
 const MarqueeBar = ({ lang }) => {
   const items = MARQUEE[lang] || MARQUEE.en;
-  const doubled = [...items, ...items];
+  const hostRef = useRef(null);
+  const measureRef = useRef(null);
+  const halfRef = useRef(null);
+  const [repeats, setRepeats] = useState(3);
+  const [halfWidthPx, setHalfWidthPx] = useState(null);
+  const [hoverPaused, setHoverPaused] = useState(false);
+
+  const renderCells = (keyPrefix) =>
+    Array.from({ length: repeats }, (_, copy) =>
+      items.map(({ Icon, text }, j) => (
+        <div key={`${keyPrefix}-${copy}-${j}`} style={marqueeCellStyle}>
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '28px',
+            height: '28px',
+            borderRadius: '9999px',
+            background: 'rgba(255,255,255,0.10)',
+            color: '#ffffff',
+            flexShrink: 0,
+          }}>
+            <Icon />
+          </span>
+          <span style={{ color: 'rgba(255,255,255,0.92)', fontSize: '13px', fontWeight: 500, letterSpacing: '0.1px' }}>
+            {text}
+          </span>
+          <span style={{ color: 'rgba(255,255,255,0.22)', fontSize: '16px', marginInlineStart: '16px' }}>
+            ·
+          </span>
+        </div>
+      ))
+    ).flat();
+
+  const layoutMarquee = useCallback(() => {
+    const host = hostRef.current;
+    const measure = measureRef.current;
+    const half = halfRef.current;
+    if (!host || !measure) return;
+    const oneCycleW = measure.scrollWidth;
+    if (oneCycleW < 1) return;
+    const nextRepeats = Math.max(2, Math.ceil(host.clientWidth / oneCycleW) + 2);
+    setRepeats((prev) => (prev === nextRepeats ? prev : nextRepeats));
+    if (half) {
+      const w = half.getBoundingClientRect().width;
+      setHalfWidthPx((prev) => (prev != null && Math.abs(prev - w) < 0.5 ? prev : w));
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    layoutMarquee();
+    const host = hostRef.current;
+    const measure = measureRef.current;
+    if (!host) return undefined;
+    const ro = new ResizeObserver(() => layoutMarquee());
+    ro.observe(host);
+    if (measure) ro.observe(measure);
+    window.addEventListener('resize', layoutMarquee);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', layoutMarquee);
+    };
+  }, [lang, layoutMarquee]);
+
+  useLayoutEffect(() => {
+    layoutMarquee();
+  }, [repeats, layoutMarquee]);
 
   return (
-    <div style={{
-      background: '#1e5c32',
-      overflow: 'hidden',
-      height: '52px',
-      display: 'flex',
-      alignItems: 'center',
-    }}>
-      <motion.div
-        style={{ display: 'flex', alignItems: 'center', width: 'max-content' }}
-        animate={{ x: ['0%', '-50%'] }}
-        transition={{ repeat: Infinity, duration: 38, ease: 'linear' }}
+    <>
+      <style>{`
+        @keyframes homeMarqueeDrift {
+          from { transform: translateX(0); }
+          to { transform: translateX(var(--marquee-x, 0px)); }
+        }
+      `}</style>
+    <div
+      ref={hostRef}
+      dir="ltr"
+      onMouseEnter={() => setHoverPaused(true)}
+      onMouseLeave={() => setHoverPaused(false)}
+      style={{
+        position: 'relative',
+        direction: 'ltr',
+        unicodeBidi: 'isolate',
+        background: '#1a5c2e',
+        overflow: 'hidden',
+        height: '48px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+      }}
+    >
+      {/* Hidden row: one full phrase cycle — width drives how many repeats fill the viewport */}
+      <div
+        ref={measureRef}
+        dir="ltr"
+        aria-hidden
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          visibility: 'hidden',
+          display: 'flex',
+          alignItems: 'center',
+          pointerEvents: 'none',
+          direction: 'ltr',
+          flexDirection: 'row',
+        }}
       >
-        {doubled.map((item, i) => (
-          <div
-            key={i}
-            style={{
-              display: 'flex',
+        {items.map(({ Icon, text }, j) => (
+          <div key={`m-${j}`} style={marqueeCellStyle}>
+            <span style={{
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: '10px',
-              padding: '0 32px',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <span style={{ fontSize: '16px' }}>{item.icon}</span>
-            <span style={{ color: 'rgba(255,255,255,0.92)', fontSize: '14px', fontWeight: 500 }}>
-              {item.text}
+              justifyContent: 'center',
+              width: '28px',
+              height: '28px',
+              borderRadius: '9999px',
+              background: 'rgba(255,255,255,0.10)',
+              color: '#ffffff',
+              flexShrink: 0,
+            }}>
+              <Icon />
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '18px', marginInlineStart: '20px' }}>
-              •
+            <span style={{ color: 'rgba(255,255,255,0.92)', fontSize: '13px', fontWeight: 500, letterSpacing: '0.1px' }}>
+              {text}
+            </span>
+            <span style={{ color: 'rgba(255,255,255,0.22)', fontSize: '16px', marginInlineStart: '16px' }}>
+              ·
             </span>
           </div>
         ))}
-      </motion.div>
+      </div>
+
+      {/* dir="ltr" keeps marquee motion consistent in RTL layouts; CSS animation so hover can pause without jumping */}
+      <div
+        dir="ltr"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          flexDirection: 'row',
+          flexShrink: 0,
+          width: 'max-content',
+          minWidth: 'max-content',
+          willChange: 'transform',
+          direction: 'ltr',
+          '--marquee-x': halfWidthPx != null && halfWidthPx > 0 ? `${-halfWidthPx}px` : '0px',
+          animation:
+            halfWidthPx != null && halfWidthPx > 0
+              ? 'homeMarqueeDrift 42s linear infinite'
+              : 'none',
+          animationPlayState: hoverPaused ? 'paused' : 'running',
+        }}
+      >
+        <div ref={halfRef} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexShrink: 0, direction: 'ltr' }}>
+          {renderCells('a')}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexShrink: 0, direction: 'ltr' }} aria-hidden>
+          {renderCells('b')}
+        </div>
+      </div>
     </div>
+    </>
   );
 };
 
 // ─── Skeleton card ────────────────────────────────────────────────────────────
 const CardSkeleton = () => (
-  <div style={{ background: colors.surface, borderRadius: '16px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+  <div style={{
+    background: colors.surface,
+    borderRadius: '14px',
+    border: `1px solid ${colors.border}`,
+    overflow: 'hidden',
+    boxShadow: shadow.sm,
+  }}>
     <motion.div
-      animate={{ opacity: [0.4, 0.75, 0.4] }}
-      transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+      animate={{ opacity: [0.4, 0.8, 0.4] }}
+      transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
       style={{ aspectRatio: '4/3', background: colors.border }}
     />
     <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      <motion.div animate={{ opacity: [0.4, 0.75, 0.4] }} transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut', delay: 0.1 }} style={{ height: '12px', width: '40%', background: colors.border, borderRadius: '6px' }} />
-      <motion.div animate={{ opacity: [0.4, 0.75, 0.4] }} transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut', delay: 0.15 }} style={{ height: '18px', width: '70%', background: colors.border, borderRadius: '6px' }} />
-      <motion.div animate={{ opacity: [0.4, 0.75, 0.4] }} transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut', delay: 0.2 }} style={{ height: '22px', width: '50%', background: colors.border, borderRadius: '6px' }} />
-      <motion.div animate={{ opacity: [0.4, 0.75, 0.4] }} transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut', delay: 0.25 }} style={{ height: '36px', background: colors.border, borderRadius: '10px' }} />
+      {[['40%', '12px', 0], ['68%', '18px', 0.08], ['48%', '22px', 0.14], ['100%', '36px', 0.2]].map(([w, h, delay], i) => (
+        <motion.div
+          key={i}
+          animate={{ opacity: [0.4, 0.8, 0.4] }}
+          transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut', delay }}
+          style={{ height: h, width: w, background: colors.border, borderRadius: '6px' }}
+        />
+      ))}
     </div>
   </div>
 );
 
 // ─── List stagger variants ────────────────────────────────────────────────────
-const listVariants = {
-  animate: { transition: { staggerChildren: 0.055 } },
-};
+const listVariants = { animate: { transition: { staggerChildren: 0.05 } } };
 const itemVariants = {
-  initial: { opacity: 0, y: 14 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.22 } },
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } },
 };
 
 // ─── HomePage ─────────────────────────────────────────────────────────────────
 const HomePage = () => {
-  const { t, i18n } = useTranslation(["home", "common"]);
+  const { t, i18n } = useTranslation(['home', 'common']);
   const { error: cartError } = useCart();
-  const lang = (i18n.language || "he").split("-")[0];
+  const lang = (i18n.language || 'he').split('-')[0];
+  const isMobile = useIsMobile();
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
+  const [activeCategoryId, setActiveCategoryId] = useState(/** @type {string | null} */ (null));
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError("");
+    setError('');
     try {
       const list = await productService.getProducts();
       setProducts(Array.isArray(list) ? list : []);
@@ -329,20 +588,32 @@ const HomePage = () => {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
+
+  const displayedProducts = useMemo(() => {
+    if (!activeCategoryId) return products;
+    return products.filter((p) => productMatchesCategoryNav(p, activeCategoryId));
+  }, [products, activeCategoryId]);
+
+  const handleCategorySelect = useCallback((id) => {
+    setActiveCategoryId((prev) => {
+      const next = prev === id ? null : id;
+      if (next != null) {
+        requestAnimationFrame(() => {
+          document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+      return next;
+    });
+  }, []);
 
   return (
     <div>
-      <HeroSection t={t} />
+      <HeroSection t={t} isMobile={isMobile} />
       <MarqueeBar lang={lang} />
 
       {/* Products section */}
-      <section
-        id="products-section"
-        style={{ background: colors.bg, padding: '64px 0 80px' }}
-      >
+      <section id="products-section" style={{ background: colors.bg, padding: isMobile ? '48px 0 64px' : '64px 0 80px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
 
           {/* Section header */}
@@ -351,7 +622,7 @@ const HomePage = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-            style={{ marginBottom: '40px', display: 'flex', flexDirection: 'column', gap: '8px' }}
+            style={{ marginBottom: isMobile ? '28px' : '40px', display: 'flex', flexDirection: 'column', gap: '8px' }}
           >
             <span style={{
               alignSelf: 'flex-start',
@@ -364,12 +635,22 @@ const HomePage = () => {
               fontWeight: 600,
               letterSpacing: '0.3px',
             }}>
-              {t("home:products.badge")}
+              {t('home:products.badge')}
             </span>
-            <h2 style={{ margin: 0, fontSize: '32px', fontWeight: 700, color: colors.textPrimary, letterSpacing: '-0.3px' }}>
-              {t("home:products.heading")}
+            <h2 style={{
+              margin: 0,
+              fontSize: isMobile ? '26px' : '32px',
+              fontWeight: 700,
+              color: colors.textPrimary,
+              letterSpacing: '-0.3px',
+            }}>
+              {t('home:products.heading')}
             </h2>
           </motion.div>
+
+          {isMobile && (
+            <CategoryBarMobile activeId={activeCategoryId} onSelect={handleCategorySelect} />
+          )}
 
           {/* Error banner */}
           <AnimatePresence>
@@ -382,43 +663,72 @@ const HomePage = () => {
                 transition={{ duration: 0.2 }}
                 style={{ overflow: 'hidden', marginBottom: '24px' }}
               >
-                <div role="alert" style={{ padding: '12px 16px', borderRadius: '10px', background: colors.errorSurface, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px' }}>
-                  <strong>{t("home:errorTitle")}</strong>
+                <div
+                  role="alert"
+                  style={{
+                    padding: '12px 16px', borderRadius: '10px',
+                    background: colors.errorSurface,
+                    border: `1px solid ${colors.errorBorder}`,
+                    color: colors.error, fontSize: '14px',
+                  }}
+                >
+                  <strong>{t('home:errorTitle')}</strong>
                   <p style={{ margin: '6px 0 0' }}>{error}</p>
                   <button
                     type="button"
                     onClick={load}
-                    style={{ marginTop: '10px', padding: '5px 14px', borderRadius: '7px', border: `1px solid ${colors.errorBorder}`, background: colors.errorSurface, color: colors.error, fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                    style={{
+                      marginTop: '10px', padding: '6px 14px', borderRadius: '10px',
+                      border: `1px solid ${colors.errorBorder}`,
+                      background: colors.errorSurface, color: colors.error,
+                      fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                    }}
                   >
-                    {t("common:retry")}
+                    {t('common:retry')}
                   </button>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Grid */}
-          {loading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '24px' }}>
-              {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
-            </div>
-          ) : products.length === 0 && !error ? (
-            <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t("home:empty")}</p>
-          ) : (
-            <motion.div
-              variants={listVariants}
-              initial="initial"
-              whileInView="animate"
-              viewport={{ once: true, amount: 0.1 }}
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '24px' }}
-            >
-              {products.map((product) => (
-                <motion.div key={product._id} variants={itemVariants}>
-                  <ProductCard product={product} lang={lang} />
+          {/* Sidebar + product grid (desktop: sticky rail at inline-start) */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              gap: '24px',
+            }}
+          >
+            {!isMobile && <CategorySidebar activeId={activeCategoryId} onSelect={handleCategorySelect} />}
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Grid */}
+              {loading ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
+                  {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
+                </div>
+              ) : products.length === 0 && !error ? (
+                <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:empty')}</p>
+              ) : displayedProducts.length === 0 && activeCategoryId ? (
+                <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:categories.filterEmpty')}</p>
+              ) : (
+                <motion.div
+                  variants={listVariants}
+                  initial="initial"
+                  whileInView="animate"
+                  viewport={{ once: true, amount: 0.05 }}
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}
+                >
+                  {displayedProducts.map((product) => (
+                    <motion.div key={product._id} variants={itemVariants}>
+                      <ProductCard product={product} lang={lang} />
+                    </motion.div>
+                  ))}
                 </motion.div>
-              ))}
-            </motion.div>
-          )}
+              )}
+            </div>
+          </div>
 
           {/* Cart error */}
           <AnimatePresence>

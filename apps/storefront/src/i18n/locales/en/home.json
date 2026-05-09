@@ -20,15 +20,24 @@
   "hero": {
     "badge": "Fruits & Vegetables",
     "heading": "Fresh Produce Delivered to Your Door",
-    "subtitle": "Quality fruits and vegetables from the Galilee region",
-    "cta": "Shop Fresh Produce",
-    "customersCount": "+500",
-    "customersLabel": "Happy Customers",
+    "subtitle": "Abu Al-Anas vegetables — the tastiest way to start your day.",
+    "cta": "Go fill the cart",
+    "trust1": "🥬 Fresh every day",
+    "trust2": "🚚 Fast delivery",
+    "trust3": "⭐ 500+ happy customers",
     "organicValue": "100%",
     "organicLabel": "ORGANIC FRESHNESS"
   },
   "products": {
     "badge": "Fresh & Healthy",
     "heading": "Our Products"
+  },
+  "categories": {
+    "navAria": "Browse by category",
+    "fruits": "Fruits",
+    "vegetables": "Vegetables",
+    "platters": "Fruit platters & sliced plates",
+    "juices": "Fresh juices & drinks",
+    "filterEmpty": "No products match this category. Try another category or tap the same icon to show all products."
   }
 }

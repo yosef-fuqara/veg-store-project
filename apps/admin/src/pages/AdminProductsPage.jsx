@@ -61,6 +61,10 @@ const Pill = ({ bg, color, border, children }) => (
 
 const FILTER_OPTIONS = ['all', 'active', 'inactive', 'frozen', 'deleted'];
 
+const interactiveBtn = {
+  transition: 'background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s',
+};
+
 const AdminProductsPage = () => {
   const { showToast } = useToast();
   const [items, setItems] = useState([]);
@@ -72,6 +76,8 @@ const AdminProductsPage = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [menuId, setMenuId] = useState('');
+  const [hoverRowId, setHoverRowId] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const filterRef = useRef(null);
   const menuRef = useRef(null);
   const pageSize = 10;
@@ -143,27 +149,87 @@ const AdminProductsPage = () => {
     }
   };
 
+  const searchInputStyle = {
+    width: '100%',
+    boxSizing: 'border-box',
+    minWidth: 0,
+    paddingInlineStart: '34px',
+    paddingInlineEnd: '12px',
+    paddingTop: '8px',
+    paddingBottom: '8px',
+    borderRadius: '10px',
+    border: `1.5px solid ${searchFocused ? colors.primary : colors.border}`,
+    background: colors.surface,
+    fontSize: '14px',
+    color: colors.textPrimary,
+    outline: 'none',
+    boxShadow: searchFocused ? '0 0 0 3px rgba(30,107,60,0.12)' : 'none',
+    transition: 'border-color 0.15s, box-shadow 0.15s',
+  };
+
   return (
-    <div>
+    <div style={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
+      <style>{`
+        @keyframes adminProductsSkeletonPulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
+        }
+        @keyframes adminProductsSpin {
+          to { transform: rotate(360deg); }
+        }
+        .admin-products-skel { animation: adminProductsSkeletonPulse 1.4s ease-in-out infinite; }
+        .admin-products-filter-btn:focus-visible,
+        .admin-products-add:focus-visible,
+        .admin-products-menu:focus-visible,
+        .admin-products-page:focus-visible,
+        .admin-products-retry:focus-visible {
+          outline: 2px solid ${colors.primary};
+          outline-offset: 2px;
+        }
+        .admin-products-dd-item:hover { background: ${colors.bg}; }
+        .admin-products-dd-item:focus-visible { outline: 2px solid ${colors.primary}; outline-offset: -2px; }
+        .admin-products-dd-item-danger:hover { background: ${colors.errorBg}; }
+      `}</style>
+
       {/* Page header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: '16px',
+        marginBottom: '32px',
+      }}>
         <Link
           to="/products/new"
+          className="admin-products-add"
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            padding: '10px 20px', borderRadius: '10px',
-            background: colors.primary, color: colors.textInverse,
-            fontSize: '14px', fontWeight: 600, textDecoration: 'none',
-            boxShadow: '0 2px 8px rgba(30,107,60,0.25)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 20px',
+            borderRadius: '10px',
+            background: colors.primary,
+            color: colors.textInverse,
+            fontSize: '14px',
+            fontWeight: 600,
+            textDecoration: 'none',
+            boxShadow: '0 4px 14px rgba(30,107,60,0.30)',
+            ...interactiveBtn,
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = colors.primaryHover; e.currentTarget.style.boxShadow = '0 4px 12px rgba(30,107,60,0.32)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = colors.primary; e.currentTarget.style.boxShadow = '0 2px 8px rgba(30,107,60,0.25)'; }}
         >
-          Add Product +
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Add Product
         </Link>
-        <div style={{ textAlign: 'end' }}>
+        <div style={{ textAlign: 'end', flex: '1 1 200px', minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: '36px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.5px' }}>
             Products
           </h1>
-          <p style={{ margin: '4px 0 0', fontSize: '14px', color: colors.textMuted }}>
+          <p style={{ margin: '8px 0 0', fontSize: '14px', color: colors.textMuted, lineHeight: 1.5 }}>
             Manage your fruit and vegetable inventory
           </p>
         </div>
@@ -171,31 +237,50 @@ const AdminProductsPage = () => {
 
       {/* Error */}
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: colors.errorBg, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span>{error}</span>
-          <button type="button" onClick={load} style={{ marginInlineStart: '12px', padding: '4px 10px', borderRadius: '6px', border: `1px solid ${colors.errorBorder}`, background: 'transparent', color: colors.error, cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+        <div style={{ padding: '12px 16px', borderRadius: '10px', background: colors.errorBg, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <span style={{ minWidth: 0 }}>{error}</span>
+          <button type="button" onClick={load} className="admin-products-retry" style={{ flexShrink: 0, padding: '6px 12px', borderRadius: '8px', border: `1px solid ${colors.errorBorder}`, background: 'transparent', color: colors.error, cursor: 'pointer', fontSize: '12px', fontWeight: 600, ...interactiveBtn }}>
             Retry
           </button>
         </div>
       )}
 
       {/* Table card */}
-      <div style={{ background: colors.surface, borderRadius: '16px', border: `1px solid ${colors.border}`, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+      <div style={{ background: colors.surface, borderRadius: '14px', border: `1px solid ${colors.border}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', maxWidth: '100%' }}>
 
         {/* Toolbar */}
-        <div style={{ padding: '14px 20px', borderBottom: `1px solid ${colors.borderLight}`, display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{
+          padding: '16px 20px',
+          borderBottom: `1px solid ${colors.borderLight}`,
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '12px',
+          alignItems: 'center',
+        }}>
           {/* Filter */}
-          <div style={{ position: 'relative' }} ref={filterRef}>
+          <div style={{ position: 'relative', flexShrink: 0 }} ref={filterRef}>
             <button
               type="button"
+              className="admin-products-filter-btn"
               onClick={() => setFilterOpen((v) => !v)}
+              aria-expanded={filterOpen}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-                padding: '7px 14px', borderRadius: '8px',
-                border: `1px solid ${colors.border}`, background: colors.surface,
-                color: colors.textPrimary, fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: `1px solid ${filterOpen ? colors.primary : colors.border}`,
+                background: filterOpen ? colors.bg : colors.surface,
+                color: colors.textPrimary,
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: 'pointer',
                 whiteSpace: 'nowrap',
+                ...interactiveBtn,
               }}
+              onMouseEnter={(e) => { if (!filterOpen) e.currentTarget.style.background = colors.bg; }}
+              onMouseLeave={(e) => { if (!filterOpen) e.currentTarget.style.background = colors.surface; }}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
@@ -207,21 +292,36 @@ const AdminProductsPage = () => {
             </button>
             {filterOpen && (
               <div style={{
-                position: 'absolute', top: 'calc(100% + 6px)', insetInlineStart: 0, zIndex: 20,
-                background: colors.surface, borderRadius: '10px', border: `1px solid ${colors.border}`,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: '148px',
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                insetInlineStart: 0,
+                zIndex: 20,
+                background: colors.surface,
+                borderRadius: '10px',
+                border: `1px solid ${colors.border}`,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                overflow: 'hidden',
+                minWidth: '160px',
+                maxWidth: 'min(280px, calc(100vw - 48px))',
               }}>
                 {FILTER_OPTIONS.map((opt) => (
                   <button
                     key={opt}
                     type="button"
+                    className="admin-products-dd-item"
                     onClick={() => { setStatusFilter(opt); setFilterOpen(false); }}
                     style={{
-                      display: 'block', width: '100%', textAlign: 'start',
-                      padding: '9px 14px', border: 'none', cursor: 'pointer',
-                      fontSize: '13px', fontWeight: statusFilter === opt ? 600 : 400,
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'start',
+                      padding: '10px 16px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: statusFilter === opt ? 600 : 400,
                       background: statusFilter === opt ? colors.bg : 'transparent',
                       color: statusFilter === opt ? colors.primary : colors.textPrimary,
+                      transition: 'background 0.12s',
                     }}
                   >
                     {opt === 'all' ? 'All statuses' : opt.charAt(0).toUpperCase() + opt.slice(1)}
@@ -232,8 +332,8 @@ const AdminProductsPage = () => {
           </div>
 
           {/* Search */}
-          <div style={{ flex: 1, position: 'relative' }}>
-            <span style={{ position: 'absolute', insetInlineStart: '11px', top: '50%', transform: 'translateY(-50%)', color: colors.textMuted, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+          <div style={{ flex: '1 1 200px', minWidth: 0, position: 'relative' }}>
+            <span style={{ position: 'absolute', insetInlineStart: '12px', top: '50%', transform: 'translateY(-50%)', color: colors.textMuted, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
@@ -241,212 +341,410 @@ const AdminProductsPage = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="...Search products"
-              style={{
-                width: '100%', boxSizing: 'border-box',
-                paddingInlineStart: '34px', paddingInlineEnd: '12px',
-                paddingTop: '7px', paddingBottom: '7px',
-                borderRadius: '8px', border: `1px solid ${colors.border}`,
-                background: colors.surface, fontSize: '13px', color: colors.textPrimary, outline: 'none',
-              }}
+              placeholder="Search products…"
+              aria-label="Search products"
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              style={searchInputStyle}
             />
           </div>
         </div>
 
         {/* Table content */}
         {loading ? (
-          <div style={{ padding: '64px 20px', textAlign: 'center', color: colors.textMuted, fontSize: '14px' }}>
-            Loading products...
+          <div style={{ padding: '8px 0 16px' }} aria-busy="true" aria-live="polite">
+            <div style={{ padding: '12px 20px 8px', fontSize: '12px', fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Loading
+            </div>
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
+              <table style={{ width: '100%', minWidth: '720px', borderCollapse: 'collapse' }}>
+                <tbody>
+                  {Array.from({ length: 6 }).map((_, r) => (
+                    <tr key={r} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
+                      {Array.from({ length: 7 }).map((__, c) => (
+                        <td key={c} style={{ padding: '14px 16px' }}>
+                          <div
+                            className="admin-products-skel"
+                            style={{
+                              height: c === 6 ? 40 : 14,
+                              width: c === 6 ? 40 : c === 0 ? '32%' : '72%',
+                              maxWidth: '100%',
+                              background: colors.borderLight,
+                              borderRadius: '6px',
+                            }}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : paged.length === 0 ? (
-          <div style={{ padding: '64px 20px', textAlign: 'center', color: colors.textMuted, fontSize: '14px' }}>
-            No matching products found.
+          <div style={{ padding: '64px 24px', textAlign: 'center', color: colors.textMuted }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: colors.bg,
+              border: `1px solid ${colors.borderLight}`,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '16px',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
+            <div style={{ fontSize: '15px', fontWeight: 600, color: colors.textPrimary, marginBottom: '6px' }}>
+              No products found
+            </div>
+            <div style={{ fontSize: '13px', color: colors.textMuted, lineHeight: 1.5 }}>
+              {search || statusFilter !== 'all'
+                ? 'Try adjusting your search or filter.'
+                : 'Add your first product to get started.'}
+            </div>
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {['Actions', 'Status', 'Stock', 'Price', 'Category', 'Product Name', 'Image'].map((h) => (
-                  <th key={h} style={{
-                    padding: '10px 16px', textAlign: 'start',
-                    fontSize: '12px', fontWeight: 600, color: colors.textSecondary,
-                    background: colors.bg, borderBottom: `1px solid ${colors.border}`,
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {paged.map((product) => {
-                const name = pickLocalizedName(product.name);
-                const subtitle = pickSubtitle(product.name);
-                const state = getProductState(product);
-                const stateStyle = STATUS_STYLES[state] || STATUS_STYLES.inactive;
-                const inStock = product.stockStatus === 'in_stock';
-                const category = product.category?.name ?? (typeof product.category === 'string' ? product.category : '');
-                const price = typeof product.price === 'number' ? product.price : null;
-                const salePrice = typeof product.salePrice === 'number' ? product.salePrice : null;
-                const isBusy = busyId === product._id;
+          <div
+            style={{
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              WebkitOverflowScrolling: 'touch',
+              maxWidth: '100%',
+            }}
+          >
+            <table style={{ width: '100%', minWidth: '880px', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {['Actions', 'Status', 'Stock', 'Price', 'Category', 'Product Name', 'Image'].map((h) => (
+                    <th key={h} style={{
+                      padding: '12px 16px',
+                      textAlign: 'start',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: colors.textSecondary,
+                      background: colors.bg,
+                      borderBottom: `1px solid ${colors.border}`,
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {paged.map((product) => {
+                  const name = pickLocalizedName(product.name);
+                  const subtitle = pickSubtitle(product.name);
+                  const state = getProductState(product);
+                  const stateStyle = STATUS_STYLES[state] || STATUS_STYLES.inactive;
+                  const inStock = product.stockStatus === 'in_stock';
+                  const category = product.category?.name ?? (typeof product.category === 'string' ? product.category : '');
+                  const price = typeof product.price === 'number' ? product.price : null;
+                  const salePrice = typeof product.salePrice === 'number' ? product.salePrice : null;
+                  const isBusy = busyId === product._id;
+                  const rowHover = hoverRowId === product._id;
 
-                return (
-                  <tr key={product._id} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
+                  return (
+                    <tr
+                      key={product._id}
+                      style={{
+                        borderBottom: `1px solid ${colors.borderLight}`,
+                        background: rowHover ? colors.bg : 'transparent',
+                        transition: 'background 0.15s ease',
+                      }}
+                      onMouseEnter={() => setHoverRowId(product._id)}
+                      onMouseLeave={() => setHoverRowId('')}
+                    >
 
-                    {/* Actions */}
-                    <td style={{ padding: '12px 16px', position: 'relative' }}>
-                      <div ref={menuId === product._id ? menuRef : null} style={{ display: 'inline-block' }}>
-                        <button
-                          type="button"
-                          onClick={() => setMenuId(menuId === product._id ? '' : product._id)}
-                          disabled={isBusy}
-                          style={{
-                            background: 'none', border: 'none', cursor: isBusy ? 'not-allowed' : 'pointer',
-                            fontSize: '20px', color: colors.textMuted, padding: '2px 6px',
-                            borderRadius: '6px', lineHeight: 1,
-                          }}
+                      {/* Actions */}
+                      <td style={{ padding: '12px 16px', position: 'relative', verticalAlign: 'middle' }}>
+                        <div ref={menuId === product._id ? menuRef : null} style={{ display: 'inline-block' }}>
+                          <button
+                            type="button"
+                            className="admin-products-menu"
+                            onClick={() => setMenuId(menuId === product._id ? '' : product._id)}
+                            disabled={isBusy}
+                            aria-expanded={menuId === product._id}
+                            aria-haspopup="true"
+                            aria-label={isBusy ? 'Working…' : `Actions for ${name}`}
+                            style={{
+                              background: menuId === product._id ? colors.borderLight : 'none',
+                              border: 'none',
+                              cursor: isBusy ? 'not-allowed' : 'pointer',
+                              fontSize: '20px',
+                              color: menuId === product._id ? colors.textPrimary : colors.textMuted,
+                              padding: '4px 8px',
+                              borderRadius: '8px',
+                              lineHeight: 1,
+                              opacity: isBusy ? 0.5 : 1,
+                              transition: 'background 0.15s, color 0.15s, opacity 0.15s',
+                            }}
+                            onMouseEnter={(e) => { if (!isBusy && menuId !== product._id) { e.currentTarget.style.background = colors.borderLight; e.currentTarget.style.color = colors.textPrimary; } }}
+                            onMouseLeave={(e) => { if (menuId !== product._id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = colors.textMuted; } }}
+                          >
+                            {isBusy ? (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ animation: 'adminProductsSpin 0.9s linear infinite', display: 'block' }}>
+                                <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
+                              </svg>
+                            ) : '⋮'}
+                          </button>
+                          {menuId === product._id && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              insetInlineStart: 0,
+                              zIndex: 20,
+                              background: colors.surface,
+                              borderRadius: '10px',
+                              border: `1px solid ${colors.border}`,
+                              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                              overflow: 'hidden',
+                              minWidth: '160px',
+                              maxWidth: 'min(260px, calc(100vw - 48px))',
+                            }}>
+                              <Link
+                                to={`/products/${product._id}/edit`}
+                                onClick={() => setMenuId('')}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  padding: '10px 16px',
+                                  fontSize: '13px',
+                                  color: colors.textPrimary,
+                                  textDecoration: 'none',
+                                  transition: 'background 0.12s',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                Edit
+                              </Link>
+                              {!product.isDeleted && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleFreeze(product)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    width: '100%',
+                                    padding: '10px 16px',
+                                    border: 'none',
+                                    background: 'none',
+                                    fontSize: '13px',
+                                    color: colors.textPrimary,
+                                    cursor: 'pointer',
+                                    textAlign: 'start',
+                                    transition: 'background 0.12s',
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                >
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                  {product.isFrozen ? 'Unfreeze' : 'Freeze'}
+                                </button>
+                              )}
+                              {!product.isDeleted && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(product)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    width: '100%',
+                                    padding: '10px 16px',
+                                    border: 'none',
+                                    background: 'none',
+                                    fontSize: '13px',
+                                    color: colors.error,
+                                    cursor: 'pointer',
+                                    textAlign: 'start',
+                                    transition: 'background 0.12s',
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = colors.errorBg; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                                >
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                        <Pill bg={stateStyle.bg} color={stateStyle.color} border={stateStyle.border}>
+                          {stateStyle.label}
+                        </Pill>
+                      </td>
+
+                      {/* Stock */}
+                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                        <Pill
+                          bg={inStock ? '#dcfce7' : '#fef2f2'}
+                          color={inStock ? '#166534' : '#991b1b'}
+                          border={inStock ? '#bbf7d0' : '#fecaca'}
                         >
-                          ⋮
-                        </button>
-                        {menuId === product._id && (
+                          {inStock ? 'In Stock' : 'Out of Stock'}
+                        </Pill>
+                      </td>
+
+                      {/* Price */}
+                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                        {price !== null ? (
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: colors.primary }}>
+                              {formatCurrency(price)}
+                            </div>
+                            {salePrice !== null && salePrice < price && (
+                              <div style={{ fontSize: '12px', color: colors.error, textDecoration: 'line-through' }}>
+                                {formatCurrency(salePrice)}
+                              </div>
+                            )}
+                            {product.unit && (
+                              <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '4px' }}>
+                                Per {product.unit}
+                              </div>
+                            )}
+                          </div>
+                        ) : '—'}
+                      </td>
+
+                      {/* Category */}
+                      <td style={{ padding: '12px 16px', verticalAlign: 'middle', maxWidth: '160px' }}>
+                        {category ? (
+                          <Pill bg={colors.bg} color={colors.textSecondary} border={colors.border}>
+                            <span style={{ display: 'inline-block', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', verticalAlign: 'bottom' }}>{category}</span>
+                          </Pill>
+                        ) : <span style={{ color: colors.textMuted, fontSize: '13px' }}>—</span>}
+                      </td>
+
+                      {/* Product Name */}
+                      <td style={{ padding: '12px 16px', maxWidth: '220px', verticalAlign: 'middle' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, wordBreak: 'break-word' }}>{name}</div>
+                        {subtitle && (
+                          <div style={{ fontSize: '12px', color: colors.textMuted, marginTop: '4px', wordBreak: 'break-word' }}>{subtitle}</div>
+                        )}
+                      </td>
+
+                      {/* Image */}
+                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                        {product.imageUrl ? (
+                          <img
+                            src={product.imageUrl}
+                            alt={name}
+                            style={{
+                              width: '52px',
+                              height: '52px',
+                              objectFit: 'cover',
+                              borderRadius: '10px',
+                              display: 'block',
+                              border: `1px solid ${colors.border}`,
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                            }}
+                          />
+                        ) : (
                           <div style={{
-                            position: 'absolute', top: '100%', insetInlineStart: 0, zIndex: 20,
-                            background: colors.surface, borderRadius: '10px',
-                            border: `1px solid ${colors.border}`,
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: '150px',
+                            width: '52px',
+                            height: '52px',
+                            borderRadius: '10px',
+                            background: '#eef7f1',
+                            border: `1px solid ${colors.borderLight}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '24px',
                           }}>
-                            <Link
-                              to={`/products/${product._id}/edit`}
-                              onClick={() => setMenuId('')}
-                              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 14px', fontSize: '13px', color: colors.textPrimary, textDecoration: 'none' }}
-                            >
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                              Edit
-                            </Link>
-                            {!product.isDeleted && (
-                              <button
-                                type="button"
-                                onClick={() => handleToggleFreeze(product)}
-                                style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '9px 14px', border: 'none', background: 'none', fontSize: '13px', color: colors.textPrimary, cursor: 'pointer', textAlign: 'start' }}
-                              >
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                                {product.isFrozen ? 'Unfreeze' : 'Freeze'}
-                              </button>
-                            )}
-                            {!product.isDeleted && (
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(product)}
-                                style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '9px 14px', border: 'none', background: 'none', fontSize: '13px', color: colors.error, cursor: 'pointer', textAlign: 'start' }}
-                              >
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                                Delete
-                              </button>
-                            )}
+                            🥬
                           </div>
                         )}
-                      </div>
-                    </td>
-
-                    {/* Status */}
-                    <td style={{ padding: '12px 16px' }}>
-                      <Pill bg={stateStyle.bg} color={stateStyle.color} border={stateStyle.border}>
-                        {stateStyle.label}
-                      </Pill>
-                    </td>
-
-                    {/* Stock */}
-                    <td style={{ padding: '12px 16px' }}>
-                      <Pill
-                        bg={inStock ? '#dcfce7' : '#fef2f2'}
-                        color={inStock ? '#166534' : '#991b1b'}
-                        border={inStock ? '#bbf7d0' : '#fecaca'}
-                      >
-                        {inStock ? 'In Stock' : 'Out of Stock'}
-                      </Pill>
-                    </td>
-
-                    {/* Price */}
-                    <td style={{ padding: '12px 16px' }}>
-                      {price !== null ? (
-                        <div>
-                          <div style={{ fontSize: '14px', fontWeight: 700, color: colors.primary }}>
-                            {formatCurrency(price)}
-                          </div>
-                          {salePrice !== null && salePrice < price && (
-                            <div style={{ fontSize: '12px', color: colors.error, textDecoration: 'line-through' }}>
-                              {formatCurrency(salePrice)}
-                            </div>
-                          )}
-                          {product.unit && (
-                            <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '1px' }}>
-                              Per {product.unit}
-                            </div>
-                          )}
-                        </div>
-                      ) : '—'}
-                    </td>
-
-                    {/* Category */}
-                    <td style={{ padding: '12px 16px' }}>
-                      {category ? (
-                        <Pill bg={colors.bg} color={colors.textSecondary} border={colors.border}>
-                          {category}
-                        </Pill>
-                      ) : <span style={{ color: colors.textMuted, fontSize: '13px' }}>—</span>}
-                    </td>
-
-                    {/* Product Name */}
-                    <td style={{ padding: '12px 16px', maxWidth: '200px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary }}>{name}</div>
-                      {subtitle && (
-                        <div style={{ fontSize: '12px', color: colors.textMuted, marginTop: '2px' }}>{subtitle}</div>
-                      )}
-                    </td>
-
-                    {/* Image */}
-                    <td style={{ padding: '12px 16px' }}>
-                      {product.imageUrl ? (
-                        <img
-                          src={product.imageUrl}
-                          alt={name}
-                          style={{ width: '52px', height: '52px', objectFit: 'cover', borderRadius: '8px', display: 'block' }}
-                        />
-                      ) : (
-                        <div style={{ width: '52px', height: '52px', borderRadius: '8px', background: '#eef7f1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
-                          🥬
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {/* Pagination */}
-        {!loading && totalPages > 1 && (
-          <div style={{ padding: '14px 20px', borderTop: `1px solid ${colors.borderLight}`, display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
+        {!loading && filtered.length > 0 && (
+          <div style={{
+            padding: '14px 20px',
+            borderTop: `1px solid ${colors.borderLight}`,
+            display: 'flex',
+            gap: '12px',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+          }}>
+            <span style={{ fontSize: '12px', color: colors.textMuted, fontVariantNumeric: 'tabular-nums' }}>
+              {(() => {
+                const start = (safePage - 1) * pageSize + 1;
+                const end = Math.min(safePage * pageSize, filtered.length);
+                return `Showing ${start}–${end} of ${filtered.length}`;
+              })()}
+            </span>
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
+              className="admin-products-page"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
-              style={{ padding: '6px 12px', borderRadius: '7px', border: `1px solid ${colors.border}`, background: colors.surface, color: safePage === 1 ? colors.textMuted : colors.textPrimary, cursor: safePage === 1 ? 'not-allowed' : 'pointer', fontSize: '13px' }}
+              aria-label="Previous page"
+              style={{
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: `1px solid ${colors.border}`,
+                background: colors.surface,
+                color: safePage === 1 ? colors.textMuted : colors.textPrimary,
+                cursor: safePage === 1 ? 'not-allowed' : 'pointer',
+                fontSize: '13px',
+                fontWeight: 500,
+                ...interactiveBtn,
+              }}
+              onMouseEnter={(e) => { if (safePage !== 1) e.currentTarget.style.background = colors.bg; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
             >
               ←
             </button>
-            <span style={{ fontSize: '13px', color: colors.textSecondary }}>
+            <span style={{ fontSize: '13px', color: colors.textSecondary, fontVariantNumeric: 'tabular-nums', minWidth: '52px', textAlign: 'center' }}>
               {safePage} / {totalPages}
             </span>
             <button
               type="button"
+              className="admin-products-page"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage >= totalPages}
-              style={{ padding: '6px 12px', borderRadius: '7px', border: `1px solid ${colors.border}`, background: colors.surface, color: safePage >= totalPages ? colors.textMuted : colors.textPrimary, cursor: safePage >= totalPages ? 'not-allowed' : 'pointer', fontSize: '13px' }}
+              aria-label="Next page"
+              style={{
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: `1px solid ${colors.border}`,
+                background: colors.surface,
+                color: safePage >= totalPages ? colors.textMuted : colors.textPrimary,
+                cursor: safePage >= totalPages ? 'not-allowed' : 'pointer',
+                fontSize: '13px',
+                fontWeight: 500,
+                ...interactiveBtn,
+              }}
+              onMouseEnter={(e) => { if (safePage < totalPages) e.currentTarget.style.background = colors.bg; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
             >
               →
             </button>
+              </div>
+            )}
           </div>
         )}
       </div>

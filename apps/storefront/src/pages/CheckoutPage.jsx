@@ -44,6 +44,18 @@ const pageStyle = {
   padding: '40px 24px',
 };
 
+const useIsNarrowCheckout = () => {
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 900
+  );
+  useEffect(() => {
+    const check = () => setNarrow(window.innerWidth < 900);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return narrow;
+};
+
 const inputBase = {
   width: '100%',
   boxSizing: 'border-box',
@@ -113,7 +125,7 @@ const Skeleton = ({ height = 44, width = '100%' }) => (
   <motion.div
     animate={{ opacity: [0.4, 0.8, 0.4] }}
     transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
-    style={{ width, height, background: colors.border, borderRadius: '10px' }}
+    style={{ width, height, background: colors.border, borderRadius: '6px' }}
   />
 );
 
@@ -121,6 +133,7 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation("checkout");
   const lang = (i18n.language || "he").split("-")[0];
+  const isNarrow = useIsNarrowCheckout();
 
   const [preview, setPreview] = useState(null);
   const [previewError, setPreviewError] = useState("");
@@ -307,10 +320,15 @@ const CheckoutPage = () => {
         {t("title")}
       </h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 340px)', gap: '32px', alignItems: 'start' }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isNarrow ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(0, 340px)',
+        gap: isNarrow ? '24px' : '32px',
+        alignItems: 'start',
+      }}>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, width: '100%' }}>
 
           {/* Delivery address */}
           <div style={sectionStyle}>
@@ -422,7 +440,7 @@ const CheckoutPage = () => {
           <AnimatePresence>
             {submitError && (
               <motion.div key="submit-error" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: 'hidden' }}>
-                <div role="alert" style={{ padding: '10px 14px', borderRadius: '8px', background: colors.errorSurface, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px' }}>
+                <div role="alert" style={{ padding: '12px 16px', borderRadius: '10px', background: colors.errorSurface, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px', lineHeight: 1.5 }}>
                   {submitError}
                 </div>
               </motion.div>
@@ -451,7 +469,17 @@ const CheckoutPage = () => {
         </form>
 
         {/* Order summary aside */}
-        <aside style={{ background: colors.surfaceRaised, border: `1px solid ${colors.border}`, borderRadius: '14px', padding: '24px', position: 'sticky', top: '80px' }}>
+        <aside style={{
+          background: colors.surfaceRaised,
+          border: `1px solid ${colors.border}`,
+          borderRadius: '14px',
+          padding: '24px',
+          position: isNarrow ? 'static' : 'sticky',
+          top: isNarrow ? 'auto' : '80px',
+          minWidth: 0,
+          width: '100%',
+          boxSizing: 'border-box',
+        }}>
           <h3 style={{ margin: '0 0 16px', fontSize: '17px', fontWeight: 600, color: colors.textPrimary }}>
             {t("orderSummary")}
           </h3>

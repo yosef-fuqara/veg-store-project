@@ -4,6 +4,7 @@ import { getAdminOrders } from "../services/orderService";
 
 const colors = {
   primary:      '#1e6b3c',
+  primaryHover: '#165430',
   bg:           '#faf8f5',
   surface:      '#ffffff',
   border:       '#e8e3dc',
@@ -69,6 +70,10 @@ const customerText = (order) => {
 
 const shortId = (id) => String(id || '').slice(-6).toUpperCase();
 
+const interactiveBtn = {
+  transition: 'background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s',
+};
+
 const AdminOrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +81,8 @@ const AdminOrdersPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
+  const [hoverRowId, setHoverRowId] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const filterRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -110,33 +117,90 @@ const AdminOrdersPage = () => {
     );
   });
 
+  const searchInputStyle = {
+    width: '100%',
+    boxSizing: 'border-box',
+    minWidth: 0,
+    paddingInlineStart: '34px',
+    paddingInlineEnd: '12px',
+    paddingTop: '8px',
+    paddingBottom: '8px',
+    borderRadius: '10px',
+    border: `1.5px solid ${searchFocused ? colors.primary : colors.border}`,
+    background: colors.surface,
+    fontSize: '14px',
+    color: colors.textPrimary,
+    outline: 'none',
+    boxShadow: searchFocused ? '0 0 0 3px rgba(30,107,60,0.12)' : 'none',
+    transition: 'border-color 0.15s, box-shadow 0.15s',
+  };
+
   return (
-    <div>
+    <div style={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
+      <style>{`
+        @keyframes adminOrdersSkeletonPulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.8; }
+        }
+        @keyframes adminOrdersSpin {
+          to { transform: rotate(360deg); }
+        }
+        .admin-orders-skel { animation: adminOrdersSkeletonPulse 1.4s ease-in-out infinite; }
+        .admin-orders-filter-btn:focus-visible,
+        .admin-orders-refresh:focus-visible,
+        .admin-orders-view:focus-visible,
+        .admin-orders-retry:focus-visible {
+          outline: 2px solid ${colors.primary};
+          outline-offset: 2px;
+        }
+        .admin-orders-dd-item:hover { background: ${colors.bg}; }
+        .admin-orders-dd-item:focus-visible { outline: 2px solid ${colors.primary}; outline-offset: -2px; }
+      `}</style>
+
       {/* Page header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: '16px',
+        marginBottom: '32px',
+      }}>
         <button
           type="button"
+          className="admin-orders-refresh"
           onClick={load}
           disabled={loading}
+          aria-label={loading ? 'Refreshing orders' : 'Refresh orders'}
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            padding: '9px 18px', borderRadius: '10px',
-            border: `1px solid ${colors.border}`, background: colors.surface,
-            color: colors.textPrimary, fontSize: '13px', fontWeight: 500,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 18px',
+            borderRadius: '10px',
+            border: `1px solid ${colors.border}`,
+            background: colors.surface,
+            color: colors.textPrimary,
+            fontSize: '13px',
+            fontWeight: 500,
             cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.7 : 1,
+            ...interactiveBtn,
           }}
+          onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = colors.bg; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={loading ? { animation: 'adminOrdersSpin 0.9s linear infinite' } : undefined}>
             <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
           </svg>
-          Refresh
+          {loading ? 'Refreshing…' : 'Refresh'}
         </button>
-        <div style={{ textAlign: 'end' }}>
+        <div style={{ textAlign: 'end', flex: '1 1 200px', minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: '36px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.5px' }}>
             Orders
           </h1>
-          <p style={{ margin: '4px 0 0', fontSize: '14px', color: colors.textMuted }}>
+          <p style={{ margin: '8px 0 0', fontSize: '14px', color: colors.textMuted, lineHeight: 1.5 }}>
             Monitor and process customer orders
           </p>
         </div>
@@ -144,31 +208,50 @@ const AdminOrdersPage = () => {
 
       {/* Error */}
       {error && (
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: colors.errorBg, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span>{error}</span>
-          <button type="button" onClick={load} style={{ padding: '4px 10px', borderRadius: '6px', border: `1px solid ${colors.errorBorder}`, background: 'transparent', color: colors.error, cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+        <div style={{ padding: '12px 16px', borderRadius: '10px', background: colors.errorBg, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <span style={{ minWidth: 0 }}>{error}</span>
+          <button type="button" onClick={load} className="admin-orders-retry" style={{ flexShrink: 0, padding: '6px 12px', borderRadius: '8px', border: `1px solid ${colors.errorBorder}`, background: 'transparent', color: colors.error, cursor: 'pointer', fontSize: '12px', fontWeight: 600, ...interactiveBtn }}>
             Retry
           </button>
         </div>
       )}
 
       {/* Table card */}
-      <div style={{ background: colors.surface, borderRadius: '16px', border: `1px solid ${colors.border}`, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+      <div style={{ background: colors.surface, borderRadius: '14px', border: `1px solid ${colors.border}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', maxWidth: '100%' }}>
 
         {/* Toolbar */}
-        <div style={{ padding: '14px 20px', borderBottom: `1px solid ${colors.borderLight}`, display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{
+          padding: '16px 20px',
+          borderBottom: `1px solid ${colors.borderLight}`,
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '12px',
+          alignItems: 'center',
+        }}>
           {/* Filter */}
-          <div style={{ position: 'relative' }} ref={filterRef}>
+          <div style={{ position: 'relative', flexShrink: 0 }} ref={filterRef}>
             <button
               type="button"
+              className="admin-orders-filter-btn"
               onClick={() => setFilterOpen((v) => !v)}
+              aria-expanded={filterOpen}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-                padding: '7px 14px', borderRadius: '8px',
-                border: `1px solid ${colors.border}`, background: colors.surface,
-                color: colors.textPrimary, fontSize: '13px', fontWeight: 500, cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                border: `1px solid ${filterOpen ? colors.primary : colors.border}`,
+                background: filterOpen ? colors.bg : colors.surface,
+                color: colors.textPrimary,
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: 'pointer',
                 whiteSpace: 'nowrap',
+                ...interactiveBtn,
               }}
+              onMouseEnter={(e) => { if (!filterOpen) e.currentTarget.style.background = colors.bg; }}
+              onMouseLeave={(e) => { if (!filterOpen) e.currentTarget.style.background = colors.surface; }}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
@@ -180,21 +263,38 @@ const AdminOrdersPage = () => {
             </button>
             {filterOpen && (
               <div style={{
-                position: 'absolute', top: 'calc(100% + 6px)', insetInlineStart: 0, zIndex: 20,
-                background: colors.surface, borderRadius: '10px', border: `1px solid ${colors.border}`,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: '200px',
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                insetInlineStart: 0,
+                zIndex: 20,
+                background: colors.surface,
+                borderRadius: '10px',
+                border: `1px solid ${colors.border}`,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                overflow: 'hidden',
+                minWidth: '220px',
+                maxWidth: 'min(320px, calc(100vw - 48px))',
+                maxHeight: 'min(320px, 50vh)',
+                overflowY: 'auto',
               }}>
                 {ORDER_STATUS_OPTIONS.map((opt) => (
                   <button
                     key={opt}
                     type="button"
+                    className="admin-orders-dd-item"
                     onClick={() => { setStatusFilter(opt); setFilterOpen(false); }}
                     style={{
-                      display: 'block', width: '100%', textAlign: 'start',
-                      padding: '9px 14px', border: 'none', cursor: 'pointer',
-                      fontSize: '13px', fontWeight: statusFilter === opt ? 600 : 400,
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'start',
+                      padding: '10px 16px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: statusFilter === opt ? 600 : 400,
                       background: statusFilter === opt ? colors.bg : 'transparent',
                       color: statusFilter === opt ? colors.primary : colors.textPrimary,
+                      transition: 'background 0.12s',
                     }}
                   >
                     {opt === 'all' ? 'All statuses' : opt.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
@@ -205,8 +305,8 @@ const AdminOrdersPage = () => {
           </div>
 
           {/* Search */}
-          <div style={{ flex: 1, position: 'relative' }}>
-            <span style={{ position: 'absolute', insetInlineStart: '11px', top: '50%', transform: 'translateY(-50%)', color: colors.textMuted, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+          <div style={{ flex: '1 1 200px', minWidth: 0, position: 'relative' }}>
+            <span style={{ position: 'absolute', insetInlineStart: '12px', top: '50%', transform: 'translateY(-50%)', color: colors.textMuted, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
@@ -214,117 +314,223 @@ const AdminOrdersPage = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="...Search order number or customer"
-              style={{
-                width: '100%', boxSizing: 'border-box',
-                paddingInlineStart: '34px', paddingInlineEnd: '12px',
-                paddingTop: '7px', paddingBottom: '7px',
-                borderRadius: '8px', border: `1px solid ${colors.border}`,
-                background: colors.surface, fontSize: '13px', color: colors.textPrimary, outline: 'none',
-              }}
+              placeholder="Search order number or customer…"
+              aria-label="Search orders"
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              style={searchInputStyle}
             />
           </div>
         </div>
 
         {/* Table */}
         {loading ? (
-          <div style={{ padding: '64px 20px', textAlign: 'center', color: colors.textMuted, fontSize: '14px' }}>
-            Loading orders...
+          <div style={{ padding: '8px 0 16px' }} aria-busy="true" aria-live="polite">
+            <div style={{ padding: '12px 20px 8px', fontSize: '12px', fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Loading
+            </div>
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
+              <table style={{ width: '100%', minWidth: '720px', borderCollapse: 'collapse' }}>
+                <tbody>
+                  {Array.from({ length: 6 }).map((_, r) => (
+                    <tr key={r} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
+                      {Array.from({ length: 7 }).map((__, c) => (
+                        <td key={c} style={{ padding: '14px 16px' }}>
+                          <div
+                            className="admin-orders-skel"
+                            style={{
+                              height: 14,
+                              width: c === 0 ? '48%' : c === 6 ? '56%' : '64%',
+                              maxWidth: '100%',
+                              background: colors.borderLight,
+                              borderRadius: '6px',
+                            }}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: '64px 20px', textAlign: 'center', color: colors.textMuted, fontSize: '14px' }}>
-            No orders found.
+          <div style={{ padding: '64px 24px', textAlign: 'center', color: colors.textMuted }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: colors.bg,
+              border: `1px solid ${colors.borderLight}`,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '16px',
+            }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
+              </svg>
+            </div>
+            <div style={{ fontSize: '15px', fontWeight: 600, color: colors.textPrimary, marginBottom: '6px' }}>
+              No orders found
+            </div>
+            <div style={{ fontSize: '13px', color: colors.textMuted, lineHeight: 1.5 }}>
+              {search || statusFilter !== 'all'
+                ? 'Try adjusting your search or filter.'
+                : 'New orders will appear here as they come in.'}
+            </div>
           </div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {['Actions', 'Status', 'Payment', 'Total', 'Date', 'Customer', '# Order'].map((h) => (
-                  <th key={h} style={{
-                    padding: '10px 16px', textAlign: 'start',
-                    fontSize: '12px', fontWeight: 600, color: colors.textSecondary,
-                    background: colors.bg, borderBottom: `1px solid ${colors.border}`,
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((order) => (
-                <tr key={order._id} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
+          <div
+            style={{
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              WebkitOverflowScrolling: 'touch',
+              maxWidth: '100%',
+            }}
+          >
+            <table style={{ width: '100%', minWidth: '920px', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {['Actions', 'Status', 'Payment', 'Total', 'Date', 'Customer', '# Order'].map((h) => (
+                    <th key={h} style={{
+                      padding: '12px 16px',
+                      textAlign: 'start',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      color: colors.textSecondary,
+                      background: colors.bg,
+                      borderBottom: `1px solid ${colors.border}`,
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((order) => (
+                  <tr
+                    key={order._id}
+                    style={{
+                      borderBottom: `1px solid ${colors.borderLight}`,
+                      background: hoverRowId === order._id ? colors.bg : 'transparent',
+                      transition: 'background 0.15s ease',
+                    }}
+                    onMouseEnter={() => setHoverRowId(order._id)}
+                    onMouseLeave={() => setHoverRowId('')}
+                  >
 
-                  {/* Actions */}
-                  <td style={{ padding: '12px 16px' }}>
-                    <Link
-                      to={`/orders/${order._id}`}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '4px',
-                        padding: '5px 12px', borderRadius: '7px',
-                        border: `1px solid ${colors.border}`, background: colors.surface,
-                        fontSize: '12px', fontWeight: 500, color: colors.textPrimary, textDecoration: 'none',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      View
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="9 18 15 12 9 6"/>
-                      </svg>
-                    </Link>
-                  </td>
-
-                  {/* Order Status */}
-                  <td style={{ padding: '12px 16px' }}>
-                    <Pill value={order.orderStatus} palette={ORDER_STATUS_STYLES} />
-                  </td>
-
-                  {/* Payment */}
-                  <td style={{ padding: '12px 16px' }}>
-                    <Pill value={order.paymentStatus} palette={PAYMENT_STATUS_STYLES} />
-                  </td>
-
-                  {/* Total */}
-                  <td style={{ padding: '12px 16px' }}>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary }}>
-                      {formatCurrency(order.total)}
-                    </span>
-                  </td>
-
-                  {/* Date */}
-                  <td style={{ padding: '12px 16px' }}>
-                    <span style={{ fontSize: '13px', color: colors.textSecondary }}>
-                      {formatDate(order.createdAt)}
-                    </span>
-                  </td>
-
-                  {/* Customer */}
-                  <td style={{ padding: '12px 16px' }}>
-                    <span style={{ fontSize: '13px', color: colors.textPrimary }}>
-                      {customerText(order)}
-                    </span>
-                  </td>
-
-                  {/* Order # */}
-                  <td style={{ padding: '12px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    {/* Actions */}
+                    <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
                       <Link
                         to={`/orders/${order._id}`}
-                        style={{ fontSize: '13px', fontWeight: 600, color: colors.primary, textDecoration: 'none', fontFamily: 'monospace' }}
+                        className="admin-orders-view"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 14px',
+                          borderRadius: '10px',
+                          border: `1px solid ${colors.border}`,
+                          background: colors.surface,
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          color: colors.textPrimary,
+                          textDecoration: 'none',
+                          whiteSpace: 'nowrap',
+                          ...interactiveBtn,
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; e.currentTarget.style.borderColor = colors.primary; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; e.currentTarget.style.borderColor = colors.border; }}
                       >
-                        #{shortId(order._id)}
+                        View
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
                       </Link>
-                      {order.hasPreorderItems && (
-                        <span style={{ display: 'inline-block', padding: '1px 6px', borderRadius: '9999px', background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', fontSize: '10px', fontWeight: 600 }}>
-                          Preorder
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+
+                    {/* Order Status */}
+                    <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                      <Pill value={order.orderStatus} palette={ORDER_STATUS_STYLES} />
+                    </td>
+
+                    {/* Payment */}
+                    <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                      <Pill value={order.paymentStatus} palette={PAYMENT_STATUS_STYLES} />
+                    </td>
+
+                    {/* Total */}
+                    <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                      <span style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, fontVariantNumeric: 'tabular-nums' }}>
+                        {formatCurrency(order.total)}
+                      </span>
+                    </td>
+
+                    {/* Date */}
+                    <td style={{ padding: '12px 16px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: '13px', color: colors.textSecondary }}>
+                        {formatDate(order.createdAt)}
+                      </span>
+                    </td>
+
+                    {/* Customer */}
+                    <td style={{ padding: '12px 16px', maxWidth: '200px', verticalAlign: 'middle' }}>
+                      <span style={{ fontSize: '13px', color: colors.textPrimary, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={customerText(order)}>
+                        {customerText(order)}
+                      </span>
+                    </td>
+
+                    {/* Order # */}
+                    <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <Link
+                          to={`/orders/${order._id}`}
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            color: colors.primary,
+                            textDecoration: 'none',
+                            fontFamily: 'ui-monospace, monospace',
+                            borderRadius: '6px',
+                            padding: '2px 4px',
+                            transition: 'background 0.12s, color 0.12s',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; e.currentTarget.style.color = colors.primaryHover; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = colors.primary; }}
+                        >
+                          #{shortId(order._id)}
+                        </Link>
+                        {order.hasPreorderItems && (
+                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '9999px', background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', fontSize: '10px', fontWeight: 600 }}>
+                            Preorder
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Result count footer */}
+        {!loading && filtered.length > 0 && (
+          <div style={{
+            padding: '12px 20px',
+            borderTop: `1px solid ${colors.borderLight}`,
+            fontSize: '12px',
+            color: colors.textMuted,
+            fontVariantNumeric: 'tabular-nums',
+            textAlign: 'center',
+          }}>
+            {filtered.length === 1 ? '1 order' : `${filtered.length} orders`}
+            {statusFilter !== 'all' && ` · ${statusFilter.replaceAll('_', ' ')}`}
+          </div>
         )}
       </div>
     </div>

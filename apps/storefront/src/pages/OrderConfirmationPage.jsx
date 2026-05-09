@@ -151,7 +151,7 @@ const OrderConfirmationPage = () => {
           </div>
 
           {statusNote && (
-            <div style={{ marginTop: '12px', padding: '10px 14px', borderRadius: '8px', background: colors.primarySurface, border: `1px solid ${colors.primaryBorder}`, color: colors.primary, fontSize: '14px' }}>
+            <div style={{ marginTop: '12px', padding: '12px 16px', borderRadius: '10px', background: colors.primarySurface, border: `1px solid ${colors.primaryBorder}`, color: colors.primary, fontSize: '14px', lineHeight: 1.5 }}>
               {statusNote}
             </div>
           )}

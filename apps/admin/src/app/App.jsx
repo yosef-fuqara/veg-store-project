@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import RequireAuth from "../components/RequireAuth";
 import RequireAdmin from "../components/RequireAdmin";
@@ -10,6 +10,9 @@ import ProductFormPage from "../pages/ProductFormPage";
 import AdminOrdersPage from "../pages/AdminOrdersPage";
 import AdminOrderDetailsPage from "../pages/AdminOrderDetailsPage";
 import AbuAlAnasLogo from "../components/common/Logo";
+
+const MOBILE_MAX_WIDTH = 767;
+const MOBILE_MEDIA = `(max-width: ${MOBILE_MAX_WIDTH}px)`;
 
 const colors = {
   primary:    '#1e6b3c',
@@ -46,28 +49,91 @@ const NAV_ITEMS = [
   },
 ];
 
-const Sidebar = () => {
+function useIsMobileNav() {
+  const getInitial = () =>
+    typeof window !== 'undefined' && window.matchMedia(MOBILE_MEDIA).matches;
+  const [isMobile, setIsMobile] = useState(getInitial);
+
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_MEDIA);
+    const onChange = () => setIsMobile(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  return isMobile;
+}
+
+function useIsRtl() {
+  const [isRtl, setIsRtl] = useState(false);
+
+  useLayoutEffect(() => {
+    const read = () => setIsRtl(document.documentElement.getAttribute('dir') === 'rtl');
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['dir'] });
+    return () => observer.disconnect();
+  }, []);
+
+  return isRtl;
+}
+
+const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
   const { user, logout } = useAuth();
   const [hovered, setHovered] = useState('');
 
+  const slideMotion = 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)';
+  const offCanvasX = isRtl ? '-100%' : '100%';
+
+  const asideBase = {
+    width: '220px',
+    flexShrink: 0,
+    background: colors.surface,
+    borderInlineStart: `1px solid ${colors.border}`,
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: '100vh',
+    alignSelf: 'flex-start',
+  };
+
+  const asideDesktop = {
+    ...asideBase,
+    position: 'sticky',
+    top: 0,
+    transform: 'none',
+    zIndex: 1,
+  };
+
+  const asideMobile = {
+    ...asideBase,
+    position: 'fixed',
+    insetBlockStart: 0,
+    insetBlockEnd: 0,
+    insetInlineEnd: 0,
+    maxWidth: 'min(220px, 92vw)',
+    zIndex: 1000,
+    boxShadow: mobileOpen ? '-4px 0 24px rgba(28, 25, 23, 0.12)' : 'none',
+    transition: slideMotion,
+    transform: mobileOpen ? 'translateX(0)' : `translateX(${offCanvasX})`,
+    pointerEvents: mobileOpen ? 'auto' : 'none',
+  };
+
+  const navLinkAfterNav = () => {
+    if (isMobile) onMobileClose();
+  };
+
   return (
-    <aside style={{
-      width: '220px',
-      flexShrink: 0,
-      background: colors.surface,
-      borderInlineStart: `1px solid ${colors.border}`,
-      display: 'flex',
-      flexDirection: 'column',
-      minHeight: '100vh',
-      position: 'sticky',
-      top: 0,
-      alignSelf: 'flex-start',
-    }}>
+    <aside
+      id="admin-app-sidebar"
+      style={isMobile ? asideMobile : asideDesktop}
+      aria-hidden={isMobile && !mobileOpen}
+    >
       {/* Brand */}
       <div style={{ padding: '24px 20px 20px', borderBottom: `1px solid ${colors.border}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <AbuAlAnasLogo size={42} />
-          <div>
+          <AbuAlAnasLogo size={42} title="Abu Al-Anas" />
+          <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: colors.textPrimary, lineHeight: 1.2 }}>
               Abu Al-Anas
             </div>
@@ -89,6 +155,7 @@ const Sidebar = () => {
           <NavLink
             key={to}
             to={to}
+            onClick={navLinkAfterNav}
             style={({ isActive }) => ({
               display: 'flex',
               alignItems: 'center',
@@ -129,7 +196,7 @@ const Sidebar = () => {
             style={{
               width: '100%',
               padding: '8px 14px',
-              borderRadius: '9px',
+              borderRadius: '10px',
               border: `1px solid ${colors.border}`,
               background: hovered === 'logout' ? colors.bg : 'transparent',
               color: colors.textPrimary,
@@ -148,36 +215,185 @@ const Sidebar = () => {
   );
 };
 
-const SIDEBAR_ROUTES = ['/products', '/orders'];
+const MobileNavBackdrop = ({ open, onClose }) => (
+  <button
+    type="button"
+    aria-label="Close menu"
+    onClick={onClose}
+    style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 999,
+      border: 'none',
+      padding: 0,
+      margin: 0,
+      cursor: 'pointer',
+      WebkitTapHighlightColor: 'transparent',
+      background: 'rgba(28, 25, 23, 0.45)',
+      opacity: open ? 1 : 0,
+      visibility: open ? 'visible' : 'hidden',
+      pointerEvents: open ? 'auto' : 'none',
+      transition: 'opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.28s',
+    }}
+  />
+);
+
+const MobileTopBar = ({ onOpenMenu, menuOpen }) => (
+  <header
+    style={{
+      display: 'none',
+      alignItems: 'center',
+      gap: '12px',
+      padding: '12px 16px',
+      background: colors.surface,
+      borderBottom: `1px solid ${colors.border}`,
+      position: 'sticky',
+      top: 0,
+      zIndex: 40,
+      flexShrink: 0,
+    }}
+    className="admin-mobile-topbar"
+  >
+    <button
+      type="button"
+      onClick={onOpenMenu}
+      aria-label="Open menu"
+      aria-expanded={menuOpen}
+      aria-controls="admin-app-sidebar"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '40px',
+        height: '40px',
+        borderRadius: '10px',
+        border: `1px solid ${colors.border}`,
+        background: colors.bg,
+        color: colors.textPrimary,
+        cursor: 'pointer',
+        padding: 0,
+        flexShrink: 0,
+        WebkitTapHighlightColor: 'transparent',
+      }}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+        <line x1="4" y1="7" x2="20" y2="7" />
+        <line x1="4" y1="12" x2="20" y2="12" />
+        <line x1="4" y1="17" x2="20" y2="17" />
+      </svg>
+    </button>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+      <AbuAlAnasLogo size={32} aria-hidden />
+      <span style={{ fontSize: '14px', fontWeight: 700, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        Admin
+      </span>
+    </div>
+  </header>
+);
 
 const App = () => {
   const { user } = useAuth();
   const location = useLocation();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/unauthorized';
   const showSidebar = user?.role === 'admin' && !isAuthPage;
+  const isMobile = useIsMobileNav();
+  const isRtl = useIsRtl();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const closeMobileNav = useCallback(() => setMobileNavOpen(false), []);
+  const openMobileNav = useCallback(() => setMobileNavOpen(true), []);
+
+  useEffect(() => {
+    if (!isMobile) setMobileNavOpen(false);
+  }, [isMobile]);
+
+  useEffect(() => {
+    closeMobileNav();
+  }, [location.pathname, closeMobileNav]);
+
+  useEffect(() => {
+    if (!showSidebar || !isMobile || !mobileNavOpen) return undefined;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [showSidebar, isMobile, mobileNavOpen]);
+
+  useEffect(() => {
+    if (!showSidebar || !isMobile || !mobileNavOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') closeMobileNav();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showSidebar, isMobile, mobileNavOpen, closeMobileNav]);
+
+  const mainPadding = isAuthPage
+    ? '0'
+    : isMobile
+      ? '20px 16px 28px'
+      : '36px 40px';
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'row-reverse',
-      minHeight: '100vh',
-      background: colors.bg,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    }}>
-      {showSidebar && <Sidebar />}
-      <main style={{ flex: 1, padding: isAuthPage ? '0' : '36px 40px', overflow: 'auto', minWidth: 0 }}>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/unauthorized" element={<UnauthorizedPage />} />
-          <Route path="/products" element={<RequireAuth><RequireAdmin><AdminProductsPage /></RequireAdmin></RequireAuth>} />
-          <Route path="/products/new" element={<RequireAuth><RequireAdmin><ProductFormPage /></RequireAdmin></RequireAuth>} />
-          <Route path="/products/:id/edit" element={<RequireAuth><RequireAdmin><ProductFormPage /></RequireAdmin></RequireAuth>} />
-          <Route path="/orders" element={<RequireAuth><RequireAdmin><AdminOrdersPage /></RequireAdmin></RequireAuth>} />
-          <Route path="/orders/:id" element={<RequireAuth><RequireAdmin><AdminOrderDetailsPage /></RequireAdmin></RequireAuth>} />
-          <Route path="/" element={<Navigate to="/products" replace />} />
-        </Routes>
-      </main>
-    </div>
+    <>
+      <style>{`
+        @media ${MOBILE_MEDIA} {
+          .admin-mobile-topbar { display: flex !important; }
+        }
+      `}</style>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row-reverse',
+          minHeight: '100vh',
+          background: colors.bg,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          position: 'relative',
+        }}
+      >
+        {showSidebar && (
+          <Sidebar
+            isMobile={isMobile}
+            mobileOpen={mobileNavOpen}
+            onMobileClose={closeMobileNav}
+            isRtl={isRtl}
+          />
+        )}
+        <main
+          style={{
+            flex: 1,
+            padding: mainPadding,
+            overflow: 'auto',
+            minWidth: 0,
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {showSidebar && isMobile && (
+            <MobileTopBar onOpenMenu={openMobileNav} menuOpen={mobileNavOpen} />
+          )}
+          <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/unauthorized" element={<UnauthorizedPage />} />
+              <Route path="/products" element={<RequireAuth><RequireAdmin><AdminProductsPage /></RequireAdmin></RequireAuth>} />
+              <Route path="/products/new" element={<RequireAuth><RequireAdmin><ProductFormPage /></RequireAdmin></RequireAuth>} />
+              <Route path="/products/:id/edit" element={<RequireAuth><RequireAdmin><ProductFormPage /></RequireAdmin></RequireAuth>} />
+              <Route path="/orders" element={<RequireAuth><RequireAdmin><AdminOrdersPage /></RequireAdmin></RequireAuth>} />
+              <Route path="/orders/:id" element={<RequireAuth><RequireAdmin><AdminOrderDetailsPage /></RequireAdmin></RequireAuth>} />
+              <Route path="/" element={<Navigate to="/products" replace />} />
+            </Routes>
+          </div>
+        </main>
+      </div>
+      {showSidebar && isMobile && (
+        <MobileNavBackdrop open={mobileNavOpen} onClose={closeMobileNav} />
+      )}
+    </>
   );
 };
 

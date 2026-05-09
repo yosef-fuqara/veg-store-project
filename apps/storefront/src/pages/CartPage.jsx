@@ -22,6 +22,8 @@ const colors = {
   errorBorder:    '#fecaca',
 };
 
+const shadowPrimary = '0 4px 14px rgba(30,107,60,0.30)';
+
 const pageStyle = {
   maxWidth: '1200px',
   margin: '0 auto',
@@ -104,7 +106,7 @@ const CartPage = () => {
 
                 {/* Quantity stepper + remove */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', border: `1px solid ${colors.border}`, borderRadius: '8px', overflow: 'hidden' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', border: `1px solid ${colors.border}`, borderRadius: '10px', overflow: 'hidden' }}>
                     <button
                       onClick={() => updateItem(item.product, Math.max(item.quantity - 1, 1))}
                       disabled={loading}
@@ -127,7 +129,7 @@ const CartPage = () => {
                   <button
                     onClick={() => removeItem(item.product)}
                     disabled={loading}
-                    style={{ padding: '0 12px', height: '32px', borderRadius: '8px', border: `1px solid ${colors.errorBorder}`, background: colors.errorSurface, color: colors.error, fontSize: '13px', fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer' }}
+                    style={{ padding: '0 12px', height: '32px', borderRadius: '10px', border: `1px solid ${colors.errorBorder}`, background: colors.errorSurface, color: colors.error, fontSize: '13px', fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer' }}
                   >
                     {t("cart:remove")}
                   </button>
@@ -203,7 +205,7 @@ const CartPage = () => {
         ) : (
           <Link
             to="/checkout"
-            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '10px 24px', borderRadius: '10px', background: colors.primary, color: colors.textInverse, fontSize: '15px', fontWeight: 600, textDecoration: 'none', boxShadow: '0 4px 14px rgba(30,107,60,0.30)' }}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '10px 24px', borderRadius: '10px', background: colors.primary, color: colors.textInverse, fontSize: '15px', fontWeight: 600, textDecoration: 'none', boxShadow: shadowPrimary }}
           >
             {t("cart:proceedToCheckout")}
             {grandTotal > 0 ? <> ({formatPrice(grandTotal, lang)})</> : null}

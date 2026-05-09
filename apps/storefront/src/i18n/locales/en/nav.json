@@ -8,5 +8,6 @@
   "logout": "Logout",
   "greeting": "Hi, {{name}}",
   "language": "Language",
+  "brandName": "Abu Al-Anas",
   "brandTagline": "Fruits & Vegetables"
 }
