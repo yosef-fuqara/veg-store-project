@@ -1,10 +1,12 @@
 {
   "home": "Home",
+  "products": "Products",
   "cart": "Cart",
   "checkout": "Checkout",
   "login": "Login",
   "register": "Register",
   "logout": "Logout",
   "greeting": "Hi, {{name}}",
-  "language": "Language"
+  "language": "Language",
+  "brandTagline": "Fruits & Vegetables"
 }

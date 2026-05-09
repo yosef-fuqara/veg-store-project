@@ -1,10 +1,12 @@
 {
   "home": "الرئيسية",
+  "products": "منتجات",
   "cart": "السلة",
   "checkout": "الدفع",
   "login": "تسجيل الدخول",
   "register": "إنشاء حساب",
   "logout": "تسجيل الخروج",
   "greeting": "مرحبًا، {{name}}",
-  "language": "اللغة"
+  "language": "اللغة",
+  "brandTagline": "فواكه وخضروات"
 }

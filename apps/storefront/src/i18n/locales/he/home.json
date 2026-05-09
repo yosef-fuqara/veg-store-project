@@ -5,7 +5,9 @@
   "empty": "אין מוצרים זמינים כרגע.",
   "errorTitle": "לא ניתן לטעון את המוצרים",
   "addToCart": "הוסף לעגלה",
+  "inStock": "במלאי",
   "outOfStock": "אזל מהמלאי",
+  "saleBadge": "מבצע",
   "preorderBadge": "הזמנה מראש בלבד",
   "preorderHint": "נדרשת התראה של {{hours}} שעות",
   "pricePerUnit": "ליחידה",
@@ -14,5 +16,19 @@
     "gram": "גרם",
     "unit": "יחידה",
     "box": "ארגז"
+  },
+  "hero": {
+    "badge": "פירות וירקות",
+    "heading": "תוצרת טרייה עד הבית",
+    "subtitle": "פירות וירקות איכותיות מאזור הגליל",
+    "cta": "קנו תוצרת טרייה",
+    "customersCount": "+500",
+    "customersLabel": "לקוחות מרוצים",
+    "organicValue": "100%",
+    "organicLabel": "ORGANIC FRESHNESS"
+  },
+  "products": {
+    "badge": "טרי ובריא",
+    "heading": "המוצרים שלנו"
   }
 }

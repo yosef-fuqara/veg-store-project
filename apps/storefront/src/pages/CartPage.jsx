@@ -1,8 +1,32 @@
 import { useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCart } from "../features/cart/CartContext";
 import { formatPrice } from "../utils/formatPrice";
+
+const colors = {
+  primary:        '#1e6b3c',
+  primarySurface: '#eef7f1',
+  primaryBorder:  '#a3cfb4',
+  surface:        '#ffffff',
+  surfaceRaised:  '#f5f2ed',
+  border:         '#e8e3dc',
+  textPrimary:    '#1c1917',
+  textSecondary:  '#57534e',
+  textMuted:      '#a8a29e',
+  textInverse:    '#ffffff',
+  success:        '#166534',
+  error:          '#991b1b',
+  errorSurface:   '#fef2f2',
+  errorBorder:    '#fecaca',
+};
+
+const pageStyle = {
+  maxWidth: '1200px',
+  margin: '0 auto',
+  padding: '40px 24px',
+};
 
 const CartPage = () => {
   const { cart, loading, error, refreshCart, updateItem, setWrap, removeItem, clear } = useCart();
@@ -13,8 +37,6 @@ const CartPage = () => {
     refreshCart();
   }, [refreshCart]);
 
-  // Cart-level wrap rate. Falls back to a sensible default when the cart is
-  // empty (server hasn't told us the rate yet).
   const wrapPricePerKg = Number(cart.wrapPricePerKg) || 2;
   const wrapTotal = Number(cart.wrapTotal) || 0;
   const subtotal = Number(cart.subtotal) || 0;
@@ -22,142 +44,166 @@ const CartPage = () => {
   const anyWrapAvailable = cart.items.some((item) => item.productSnapshot?.wrapAvailable);
 
   return (
-    <section>
-      <h2>{t("cart:title")}</h2>
-      {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
-      {cart.items.length === 0 ? <p>{t("cart:empty")}</p> : null}
+    <section style={pageStyle}>
+      <h1 style={{ margin: '0 0 24px', fontSize: '30px', lineHeight: '36px', fontWeight: 700, color: colors.textPrimary }}>
+        {t("cart:title")}
+      </h1>
 
-      {anyWrapAvailable ? (
-        <div
-          style={{
-            border: "1px solid #bbf7d0",
-            background: "#f0fdf4",
-            color: "#166534",
-            padding: "10px 14px",
-            borderRadius: 8,
-            margin: "12px 0",
-            fontSize: "0.9rem",
-            lineHeight: 1.45
-          }}
-          role="note"
-        >
-          <strong style={{ display: "block", marginBottom: 4 }}>
-            {t("cart:wrap.sectionTitle")}
-          </strong>
-          <span style={{ display: "block", marginBottom: 4 }}>
-            {t("cart:wrap.explanation")}
-          </span>
-          <small>{t("cart:wrap.priceHint", { price: wrapPricePerKg })}</small>
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            key="cart-error"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ overflow: 'hidden', marginBottom: '16px' }}
+          >
+            <div role="alert" style={{ padding: '12px 16px', borderRadius: '10px', background: colors.errorSurface, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px' }}>
+              {error}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {anyWrapAvailable && (
+        <div role="note" style={{ padding: '12px 16px', borderRadius: '10px', background: colors.primarySurface, border: `1px solid ${colors.primaryBorder}`, color: colors.primary, fontSize: '14px', lineHeight: 1.5, marginBottom: '20px' }}>
+          <strong style={{ display: 'block', marginBottom: '4px' }}>{t("cart:wrap.sectionTitle")}</strong>
+          <span style={{ display: 'block', marginBottom: '4px' }}>{t("cart:wrap.explanation")}</span>
+          <span style={{ fontSize: '12px', color: colors.success }}>{t("cart:wrap.priceHint", { price: wrapPricePerKg })}</span>
         </div>
-      ) : null}
+      )}
 
-      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-        {cart.items.map((item) => {
-          const lineTotal = item.quantity * item.unitPriceSnapshot;
-          const wrapAvailable = Boolean(item.productSnapshot?.wrapAvailable);
-          const wrapFee = Number(item.wrapFee) || 0;
-          return (
-            <li
-              key={item.product}
-              style={{
-                marginBottom: 10,
-                padding: "10px 0",
-                borderBottom: "1px solid #eee",
-                display: "grid",
-                gap: 6
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                <span>
-                  <strong>{item.productSnapshot?.name || item.product}</strong>
-                  {" — "}
-                  {t("cart:quantity")}: {item.quantity} × {formatPrice(item.unitPriceSnapshot, lang)}
-                </span>
-                <span>{formatPrice(lineTotal, lang)}</span>
-              </div>
-
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                <button onClick={() => updateItem(item.product, item.quantity + 1)} disabled={loading}>
-                  +
-                </button>
-                <button
-                  onClick={() => updateItem(item.product, Math.max(item.quantity - 1, 1))}
-                  disabled={loading}
-                >
-                  -
-                </button>
-                <button onClick={() => removeItem(item.product)} disabled={loading}>
-                  {t("cart:remove")}
-                </button>
-              </div>
-
-              {wrapAvailable ? (
-                <label
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    alignItems: "center",
-                    fontSize: "0.9rem",
-                    color: "#166534"
-                  }}
-                  title={t("cart:wrap.explanation")}
-                >
-                  <input
-                    type="checkbox"
-                    checked={Boolean(item.wrap)}
-                    disabled={loading}
-                    onChange={(event) => setWrap(item.product, event.target.checked)}
-                  />
-                  <span>
-                    {t("cart:wrap.toggleLabel")}{" "}
-                    <small style={{ color: "#4b5563" }}>
-                      ({t("cart:wrap.priceHint", { price: wrapPricePerKg })})
-                    </small>
+      {cart.items.length === 0 ? (
+        <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t("cart:empty")}</p>
+      ) : (
+        <div>
+          {cart.items.map((item) => {
+            const lineTotal = item.quantity * item.unitPriceSnapshot;
+            const wrapAvailable = Boolean(item.productSnapshot?.wrapAvailable);
+            const wrapFee = Number(item.wrapFee) || 0;
+            return (
+              <div
+                key={item.product}
+                style={{ padding: '16px 0', borderBottom: `1px solid ${colors.border}`, display: 'flex', flexDirection: 'column', gap: '10px' }}
+              >
+                {/* Name + line total */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: 600, color: colors.textPrimary }}>
+                      {item.productSnapshot?.name || item.product}
+                    </div>
+                    <div style={{ fontSize: '13px', color: colors.textSecondary, marginTop: '2px' }}>
+                      {item.quantity} × {formatPrice(item.unitPriceSnapshot, lang)}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '16px', fontWeight: 600, color: colors.textPrimary, flexShrink: 0 }}>
+                    {formatPrice(lineTotal, lang)}
                   </span>
-                  {item.wrap ? (
-                    <span style={{ marginInlineStart: "auto", color: "#166534" }}>
-                      {t("cart:wrap.lineFee", { amount: formatPrice(wrapFee, lang) })}
+                </div>
+
+                {/* Quantity stepper + remove */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', border: `1px solid ${colors.border}`, borderRadius: '8px', overflow: 'hidden' }}>
+                    <button
+                      onClick={() => updateItem(item.product, Math.max(item.quantity - 1, 1))}
+                      disabled={loading}
+                      style={{ width: '32px', height: '32px', border: 'none', borderInlineEnd: `1px solid ${colors.border}`, background: colors.surface, color: colors.textPrimary, fontSize: '18px', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      −
+                    </button>
+                    <span style={{ minWidth: '36px', textAlign: 'center', fontSize: '14px', fontWeight: 600, color: colors.textPrimary }}>
+                      {item.quantity}
                     </span>
-                  ) : null}
-                </label>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
+                    <button
+                      onClick={() => updateItem(item.product, item.quantity + 1)}
+                      disabled={loading}
+                      style={{ width: '32px', height: '32px', border: 'none', borderInlineStart: `1px solid ${colors.border}`, background: colors.surface, color: colors.textPrimary, fontSize: '18px', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      +
+                    </button>
+                  </div>
 
-      {cart.items.length > 0 ? (
-        <div style={{ marginTop: 12, display: "grid", gap: 4 }}>
-          <p style={{ margin: 0 }}>
-            {t("cart:subtotal")}: {formatPrice(subtotal, lang)}
-          </p>
-          {wrapTotal > 0 ? (
-            <p style={{ margin: 0 }}>
-              {t("cart:wrap.summaryLabel")}: {formatPrice(wrapTotal, lang)}
-            </p>
-          ) : null}
+                  <button
+                    onClick={() => removeItem(item.product)}
+                    disabled={loading}
+                    style={{ padding: '0 12px', height: '32px', borderRadius: '8px', border: `1px solid ${colors.errorBorder}`, background: colors.errorSurface, color: colors.error, fontSize: '13px', fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer' }}
+                  >
+                    {t("cart:remove")}
+                  </button>
+                </div>
+
+                {/* Wrap toggle */}
+                {wrapAvailable && (
+                  <label title={t("cart:wrap.explanation")} style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '14px', color: colors.success, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(item.wrap)}
+                      disabled={loading}
+                      onChange={(event) => setWrap(item.product, event.target.checked)}
+                    />
+                    <span>
+                      {t("cart:wrap.toggleLabel")}{" "}
+                      <span style={{ color: colors.textMuted, fontSize: '12px' }}>
+                        ({t("cart:wrap.priceHint", { price: wrapPricePerKg })})
+                      </span>
+                    </span>
+                    {item.wrap ? (
+                      <span style={{ marginInlineStart: 'auto', fontWeight: 600 }}>
+                        {t("cart:wrap.lineFee", { amount: formatPrice(wrapFee, lang) })}
+                      </span>
+                    ) : null}
+                  </label>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Totals */}
+          <div style={{ marginTop: '20px', marginInlineStart: 'auto', padding: '16px', background: colors.surfaceRaised, borderRadius: '10px', border: `1px solid ${colors.border}`, display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '320px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.textSecondary }}>
+              <span>{t("cart:subtotal")}</span>
+              <span>{formatPrice(subtotal, lang)}</span>
+            </div>
+            {wrapTotal > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.success }}>
+                <span>{t("cart:wrap.summaryLabel")}</span>
+                <span>{formatPrice(wrapTotal, lang)}</span>
+              </div>
+            )}
+          </div>
         </div>
-      ) : null}
+      )}
 
-      <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button onClick={() => clear()} disabled={loading || cart.items.length === 0}>
+      {/* Actions */}
+      <div style={{ marginTop: '24px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <motion.button
+          type="button"
+          onClick={() => clear()}
+          disabled={loading || cart.items.length === 0}
+          whileHover={!loading && cart.items.length > 0 ? { scale: 1.02 } : {}}
+          whileTap={!loading && cart.items.length > 0 ? { scale: 0.96 } : {}}
+          transition={{ duration: 0.12 }}
+          style={{
+            padding: '10px 20px', borderRadius: '10px',
+            border: `1px solid ${colors.border}`,
+            background: 'transparent', color: colors.textSecondary,
+            fontSize: '14px', fontWeight: 500,
+            cursor: (loading || cart.items.length === 0) ? 'not-allowed' : 'pointer',
+            opacity: (loading || cart.items.length === 0) ? 0.5 : 1,
+          }}
+        >
           {t("cart:clearCart")}
-        </button>
+        </motion.button>
+
         {cart.items.length === 0 ? (
-          <button type="button" disabled>
+          <button type="button" disabled style={{ padding: '10px 20px', borderRadius: '10px', border: 'none', background: colors.border, color: colors.textMuted, fontSize: '15px', fontWeight: 600, cursor: 'not-allowed' }}>
             {t("cart:proceedToCheckout")}
           </button>
         ) : (
           <Link
             to="/checkout"
-            style={{
-              display: "inline-block",
-              padding: "2px 8px",
-              border: "1px solid #333",
-              borderRadius: 2,
-              color: "inherit",
-              textDecoration: "none"
-            }}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '10px 24px', borderRadius: '10px', background: colors.primary, color: colors.textInverse, fontSize: '15px', fontWeight: 600, textDecoration: 'none', boxShadow: '0 4px 14px rgba(30,107,60,0.30)' }}
           >
             {t("cart:proceedToCheckout")}
             {grandTotal > 0 ? <> ({formatPrice(grandTotal, lang)})</> : null}

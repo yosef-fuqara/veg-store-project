@@ -23,16 +23,28 @@ const LanguageSwitcher = () => {
   const current = (i18n.language || "he").split("-")[0];
 
   return (
-    <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ fontSize: "0.9rem" }}>{t("language")}</span>
-      <select value={current} onChange={handleChange} aria-label={t("language")}>
-        {OPTIONS.map((opt) => (
-          <option key={opt.code} value={opt.code}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <select
+      value={current}
+      onChange={handleChange}
+      aria-label={t("language")}
+      style={{
+        padding: '5px 8px',
+        borderRadius: '6px',
+        border: '1px solid #e8e3dc',
+        background: 'transparent',
+        color: '#57534e',
+        fontSize: '13px',
+        fontWeight: 500,
+        cursor: 'pointer',
+        outline: 'none',
+      }}
+    >
+      {OPTIONS.map((opt) => (
+        <option key={opt.code} value={opt.code}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
   );
 };
 

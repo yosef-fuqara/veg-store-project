@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -15,13 +16,75 @@ import * as cartService from "../services/cartService";
 import * as orderService from "../services/orderService";
 import { formatPrice } from "../utils/formatPrice";
 
+const colors = {
+  primary:        '#1e6b3c',
+  primarySurface: '#eef7f1',
+  primaryBorder:  '#a3cfb4',
+  surface:        '#ffffff',
+  surfaceRaised:  '#f5f2ed',
+  border:         '#e8e3dc',
+  textPrimary:    '#1c1917',
+  textSecondary:  '#57534e',
+  textMuted:      '#a8a29e',
+  textInverse:    '#ffffff',
+  success:        '#166534',
+  successSurface: '#f0fdf4',
+  successBorder:  '#bbf7d0',
+  error:          '#991b1b',
+  errorSurface:   '#fef2f2',
+  errorBorder:    '#fecaca',
+  warning:        '#92400e',
+  warningSurface: '#fffbeb',
+  warningBorder:  '#fde68a',
+};
+
+const pageStyle = {
+  maxWidth: '1200px',
+  margin: '0 auto',
+  padding: '40px 24px',
+};
+
+const inputBase = {
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '10px 14px',
+  borderRadius: '10px',
+  border: `1.5px solid #e8e3dc`,
+  fontSize: '15px',
+  color: '#1c1917',
+  background: '#ffffff',
+  outline: 'none',
+  display: 'block',
+  transition: 'border-color 0.15s, box-shadow 0.15s',
+};
+
+const labelStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '6px',
+  fontSize: '14px',
+  fontWeight: 500,
+  color: colors.textSecondary,
+};
+
+const sectionStyle = {
+  border: `1px solid ${colors.border}`,
+  borderRadius: '10px',
+  padding: '20px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
+};
+
+const sectionTitleStyle = {
+  margin: 0,
+  fontSize: '15px',
+  fontWeight: 600,
+  color: colors.textPrimary,
+};
+
 const initialForm = {
-  deliveryAddress: {
-    street: "",
-    building: "",
-    apartment: "",
-    notes: ""
-  },
+  deliveryAddress: { street: "", building: "", apartment: "", notes: "" },
   deliveryArea: "",
   customerPhone: "",
   notes: "",
@@ -40,14 +103,19 @@ const fieldErrorsFromResponse = (err) => {
   }, {});
 };
 
-// HTML datetime-local needs `YYYY-MM-DDTHH:mm`. Default to "now + hours" hours.
 const minDateTimeLocal = (hoursAhead) => {
   const target = new Date(Date.now() + hoursAhead * 60 * 60 * 1000);
   const pad = (n) => String(n).padStart(2, "0");
-  return `${target.getFullYear()}-${pad(target.getMonth() + 1)}-${pad(target.getDate())}T${pad(
-    target.getHours()
-  )}:${pad(target.getMinutes())}`;
+  return `${target.getFullYear()}-${pad(target.getMonth() + 1)}-${pad(target.getDate())}T${pad(target.getHours())}:${pad(target.getMinutes())}`;
 };
+
+const Skeleton = ({ height = 44, width = '100%' }) => (
+  <motion.div
+    animate={{ opacity: [0.4, 0.8, 0.4] }}
+    transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
+    style={{ width, height, background: colors.border, borderRadius: '10px' }}
+  />
+);
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -71,6 +139,7 @@ const CheckoutPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [focused, setFocused] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,15 +153,9 @@ const CheckoutPage = () => {
         ]);
         if (cancelled) return;
         setPreview(checkout);
-        if (deliveryInfo?.areas?.length) {
-          setAreas(deliveryInfo.areas);
-        }
-        if (deliveryInfo?.localAreaKey) {
-          setLocalAreaKey(deliveryInfo.localAreaKey);
-        }
-        if (deliveryInfo?.rules) {
-          setRules(deliveryInfo.rules);
-        }
+        if (deliveryInfo?.areas?.length) setAreas(deliveryInfo.areas);
+        if (deliveryInfo?.localAreaKey) setLocalAreaKey(deliveryInfo.localAreaKey);
+        if (deliveryInfo?.rules) setRules(deliveryInfo.rules);
       } catch (err) {
         if (cancelled) return;
         setPreview(null);
@@ -101,15 +164,12 @@ const CheckoutPage = () => {
         if (!cancelled) setPreviewLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [t]);
 
   const subtotal = preview?.subtotal ?? 0;
   const wrapTotal = Number(preview?.wrapTotal) || 0;
   const hasPreorderItems = Boolean(preview?.hasPreorderItems);
-  // Strictest minimum (default 24h) across preorder items in the cart.
   const minAdvanceHours = useMemo(() => {
     if (!preview?.items?.length) return 24;
     const hours = preview.items
@@ -122,21 +182,26 @@ const CheckoutPage = () => {
     () => estimateDeliveryFee(form.deliveryArea, subtotal, rules),
     [form.deliveryArea, subtotal, rules]
   );
-  // Wrap charges are billed on top of the items + delivery; they don't
-  // qualify for free-delivery thresholds.
   const total = subtotal + wrapTotal + deliveryFeeEstimate;
 
   const updateAddress = (key) => (event) => {
     const value = event.target.value;
-    setForm((prev) => ({
-      ...prev,
-      deliveryAddress: { ...prev.deliveryAddress, [key]: value }
-    }));
+    setForm((prev) => ({ ...prev, deliveryAddress: { ...prev.deliveryAddress, [key]: value } }));
+  };
+  const updateField = (key) => (event) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
+
+  const focus = (field) => () => setFocused(field);
+  const blur = () => setFocused(null);
+
+  const inputStyle = (field) => {
+    if (fieldErrors[field]) return { ...inputBase, borderColor: colors.error };
+    if (focused === field) return { ...inputBase, borderColor: colors.primary, boxShadow: '0 0 0 3px rgba(30,107,60,0.12)' };
+    return inputBase;
   };
 
-  const updateField = (key) => (event) => {
-    setForm((prev) => ({ ...prev, [key]: event.target.value }));
-  };
+  const fieldErr = (id) => fieldErrors[id]
+    ? <span style={{ fontSize: '12px', color: colors.error, display: 'block', marginTop: '4px' }}>{fieldErrors[id]}</span>
+    : null;
 
   const validateClientSide = () => {
     if (!form.deliveryArea) {
@@ -144,25 +209,12 @@ const CheckoutPage = () => {
     }
     if (hasPreorderItems) {
       if (!form.preferredDeliveryAt) {
-        return {
-          ok: false,
-          fields: {
-            preferredDeliveryAt: t("preorderDateRequired")
-          }
-        };
+        return { ok: false, fields: { preferredDeliveryAt: t("preorderDateRequired") } };
       }
       const target = new Date(form.preferredDeliveryAt);
       const minMs = minAdvanceHours * 60 * 60 * 1000;
-      if (
-        Number.isNaN(target.getTime()) ||
-        target.getTime() - Date.now() < minMs
-      ) {
-        return {
-          ok: false,
-          fields: {
-            preferredDeliveryAt: t("preorderDateTooSoon", { hours: minAdvanceHours })
-          }
-        };
+      if (Number.isNaN(target.getTime()) || target.getTime() - Date.now() < minMs) {
+        return { ok: false, fields: { preferredDeliveryAt: t("preorderDateTooSoon", { hours: minAdvanceHours }) } };
       }
     }
     return { ok: true };
@@ -191,9 +243,7 @@ const CheckoutPage = () => {
     if (hasPreorderItems && form.preferredDeliveryAt) {
       payload.preferredDeliveryAt = new Date(form.preferredDeliveryAt).toISOString();
     }
-    if (form.customRequest) {
-      payload.customRequest = form.customRequest;
-    }
+    if (form.customRequest) payload.customRequest = form.customRequest;
 
     try {
       const order = await orderService.createOrder(payload);
@@ -211,108 +261,87 @@ const CheckoutPage = () => {
   };
 
   if (previewLoading) {
-    return <p>{t("loading")}</p>;
+    return (
+      <section style={pageStyle}>
+        <h1 style={{ margin: '0 0 32px', fontSize: '30px', fontWeight: 700, color: colors.textPrimary }}>
+          {t("title")}
+        </h1>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '520px' }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} height={44} />
+          ))}
+        </div>
+      </section>
+    );
   }
 
   if (previewError) {
     return (
-      <section>
-        <h2>{t("title")}</h2>
-        <p style={{ color: "crimson" }}>{previewError}</p>
-        <p>
-          <Link to="/cart">{t("backToCart")}</Link>
-        </p>
+      <section style={pageStyle}>
+        <h1 style={{ margin: '0 0 20px', fontSize: '30px', fontWeight: 700, color: colors.textPrimary }}>
+          {t("title")}
+        </h1>
+        <div role="alert" style={{ padding: '12px 16px', borderRadius: '10px', background: colors.errorSurface, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px', marginBottom: '16px' }}>
+          {previewError}
+        </div>
+        <Link to="/cart" style={{ color: colors.primary, fontWeight: 600 }}>{t("backToCart")}</Link>
       </section>
     );
   }
 
   if (!preview || !preview.items?.length) {
     return (
-      <section>
-        <h2>{t("title")}</h2>
-        <p>{t("cartEmpty")}</p>
-        <p>
-          <Link to="/">{t("continueShopping")}</Link>
-        </p>
+      <section style={pageStyle}>
+        <h1 style={{ margin: '0 0 20px', fontSize: '30px', fontWeight: 700, color: colors.textPrimary }}>
+          {t("title")}
+        </h1>
+        <p style={{ color: colors.textMuted, fontSize: '15px', marginBottom: '16px' }}>{t("cartEmpty")}</p>
+        <Link to="/" style={{ color: colors.primary, fontWeight: 600 }}>{t("continueShopping")}</Link>
       </section>
     );
   }
 
-  const fieldError = (key) =>
-    fieldErrors[key] ? (
-      <small style={{ color: "crimson", display: "block" }}>{fieldErrors[key]}</small>
-    ) : null;
-
   return (
-    <section>
-      <h2>{t("title")}</h2>
+    <section style={pageStyle}>
+      <h1 style={{ margin: '0 0 32px', fontSize: '30px', fontWeight: 700, color: colors.textPrimary }}>
+        {t("title")}
+      </h1>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 320px)",
-          gap: 24,
-          alignItems: "start"
-        }}
-      >
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, maxWidth: 520 }}>
-          <fieldset style={{ display: "grid", gap: 8, border: "1px solid #ccc", padding: 12 }}>
-            <legend>{t("deliveryAddress")}</legend>
-            <label>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 340px)', gap: '32px', alignItems: 'start' }}>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* Delivery address */}
+          <div style={sectionStyle}>
+            <h3 style={sectionTitleStyle}>{t("deliveryAddress")}</h3>
+            <label style={labelStyle}>
               {t("streetRequired")}
-              <input
-                value={form.deliveryAddress.street}
-                onChange={updateAddress("street")}
-                maxLength={120}
-                required
-                style={{ width: "100%", boxSizing: "border-box" }}
-              />
-              {fieldError("deliveryAddress.street")}
+              <input value={form.deliveryAddress.street} onChange={updateAddress("street")} maxLength={120} required onFocus={focus("street")} onBlur={blur} style={inputStyle("deliveryAddress.street")} />
+              {fieldErr("deliveryAddress.street")}
             </label>
-            <label>
+            <label style={labelStyle}>
               {t("building")}
-              <input
-                value={form.deliveryAddress.building}
-                onChange={updateAddress("building")}
-                maxLength={50}
-                style={{ width: "100%", boxSizing: "border-box" }}
-              />
-              {fieldError("deliveryAddress.building")}
+              <input value={form.deliveryAddress.building} onChange={updateAddress("building")} maxLength={50} onFocus={focus("building")} onBlur={blur} style={inputStyle("deliveryAddress.building")} />
+              {fieldErr("deliveryAddress.building")}
             </label>
-            <label>
+            <label style={labelStyle}>
               {t("apartment")}
-              <input
-                value={form.deliveryAddress.apartment}
-                onChange={updateAddress("apartment")}
-                maxLength={50}
-                style={{ width: "100%", boxSizing: "border-box" }}
-              />
-              {fieldError("deliveryAddress.apartment")}
+              <input value={form.deliveryAddress.apartment} onChange={updateAddress("apartment")} maxLength={50} onFocus={focus("apartment")} onBlur={blur} style={inputStyle("deliveryAddress.apartment")} />
+              {fieldErr("deliveryAddress.apartment")}
             </label>
-            <label>
+            <label style={labelStyle}>
               {t("addressNotes")}
-              <textarea
-                value={form.deliveryAddress.notes}
-                onChange={updateAddress("notes")}
-                maxLength={500}
-                rows={2}
-                style={{ width: "100%", boxSizing: "border-box" }}
-              />
-              {fieldError("deliveryAddress.notes")}
+              <textarea value={form.deliveryAddress.notes} onChange={updateAddress("notes")} maxLength={500} rows={2} onFocus={focus("addressNotes")} onBlur={blur} style={{ ...inputStyle("deliveryAddress.notes"), resize: 'vertical' }} />
+              {fieldErr("deliveryAddress.notes")}
             </label>
-          </fieldset>
+          </div>
 
-          <label>
+          {/* Delivery area */}
+          <label style={labelStyle}>
             {t("deliveryAreaRequired")}
-            <select
-              value={form.deliveryArea}
-              onChange={updateField("deliveryArea")}
-              required
-              style={{ width: "100%", boxSizing: "border-box" }}
-            >
-              <option value="" disabled>
-                {t("deliveryAreaPlaceholder")}
-              </option>
+            <select value={form.deliveryArea} onChange={updateField("deliveryArea")} required onFocus={focus("deliveryArea")} onBlur={blur} style={inputStyle("deliveryArea")}>
+              <option value="" disabled>{t("deliveryAreaPlaceholder")}</option>
               {areas.map((area) => (
                 <option key={area.key} value={area.key}>
                   {t(`areas.${area.key}`, { defaultValue: area.label })}
@@ -320,169 +349,160 @@ const CheckoutPage = () => {
                 </option>
               ))}
             </select>
-            <small style={{ color: "#555", display: "block", whiteSpace: "pre-line" }}>
+            <span style={{ fontSize: '12px', color: colors.textMuted, display: 'block', whiteSpace: 'pre-line', marginTop: '4px' }}>
               {t("deliveryAreaHelper", {
                 localMin: rules.localFreeDeliveryMin,
                 localFee: rules.localDeliveryFee,
                 outsideMin: rules.outsideFreeDeliveryMin,
                 outsideFee: rules.outsideDeliveryFee
               })}
-            </small>
-            {fieldError("deliveryArea")}
+            </span>
+            {fieldErr("deliveryArea")}
           </label>
 
-          {hasPreorderItems ? (
-            <fieldset style={{ display: "grid", gap: 6, border: "1px solid #f59e0b", padding: 12, background: "#fffbeb" }}>
-              <legend style={{ color: "#92400e" }}>{t("preorderNotice")}</legend>
-              <p style={{ margin: 0, color: "#92400e" }}>
-                {t("preorderHelper", { hours: minAdvanceHours })}
-              </p>
-              <label>
+          {/* Preorder section */}
+          {hasPreorderItems && (
+            <div style={{ ...sectionStyle, border: `1px solid ${colors.warningBorder}`, background: colors.warningSurface }}>
+              <h3 style={{ ...sectionTitleStyle, color: colors.warning }}>{t("preorderNotice")}</h3>
+              <p style={{ margin: 0, fontSize: '14px', color: colors.warning }}>{t("preorderHelper", { hours: minAdvanceHours })}</p>
+              <label style={labelStyle}>
                 {t("preorderDateRequired")}
-                <input
-                  type="datetime-local"
-                  value={form.preferredDeliveryAt}
-                  onChange={updateField("preferredDeliveryAt")}
-                  min={minDateTimeLocal(minAdvanceHours)}
-                  required
-                  style={{ width: "100%", boxSizing: "border-box" }}
-                />
-                {fieldError("preferredDeliveryAt")}
+                <input type="datetime-local" value={form.preferredDeliveryAt} onChange={updateField("preferredDeliveryAt")} min={minDateTimeLocal(minAdvanceHours)} required onFocus={focus("preferredDeliveryAt")} onBlur={blur} style={inputStyle("preferredDeliveryAt")} />
+                {fieldErr("preferredDeliveryAt")}
               </label>
-              <label>
+              <label style={labelStyle}>
                 {t("customRequest")}
-                <textarea
-                  value={form.customRequest}
-                  onChange={updateField("customRequest")}
-                  placeholder={t("customRequestPlaceholder")}
-                  maxLength={1000}
-                  rows={3}
-                  style={{ width: "100%", boxSizing: "border-box" }}
-                />
-                {fieldError("customRequest")}
+                <textarea value={form.customRequest} onChange={updateField("customRequest")} placeholder={t("customRequestPlaceholder")} maxLength={1000} rows={3} onFocus={focus("customRequest")} onBlur={blur} style={{ ...inputStyle("customRequest"), resize: 'vertical' }} />
+                {fieldErr("customRequest")}
               </label>
-            </fieldset>
-          ) : null}
+            </div>
+          )}
 
-          <label>
+          {/* Phone */}
+          <label style={labelStyle}>
             {t("phoneRequired")}
-            <input
-              value={form.customerPhone}
-              onChange={updateField("customerPhone")}
-              minLength={7}
-              maxLength={20}
-              required
-              style={{ width: "100%", boxSizing: "border-box" }}
-            />
-            {fieldError("customerPhone")}
+            <input value={form.customerPhone} onChange={updateField("customerPhone")} minLength={7} maxLength={20} required onFocus={focus("phone")} onBlur={blur} style={inputStyle("customerPhone")} />
+            {fieldErr("customerPhone")}
           </label>
 
-          <label>
+          {/* Order notes */}
+          <label style={labelStyle}>
             {t("orderNotes")}
-            <textarea
-              value={form.notes}
-              onChange={updateField("notes")}
-              maxLength={1000}
-              rows={3}
-              style={{ width: "100%", boxSizing: "border-box" }}
-            />
-            {fieldError("notes")}
+            <textarea value={form.notes} onChange={updateField("notes")} maxLength={1000} rows={3} onFocus={focus("notes")} onBlur={blur} style={{ ...inputStyle("notes"), resize: 'vertical' }} />
+            {fieldErr("notes")}
           </label>
 
-          <fieldset style={{ display: "grid", gap: 6, border: "1px solid #ccc", padding: 12 }}>
-            <legend>{t("paymentMethodRequired")}</legend>
-            {PAYMENT_METHODS.map((method) => (
-              <label key={method.value} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value={method.value}
-                  checked={form.paymentMethod === method.value}
-                  onChange={updateField("paymentMethod")}
-                />
-                {t(`paymentMethods.${method.value}`)}
-              </label>
-            ))}
-            {fieldError("paymentMethod")}
+          {/* Payment method */}
+          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+            <legend style={{ fontSize: '14px', fontWeight: 500, color: colors.textSecondary, marginBottom: '10px', display: 'block' }}>
+              {t("paymentMethodRequired")}
+            </legend>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {PAYMENT_METHODS.map((method) => (
+                <label
+                  key={method.value}
+                  style={{
+                    display: 'flex', gap: '10px', alignItems: 'center',
+                    padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
+                    border: `1.5px solid ${form.paymentMethod === method.value ? colors.primary : colors.border}`,
+                    background: form.paymentMethod === method.value ? colors.primarySurface : colors.surface,
+                    fontSize: '14px', fontWeight: 500, color: colors.textPrimary,
+                    transition: 'border-color 0.15s, background 0.15s',
+                  }}
+                >
+                  <input type="radio" name="paymentMethod" value={method.value} checked={form.paymentMethod === method.value} onChange={updateField("paymentMethod")} />
+                  {t(`paymentMethods.${method.value}`)}
+                </label>
+              ))}
+            </div>
+            {fieldErr("paymentMethod")}
           </fieldset>
 
-          {submitError ? <p style={{ color: "crimson" }}>{submitError}</p> : null}
+          {/* Submit error */}
+          <AnimatePresence>
+            {submitError && (
+              <motion.div key="submit-error" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} style={{ overflow: 'hidden' }}>
+                <div role="alert" style={{ padding: '10px 14px', borderRadius: '8px', background: colors.errorSurface, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px' }}>
+                  {submitError}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <button type="submit" disabled={submitting}>
+          {/* Submit */}
+          <motion.button
+            type="submit"
+            disabled={submitting}
+            whileHover={!submitting ? { scale: 1.02 } : {}}
+            whileTap={!submitting ? { scale: 0.96 } : {}}
+            transition={{ duration: 0.12 }}
+            style={{
+              padding: '12px 20px', borderRadius: '10px', border: 'none',
+              background: submitting ? colors.border : colors.primary,
+              color: submitting ? colors.textMuted : colors.textInverse,
+              fontSize: '15px', fontWeight: 600,
+              cursor: submitting ? 'not-allowed' : 'pointer',
+              boxShadow: submitting ? 'none' : '0 4px 14px rgba(30,107,60,0.30)',
+              width: '100%',
+            }}
+          >
             {submitting ? t("placingOrder") : t("placeOrder")}
-          </button>
+          </motion.button>
         </form>
 
-        <aside style={{ background: "#f4f4f4", padding: 16 }}>
-          <h3 style={{ marginTop: 0 }}>{t("orderSummary")}</h3>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+        {/* Order summary aside */}
+        <aside style={{ background: colors.surfaceRaised, border: `1px solid ${colors.border}`, borderRadius: '14px', padding: '24px', position: 'sticky', top: '80px' }}>
+          <h3 style={{ margin: '0 0 16px', fontSize: '17px', fontWeight: 600, color: colors.textPrimary }}>
+            {t("orderSummary")}
+          </h3>
+
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             {preview.items.map((item) => (
-              <li key={item.product} style={{ marginBottom: 6 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                  <span>
-                    {item.name} x {item.quantity}
+              <div key={item.product} style={{ padding: '10px 0', borderBottom: `1px solid ${colors.border}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '14px' }}>
+                  <span style={{ color: colors.textPrimary }}>
+                    {item.name} × {item.quantity}
                     {item.isPreorderOnly ? " ⏱" : ""}
-                    {item.wrap ? (
-                      <span
-                        style={{
-                          marginInlineStart: 6,
-                          padding: "1px 6px",
-                          borderRadius: 999,
-                          fontSize: 11,
-                          background: "#f0fdf4",
-                          color: "#166534",
-                          border: "1px solid #bbf7d0"
-                        }}
-                      >
+                    {item.wrap && (
+                      <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', background: colors.successSurface, color: colors.success, border: `1px solid ${colors.successBorder}` }}>
                         {t("wrapBadge")}
                       </span>
-                    ) : null}
+                    )}
                   </span>
-                  <span>{formatPrice(item.lineTotal, lang)}</span>
+                  <span style={{ fontWeight: 600, color: colors.textPrimary, flexShrink: 0 }}>
+                    {formatPrice(item.lineTotal, lang)}
+                  </span>
                 </div>
-                {item.wrap && Number(item.wrapFee) > 0 ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 8,
-                      fontSize: "0.8rem",
-                      color: "#166534"
-                    }}
-                  >
+                {item.wrap && Number(item.wrapFee) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '12px', color: colors.success, marginTop: '4px' }}>
                     <span>↳ {t("wrapFees")}</span>
                     <span>+{formatPrice(item.wrapFee, lang)}</span>
                   </div>
-                ) : null}
-              </li>
+                )}
+              </div>
             ))}
-          </ul>
-          <hr />
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>{t("subtotal")}</span>
-            <span>{formatPrice(subtotal, lang)}</span>
           </div>
-          {wrapTotal > 0 ? (
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>{t("wrapFees")}</span>
-              <span>{formatPrice(wrapTotal, lang)}</span>
+
+          <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.textSecondary }}>
+              <span>{t("subtotal")}</span>
+              <span>{formatPrice(subtotal, lang)}</span>
             </div>
-          ) : null}
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span>{t("deliveryFee")}</span>
-            <span>{formatPrice(deliveryFeeEstimate, lang)}</span>
-          </div>
-          <small style={{ color: "#666", display: "block" }}>{t("feeEstimateNote")}</small>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontWeight: "bold",
-              marginTop: 8
-            }}
-          >
-            <span>{t("total")}</span>
-            <span>{formatPrice(total, lang)}</span>
+            {wrapTotal > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.success }}>
+                <span>{t("wrapFees")}</span>
+                <span>{formatPrice(wrapTotal, lang)}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.textSecondary }}>
+              <span>{t("deliveryFee")}</span>
+              <span>{formatPrice(deliveryFeeEstimate, lang)}</span>
+            </div>
+            <span style={{ fontSize: '11px', color: colors.textMuted }}>{t("feeEstimateNote")}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700, color: colors.textPrimary, paddingTop: '10px', borderTop: `1px solid ${colors.border}`, marginTop: '4px' }}>
+              <span>{t("total")}</span>
+              <span>{formatPrice(total, lang)}</span>
+            </div>
           </div>
         </aside>
       </div>

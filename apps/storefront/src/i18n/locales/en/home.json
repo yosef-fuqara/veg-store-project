@@ -5,7 +5,9 @@
   "empty": "No products available right now.",
   "errorTitle": "Could not load products",
   "addToCart": "Add to cart",
+  "inStock": "In stock",
   "outOfStock": "Out of stock",
+  "saleBadge": "Sale",
   "preorderBadge": "Preorder only",
   "preorderHint": "Requires {{hours}}h advance notice",
   "pricePerUnit": "per unit",
@@ -14,5 +16,19 @@
     "gram": "g",
     "unit": "unit",
     "box": "box"
+  },
+  "hero": {
+    "badge": "Fruits & Vegetables",
+    "heading": "Fresh Produce Delivered to Your Door",
+    "subtitle": "Quality fruits and vegetables from the Galilee region",
+    "cta": "Shop Fresh Produce",
+    "customersCount": "+500",
+    "customersLabel": "Happy Customers",
+    "organicValue": "100%",
+    "organicLabel": "ORGANIC FRESHNESS"
+  },
+  "products": {
+    "badge": "Fresh & Healthy",
+    "heading": "Our Products"
   }
 }

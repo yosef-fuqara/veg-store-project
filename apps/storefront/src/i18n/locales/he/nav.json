@@ -1,10 +1,12 @@
 {
   "home": "בית",
+  "products": "מוצרים",
   "cart": "עגלה",
   "checkout": "תשלום",
   "login": "התחברות",
   "register": "הרשמה",
   "logout": "התנתקות",
   "greeting": "שלום, {{name}}",
-  "language": "שפה"
+  "language": "שפה",
+  "brandTagline": "פירות וירקות"
 }
