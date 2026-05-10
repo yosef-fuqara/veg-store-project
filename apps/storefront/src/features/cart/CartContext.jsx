@@ -1,5 +1,17 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import i18n from "../../i18n";
+import SignInToAddToCartModal from "../../components/SignInToAddToCartModal";
 import * as cartService from "../../services/cartService";
+import { getAccessToken } from "../../services/authStorage";
+import {
+  isCartAuthError,
+  isTechnicalCustomerCartMessage
+} from "../../utils/cartErrorHandling";
+import {
+  loadPersistedCartLines,
+  persistCartFromServerCart,
+  clearPersistedCart
+} from "../../utils/vegstorePersistence";
 
 const CartContext = createContext(null);
 
@@ -7,6 +19,7 @@ export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState({ items: [], subtotal: 0, wrapTotal: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [signInForCartOpen, setSignInForCartOpen] = useState(false);
 
   const withLoading = useCallback(async (handler) => {
     setLoading(true);
@@ -14,7 +27,17 @@ export const CartProvider = ({ children }) => {
     try {
       await handler();
     } catch (err) {
-      setError(err.userMessage || err.response?.data?.message || "Cart operation failed");
+      if (isCartAuthError(err)) {
+        setSignInForCartOpen(true);
+        setError("");
+        return;
+      }
+      const raw = String(err.userMessage || err.response?.data?.message || "").trim();
+      if (!raw || isTechnicalCustomerCartMessage(raw)) {
+        setError(i18n.t("cart:genericError"));
+      } else {
+        setError(raw);
+      }
     } finally {
       setLoading(false);
     }
@@ -22,26 +45,55 @@ export const CartProvider = ({ children }) => {
 
   const refreshCart = useCallback(async () => {
     await withLoading(async () => {
-      const next = await cartService.fetchCart();
+      let next = await cartService.fetchCart();
+      const serverEmpty = !next?.items?.length;
+      if (serverEmpty) {
+        const lines = loadPersistedCartLines();
+        if (lines.length) {
+          for (const line of lines) {
+            next = await cartService.addCartItem(line.product, line.quantity, { wrap: line.wrap });
+          }
+        }
+      }
       setCart(next);
+      persistCartFromServerCart(next);
     });
   }, [withLoading]);
 
-  const addItem = useCallback(
-    async (productId, quantity = 1) => {
-      await withLoading(async () => {
-        const next = await cartService.addCartItem(productId, quantity);
-        setCart(next);
-      });
-    },
-    [withLoading]
-  );
+  /** Home / product grid: no global `loading` so other cards stay interactive. Returns true on success. */
+  const addItem = useCallback(async (productId, quantity = 1) => {
+    if (!getAccessToken()) {
+      setSignInForCartOpen(true);
+      return false;
+    }
+    setError("");
+    try {
+      const next = await cartService.addCartItem(productId, quantity);
+      setCart(next);
+      persistCartFromServerCart(next);
+      return true;
+    } catch (err) {
+      if (isCartAuthError(err)) {
+        setSignInForCartOpen(true);
+        setError("");
+        return false;
+      }
+      const raw = String(err.userMessage || err.response?.data?.message || "").trim();
+      if (!raw || isTechnicalCustomerCartMessage(raw)) {
+        setError(i18n.t("cart:genericError"));
+      } else {
+        setError(raw);
+      }
+      return false;
+    }
+  }, []);
 
   const updateItem = useCallback(
     async (productId, updates) => {
       await withLoading(async () => {
         const next = await cartService.updateCartItem(productId, updates);
         setCart(next);
+        persistCartFromServerCart(next);
       });
     },
     [withLoading]
@@ -52,6 +104,7 @@ export const CartProvider = ({ children }) => {
       await withLoading(async () => {
         const next = await cartService.updateCartItem(productId, { wrap });
         setCart(next);
+        persistCartFromServerCart(next);
       });
     },
     [withLoading]
@@ -62,6 +115,7 @@ export const CartProvider = ({ children }) => {
       await withLoading(async () => {
         const next = await cartService.removeCartItem(productId);
         setCart(next);
+        persistCartFromServerCart(next);
       });
     },
     [withLoading]
@@ -71,6 +125,7 @@ export const CartProvider = ({ children }) => {
     await withLoading(async () => {
       const next = await cartService.clearCart();
       setCart(next);
+      clearPersistedCart();
     });
   }, [withLoading]);
 
@@ -109,7 +164,12 @@ export const CartProvider = ({ children }) => {
     ]
   );
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return (
+    <>
+      <CartContext.Provider value={value}>{children}</CartContext.Provider>
+      <SignInToAddToCartModal open={signInForCartOpen} onClose={() => setSignInForCartOpen(false)} />
+    </>
+  );
 };
 
 export const useCart = () => {

@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../features/auth/AuthContext";
+import { PasswordFieldWithToggle } from "../components/common/PasswordFieldWithToggle";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -197,14 +198,16 @@ const RegisterPage = () => {
 
             <label style={labelStyle}>
               {t('password')}
-              <input
-                type="password"
+              <PasswordFieldWithToggle
                 value={form.password}
                 onChange={update('password')}
                 autoComplete="new-password"
-                minLength={8} maxLength={128} required
-                onFocus={focus('password')} onBlur={blur}
-                style={inputStyle('password')}
+                minLength={8}
+                maxLength={128}
+                required
+                onFocus={focus('password')}
+                onBlur={blur}
+                inputStyle={inputStyle('password')}
               />
               <FieldError message={fieldErrors.password} />
             </label>

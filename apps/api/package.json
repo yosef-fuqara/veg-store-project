@@ -9,7 +9,10 @@
     "start": "node src/server.js",
     "test": "jest --runInBand",
     "test:watch": "jest --watch --runInBand",
-    "seed:postman": "node scripts/seed-postman.js"
+    "seed:postman": "node scripts/seed-postman.js",
+    "migrate:product-names-i18n": "node scripts/migrate-product-names-i18n.js",
+    "migrate:category-names-i18n": "node scripts/migrate-category-names-i18n.js",
+    "migrate:split-herbs-spices": "node scripts/split-herbs-spices-category.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCart } from "../features/cart/CartContext";
 import { formatPrice } from "../utils/formatPrice";
+import { getLocalizedProductName } from "../utils/localizedProduct";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -93,7 +94,7 @@ const CartPage = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
                   <div>
                     <div style={{ fontSize: '16px', fontWeight: 600, color: colors.textPrimary }}>
-                      {item.productSnapshot?.name || item.product}
+                      {getLocalizedProductName({ name: item.productSnapshot?.name }, lang) || String(item.product)}
                     </div>
                     <div style={{ fontSize: '13px', color: colors.textSecondary, marginTop: '2px' }}>
                       {item.quantity} × {formatPrice(item.unitPriceSnapshot, lang)}
@@ -205,6 +206,7 @@ const CartPage = () => {
         ) : (
           <Link
             to="/checkout"
+            state={{ scrollToDelivery: true }}
             style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '10px 24px', borderRadius: '10px', background: colors.primary, color: colors.textInverse, fontSize: '15px', fontWeight: 600, textDecoration: 'none', boxShadow: shadowPrimary }}
           >
             {t("cart:proceedToCheckout")}

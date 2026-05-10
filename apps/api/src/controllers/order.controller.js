@@ -20,7 +20,8 @@ const {
   LOCAL_FREE_DELIVERY_MIN,
   OUTSIDE_FREE_DELIVERY_MIN,
   LOCAL_DELIVERY_FEE,
-  OUTSIDE_DELIVERY_FEE
+  OUTSIDE_DELIVERY_FEE,
+  snapshotCityForOrder
 } = require("../constants/delivery");
 const { ORDER_STATUS } = require("../constants/order");
 
@@ -67,7 +68,7 @@ const createOrder = async (req, res, next) => {
     const submittedAddress = req.body.deliveryAddress || {};
     const deliveryAddress = {
       label: submittedAddress.label || "",
-      city: area.label,
+      city: snapshotCityForOrder(area),
       street: submittedAddress.street,
       building: submittedAddress.building || "",
       apartment: submittedAddress.apartment || "",
@@ -122,7 +123,12 @@ const getDeliveryAreas = async (_req, res, next) => {
     return res.status(StatusCodes.OK).json({
       success: true,
       data: {
-        areas: ALLOWED_DELIVERY_AREAS,
+        areas: ALLOWED_DELIVERY_AREAS.map((a) => ({
+          key: a.key,
+          names: a.names,
+          isLocal: a.isLocal,
+          label: a.names?.en || a.names?.he || a.names?.ar || a.key
+        })),
         localAreaKey: LOCAL_DELIVERY_AREA,
         rules: {
           localFreeDeliveryMin: LOCAL_FREE_DELIVERY_MIN,

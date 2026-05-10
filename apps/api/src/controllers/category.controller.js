@@ -1,18 +1,39 @@
 const { StatusCodes } = require("http-status-codes");
 const Category = require("../models/category.model");
 const AppError = require("../utils/app-error");
+const { toProductNameLocales, resolveProductNameString } = require("../utils/product-name");
 
 const normalizeName = (value) => value.trim().replace(/\s+/g, " ");
 const toSlug = (value) =>
   normalizeName(value)
     .toLowerCase()
-    .replace(/[^a-z0-9\u0590-\u05ff\s-]/g, "")
-    .replace(/\s+/g, "-");
+    .replace(/[^a-z0-9\u0590-\u05ff\u0600-\u06ff\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+function normalizeCategoryLocalesFromBody(rawName) {
+  const loc = toProductNameLocales(rawName);
+  return {
+    ar: normalizeName(loc.ar),
+    he: normalizeName(loc.he),
+    en: normalizeName(loc.en)
+  };
+}
+
+function buildSlugFromCategoryName(locales) {
+  const base = resolveProductNameString(locales);
+  let slug = toSlug(base);
+  if (!slug) {
+    slug = `category-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+  return slug;
+}
 
 const getPublicCategories = async (req, res, next) => {
   try {
     const categories = await Category.find({ isActive: true, isFrozen: false, isDeleted: false })
-      .sort({ name: 1 })
+      .sort({ slug: 1 })
       .select("name slug description isFrozen isActive createdAt updatedAt");
 
     return res.status(StatusCodes.OK).json({
@@ -40,17 +61,19 @@ const getAdminCategories = async (req, res, next) => {
 
 const createCategory = async (req, res, next) => {
   try {
-    const normalizedName = normalizeName(req.body.name);
-    const slug = toSlug(normalizedName);
+    const nameLocales = normalizeCategoryLocalesFromBody(req.body.name);
+    const slug = buildSlugFromCategoryName(nameLocales);
     const existing = await Category.findOne({ slug, isDeleted: false });
     if (existing) {
       throw new AppError("Category name already exists", StatusCodes.CONFLICT);
     }
 
     const category = await Category.create({
-      name: normalizedName,
+      name: nameLocales,
       slug,
-      description: req.body.description || ""
+      description: req.body.description || "",
+      ...(typeof req.body.isActive === "boolean" && { isActive: req.body.isActive }),
+      ...(typeof req.body.isFrozen === "boolean" && { isFrozen: req.body.isFrozen })
     });
 
     return res.status(StatusCodes.CREATED).json({
@@ -75,9 +98,9 @@ const updateCategory = async (req, res, next) => {
     }
 
     // update name + slug
-    if (req.body.name) {
-      const normalizedName = normalizeName(req.body.name);
-      const slug = toSlug(normalizedName);
+    if (req.body.name !== undefined && req.body.name !== null) {
+      const nameLocales = normalizeCategoryLocalesFromBody(req.body.name);
+      const slug = buildSlugFromCategoryName(nameLocales);
 
       const duplicate = await Category.findOne({
         slug,
@@ -89,7 +112,7 @@ const updateCategory = async (req, res, next) => {
         throw new AppError("Category name already exists", StatusCodes.CONFLICT);
       }
 
-      category.name = normalizedName;
+      category.name = nameLocales;
       category.slug = slug;
     }
 

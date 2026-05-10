@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const { ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHOD } = require("../constants/order");
-const { ALLOWED_DELIVERY_AREA_KEYS } = require("../constants/delivery");
 
 const deliveryAddressSchema = new mongoose.Schema(
   {
@@ -52,10 +51,12 @@ const orderSchema = new mongoose.Schema(
     deliveryFee: { type: Number, required: true, min: 0 },
     total: { type: Number, required: true, min: 0 },
     deliveryAddress: { type: deliveryAddressSchema, required: true },
+    // Not enum-restricted: legacy documents may carry retired area keys; new orders
+    // are validated in Joi + order service.
     deliveryArea: {
       type: String,
       required: true,
-      enum: ALLOWED_DELIVERY_AREA_KEYS
+      trim: true
     },
     customerPhone: { type: String, required: true, trim: true },
     notes: { type: String, trim: true, maxlength: 1000 },

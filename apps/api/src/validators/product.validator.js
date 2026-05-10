@@ -3,13 +3,24 @@ const { PRODUCT_UNITS, PRODUCT_STOCK_STATUS } = require("../constants/product");
 
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
+const localizedProductNameSchema = Joi.object({
+  ar: Joi.string().trim().min(2).max(120).required(),
+  he: Joi.string().trim().min(2).max(120).required(),
+  en: Joi.string().trim().min(2).max(120).required()
+}).unknown(false);
+
+const productNameSchema = Joi.alternatives().try(
+  localizedProductNameSchema,
+  Joi.string().trim().min(2).max(120)
+);
+
 const productIdParamSchema = Joi.object({
   id: Joi.string().pattern(objectIdRegex).required()
 });
 
 const createProductSchema = Joi.object({
-  name: Joi.string().trim().min(2).max(120).required(),
-  description: Joi.string().trim().min(2).max(2000).required(),
+  name: productNameSchema.required(),
+  description: Joi.string().trim().max(2000).allow("").optional(),
   price: Joi.number().min(0).required(),
   salePrice: Joi.number().min(0).optional(),
   category: Joi.string().pattern(objectIdRegex).required(),
@@ -32,8 +43,8 @@ const createProductSchema = Joi.object({
 });
 
 const updateProductSchema = Joi.object({
-  name: Joi.string().trim().min(2).max(120).optional(),
-  description: Joi.string().trim().min(2).max(2000).optional(),
+  name: productNameSchema.optional(),
+  description: Joi.string().trim().max(2000).allow("").optional(),
   price: Joi.number().min(0).optional(),
   salePrice: Joi.number().min(0).allow(null).optional(),
   category: Joi.string().pattern(objectIdRegex).optional(),

@@ -1,4 +1,12 @@
 {
+  "addedToCartToast": "Added to cart",
+  "genericError": "Something went wrong. Please try again.",
+  "signInToAdd": {
+    "message": "Please sign in to add products to your cart",
+    "signIn": "Sign in",
+    "createAccount": "Create account",
+    "close": "Close"
+  },
   "title": "Cart",
   "quantity": "Qty",
   "price": "Price",

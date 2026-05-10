@@ -3,6 +3,15 @@ import { formatApiError } from "../utils/formatApiError";
 import { getAccessToken } from "./authStorage";
 import { clearAuthSession } from "./authSession";
 
+/** POST /auth/login returns 401 for wrong credentials — must not trigger session-expired flow. */
+function isAuthLoginPost(config) {
+  if (!config) return false;
+  const method = String(config.method || "get").toLowerCase();
+  if (method !== "post") return false;
+  const url = String(config.url || "").split("?")[0];
+  return url === "/auth/login" || url.endsWith("/auth/login");
+}
+
 function resolveBaseURL() {
   const fromEnv = import.meta.env.VITE_API_URL;
   if (fromEnv && String(fromEnv).trim() !== "") {
@@ -37,7 +46,18 @@ apiClient.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
     const code = String(error.response?.data?.code || "").toUpperCase();
-    if (status === 401 || code === "UNAUTHENTICATED" || code === "TOKEN_INVALID") {
+
+    if (status === 403 && !isAuthLoginPost(error.config) && getAccessToken()) {
+      window.location.assign("/unauthorized");
+      error.userMessage = formatApiError(error);
+      return Promise.reject(error);
+    }
+
+    const isFailedLogin =
+      isAuthLoginPost(error.config) &&
+      (status === 401 || code === "UNAUTHENTICATED" || code === "TOKEN_INVALID");
+
+    if (!isFailedLogin && (status === 401 || code === "UNAUTHENTICATED" || code === "TOKEN_INVALID")) {
       clearAuthSession({
         redirectToLogin: true,
         preserveRedirect: true,

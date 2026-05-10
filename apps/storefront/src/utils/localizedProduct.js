@@ -1,10 +1,9 @@
-const LANG_KEYS = ["he", "ar", "en"];
-
 /**
- * @param {unknown} value - string | { he?, ar?, en? } | null | undefined
- * @param {string} lang - 'he' | 'ar' | 'en'
+ * @param {unknown} value - string | { ar?, he?, en? } | null | undefined
+ * @param {string} [currentLanguage] - e.g. 'he' | 'ar' | 'en' (BCP47 prefix ok)
+ * @returns {string}
  */
-function pickLocalized(value, lang) {
+export function getLocalizedText(value, currentLanguage) {
   if (value == null) return "";
 
   if (typeof value === "string") {
@@ -13,19 +12,20 @@ function pickLocalized(value, lang) {
 
   if (typeof value === "object" && !Array.isArray(value)) {
     const o = /** @type {Record<string, unknown>} */ (value);
-    const tryKeys = [lang, "he", "en", "ar"];
-    for (const key of tryKeys) {
+    const pick = (key) => {
+      if (!key) return "";
       const v = o[key];
-      if (typeof v === "string" && v.trim() !== "") return v.trim();
-    }
-    for (const k of LANG_KEYS) {
-      const v = o[k];
-      if (typeof v === "string" && v.trim() !== "") return v.trim();
-    }
-    return "";
+      return typeof v === "string" ? v.trim() : "";
+    };
+    const lang =
+      currentLanguage != null && currentLanguage !== ""
+        ? String(currentLanguage).split("-")[0]
+        : "";
+    const primary = lang ? pick(lang) : "";
+    return primary || pick("en") || pick("he") || pick("ar") || "";
   }
 
-  return String(value);
+  return "";
 }
 
 /**
@@ -34,7 +34,7 @@ function pickLocalized(value, lang) {
  */
 export function getLocalizedProductName(product, lang) {
   if (!product) return "";
-  return pickLocalized(product.name, lang);
+  return getLocalizedText(product.name, lang);
 }
 
 /**
@@ -43,7 +43,7 @@ export function getLocalizedProductName(product, lang) {
  */
 export function getLocalizedProductDescription(product, lang) {
   if (!product) return "";
-  return pickLocalized(product.description, lang);
+  return getLocalizedText(product.description, lang);
 }
 
 /**
@@ -52,5 +52,5 @@ export function getLocalizedProductDescription(product, lang) {
  */
 export function getLocalizedCategoryName(category, lang) {
   if (!category) return "";
-  return pickLocalized(category.name, lang);
+  return getLocalizedText(category.name, lang);
 }

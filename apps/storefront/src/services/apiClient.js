@@ -1,6 +1,10 @@
 import axios from "axios";
 import { formatApiError } from "../utils/formatApiError";
-import { getAccessToken } from "./authStorage";
+import {
+  AUTH_SESSION_EXPIRED_EVENT,
+  clearAccessToken,
+  getAccessToken
+} from "./authStorage";
 
 function resolveBaseURL() {
   const fromEnv = import.meta.env.VITE_API_URL;
@@ -32,6 +36,16 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error.response?.status;
+    const reqUrl = String(error.config?.url || "");
+    const isCredentialRoute =
+      reqUrl.includes("/auth/login") || reqUrl.includes("/auth/register");
+    if (status === 401 && !isCredentialRoute && getAccessToken()) {
+      clearAccessToken();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
+      }
+    }
     error.userMessage = formatApiError(error);
     return Promise.reject(error);
   }

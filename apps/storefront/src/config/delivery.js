@@ -1,6 +1,5 @@
 // Mirror of backend delivery rules. The backend remains the source of truth;
-// these constants are used only as a fallback for offline rendering and are
-// kept in sync with `apps/api/src/constants/delivery.js`.
+// these constants are used as a fallback when the API is unavailable.
 
 export const LOCAL_DELIVERY_AREA = "buaine_nujeidat";
 
@@ -10,20 +9,87 @@ export const LOCAL_DELIVERY_FEE = 10;
 export const OUTSIDE_DELIVERY_FEE = 30;
 
 export const ALLOWED_DELIVERY_AREAS = [
-  { key: "buaine_nujeidat", label: "Bu'eine Nujeidat", isLocal: true },
-  { key: "eilabun", label: "Eilabun", isLocal: false },
-  { key: "kafr_manda", label: "Kafr Manda", isLocal: false },
-  { key: "sakhnin", label: "Sakhnin", isLocal: false },
-  { key: "arraba", label: "Arraba", isLocal: false },
-  { key: "deir_hanna", label: "Deir Hanna", isLocal: false },
-  { key: "mashhad", label: "Mashhad", isLocal: false },
-  { key: "nazareth", label: "Nazareth", isLocal: false }
+  {
+    key: "buaine_nujeidat",
+    names: { he: "בועיינה נוג׳ידאת", ar: "بُعينة-نُجيدات", en: "Bu'eine Nujeidat" },
+    isLocal: true
+  },
+  {
+    key: "turan",
+    names: { he: "טורעאן", ar: "طرعان", en: "Tur'an" },
+    isLocal: false
+  },
+  {
+    key: "eilabun",
+    names: { he: "עילבון", ar: "عيلبون", en: "Eilabun" },
+    isLocal: false
+  },
+  {
+    key: "deir_hanna",
+    names: { he: "דיר חנא", ar: "دير حنا", en: "Deir Hanna" },
+    isLocal: false
+  },
+  {
+    key: "arraba",
+    names: { he: "עראבה", ar: "عرابة", en: "Arraba" },
+    isLocal: false
+  },
+  {
+    key: "sakhnin",
+    names: { he: "סחנין", ar: "سخنين", en: "Sakhnin" },
+    isLocal: false
+  },
+  {
+    key: "kafr_kanna",
+    names: { he: "כפר כנא", ar: "كفر كنا", en: "Kafr Kanna" },
+    isLocal: false
+  },
+  {
+    key: "wadi_al_hamam",
+    names: { he: "ואדי אל חמאם", ar: "وادي الحمام", en: "Wadi al-Hamam" },
+    isLocal: false
+  },
+  {
+    key: "maghar",
+    names: { he: "מגאר", ar: "المغار", en: "Maghar" },
+    isLocal: false
+  },
+  {
+    key: "izeir",
+    names: { he: "עוזיר", ar: "أوزير", en: "Izeir" },
+    isLocal: false
+  },
+  {
+    key: "arab_al_heeb",
+    names: { he: "ערב אל-היב", ar: "عرب الهيب", en: "Arab al-Heeb" },
+    isLocal: false
+  },
+  {
+    key: "rummana",
+    names: { he: "רומאנה", ar: "الرمانة", en: "Rummana" },
+    isLocal: false
+  }
 ];
 
-/**
- * Mirrors the backend rule. Used to render an *estimate* — the backend still
- * decides the final fee at order creation.
- */
+/** Retired keys — display fallback only. */
+export const LEGACY_DELIVERY_AREA_LABELS = {
+  kafr_manda: {
+    he: "כפר מנדא",
+    ar: "كفر مندا",
+    en: "Kafr Manda"
+  },
+  mashhad: {
+    he: "משהד",
+    ar: "المشهد",
+    en: "Mashhad"
+  },
+  nazareth: {
+    he: "נצרת",
+    ar: "الناصرة",
+    en: "Nazareth"
+  }
+};
+
 export const estimateDeliveryFee = (areaKey, subtotal, rules) => {
   const r = rules || {
     localFreeDeliveryMin: LOCAL_FREE_DELIVERY_MIN,

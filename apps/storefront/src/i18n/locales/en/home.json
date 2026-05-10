@@ -19,7 +19,6 @@
   },
   "hero": {
     "badge": "Fruits & Vegetables",
-    "heading": "Fresh Produce Delivered to Your Door",
     "subtitle": "Abu Al-Anas vegetables — the tastiest way to start your day.",
     "cta": "Go fill the cart",
     "trust1": "🥬 Fresh every day",
@@ -34,10 +33,22 @@
   },
   "categories": {
     "navAria": "Browse by category",
+    "showAll": "All products",
     "fruits": "Fruits",
     "vegetables": "Vegetables",
+    "herbs": "Herbs",
+    "spices": "Spices",
     "platters": "Fruit platters & sliced plates",
-    "juices": "Fresh juices & drinks",
+    "other": "Other products",
     "filterEmpty": "No products match this category. Try another category or tap the same icon to show all products."
+  },
+  "footer": {
+    "stayInTouch": "Let's Stay In Touch",
+    "phoneLabel": "Call us",
+    "categoriesAria": "Product categories",
+    "categoriesTitle": "Shop by category",
+    "rights": "All rights reserved.",
+    "whatsappAria": "Chat with us on WhatsApp",
+    "creditPrefix": "Designed & developed by"
   }
 }

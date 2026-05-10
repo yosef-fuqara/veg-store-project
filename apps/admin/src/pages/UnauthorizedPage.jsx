@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
+/** Full URL to the public storefront home (separate app from admin). */
+function getStorefrontHomeUrl() {
+  const raw = import.meta.env.VITE_STOREFRONT_URL;
+  const base =
+    typeof raw === "string" && raw.trim()
+      ? raw.trim().replace(/\/+$/, "")
+      : "http://localhost:5173";
+  return `${base}/`;
+}
 
 const colors = {
   primary:     '#1e6b3c',
@@ -59,7 +69,7 @@ const UnauthorizedPage = () => {
             Access Denied
           </h1>
           <p style={{ margin: 0, fontSize: '15px', color: colors.textSecondary, lineHeight: 1.6 }}>
-            You do not have administrative privileges to access this area. If you believe this is an error, please contact the site administrator.
+            This area is for admins only. If you believe this is an error, please contact the site administrator.
           </p>
         </div>
 
@@ -88,7 +98,8 @@ const UnauthorizedPage = () => {
           </button>
 
           <a
-            href="/"
+            href={getStorefrontHomeUrl()}
+            rel="noopener noreferrer"
             onMouseEnter={() => setLinkHovered(true)}
             onMouseLeave={() => setLinkHovered(false)}
             style={{

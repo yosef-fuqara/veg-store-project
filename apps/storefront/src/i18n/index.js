@@ -9,6 +9,7 @@ import heCart from "./locales/he/cart.json";
 import heAuth from "./locales/he/auth.json";
 import heCheckout from "./locales/he/checkout.json";
 import heOrder from "./locales/he/order.json";
+import hePromotion from "./locales/he/promotion.json";
 import arCommon from "./locales/ar/common.json";
 import arNav from "./locales/ar/nav.json";
 import arHome from "./locales/ar/home.json";
@@ -16,6 +17,7 @@ import arCart from "./locales/ar/cart.json";
 import arAuth from "./locales/ar/auth.json";
 import arCheckout from "./locales/ar/checkout.json";
 import arOrder from "./locales/ar/order.json";
+import arPromotion from "./locales/ar/promotion.json";
 import enCommon from "./locales/en/common.json";
 import enNav from "./locales/en/nav.json";
 import enHome from "./locales/en/home.json";
@@ -23,6 +25,7 @@ import enCart from "./locales/en/cart.json";
 import enAuth from "./locales/en/auth.json";
 import enCheckout from "./locales/en/checkout.json";
 import enOrder from "./locales/en/order.json";
+import enPromotion from "./locales/en/promotion.json";
 
 const STORAGE_KEY = "app.lang";
 
@@ -34,7 +37,8 @@ const resources = {
     cart: heCart,
     auth: heAuth,
     checkout: heCheckout,
-    order: heOrder
+    order: heOrder,
+    promotion: hePromotion
   },
   ar: {
     common: arCommon,
@@ -43,7 +47,8 @@ const resources = {
     cart: arCart,
     auth: arAuth,
     checkout: arCheckout,
-    order: arOrder
+    order: arOrder,
+    promotion: arPromotion
   },
   en: {
     common: enCommon,
@@ -52,7 +57,8 @@ const resources = {
     cart: enCart,
     auth: enAuth,
     checkout: enCheckout,
-    order: enOrder
+    order: enOrder,
+    promotion: enPromotion
   }
 };
 
@@ -64,7 +70,7 @@ i18n
     supportedLngs: ["he", "ar", "en"],
     fallbackLng: "en",
     lng: "he",
-    ns: ["common", "nav", "home", "cart", "auth", "checkout", "order"],
+    ns: ["common", "nav", "home", "cart", "auth", "checkout", "order", "promotion"],
     defaultNS: "common",
     interpolation: {
       escapeValue: false

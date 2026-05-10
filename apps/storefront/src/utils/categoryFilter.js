@@ -3,13 +3,13 @@
  * Matches API category slug and multilingual names against known shop groupings.
  */
 
-/** @typedef {'fruits' | 'vegetables' | 'platters' | 'juices'} CategoryNavId */
+/** @typedef {'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | 'other'} CategoryNavId */
 
 /** @type {CategoryNavId[]} */
-export const CATEGORY_NAV_IDS = ['fruits', 'vegetables', 'platters', 'juices'];
+export const CATEGORY_NAV_IDS = ['fruits', 'vegetables', 'herbs', 'spices', 'platters', 'other'];
 
 /** @param {unknown} category */
-function categoryHaystack(category) {
+export function categoryHaystack(category) {
   if (category == null) return '';
   const parts = [];
   if (typeof category === 'string') {
@@ -30,7 +30,7 @@ function categoryHaystack(category) {
   return parts.join(' ').toLowerCase();
 }
 
-/** @type {Record<CategoryNavId, { slugs: string[], needles: string[] }>} */
+/** @type {Record<'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters', { slugs: string[], needles: string[] }>} */
 const RULES = {
   fruits: {
     slugs: ['fruit', 'fruits', 'פירות', 'פרי'],
@@ -40,26 +40,82 @@ const RULES = {
     slugs: ['vegetable', 'vegetables', 'veggie', 'veggies', 'ירקות', 'ירק'],
     needles: ['vegetable', 'vegetables', 'veggie', 'ירקות', 'ירק', 'خضار', 'خضروات'],
   },
+  herbs: {
+    slugs: ['herb', 'herbs', 'עשבי-תיבול', 'עשבי תיבול'],
+    needles: [
+      'herb',
+      'herbs',
+      'cilantro',
+      'parsley',
+      'basil',
+      'mint',
+      'dill',
+      'rosemary',
+      'thyme',
+      'oregano',
+      'chives',
+      'sage',
+      'עשבי תיבול',
+      'כוסברה',
+      'נענע',
+      'שמיר',
+      'פטרוזיליה',
+      'בזיליקום',
+      'רוזמרין',
+      'אורגנו',
+      'תימין',
+      'בצל ירוק',
+      'אסטור',
+      'أعشاب',
+      'بقدونس',
+      'نعناع',
+      'ريحان',
+      'شبت',
+      'زعتر',
+      'حبق',
+      // Legacy combined category (until DB migration reassigns products)
+      'herbs & spices',
+      'herbs and spices',
+      'עשבי תיבול ותבלינים',
+      'أعشاب وتوابل',
+    ],
+  },
+  spices: {
+    slugs: ['spice', 'spices', 'baharat', 'بهارات', 'תבלינים'],
+    needles: [
+      'spice',
+      'spices',
+      'seasoning',
+      'תבלין',
+      'תבלינים',
+      'بهارات',
+      'توابل',
+      'baharat',
+      'bahar',
+      'cumin',
+      'paprika',
+      'cinnamon',
+      'turmeric',
+      'curry powder',
+      'nutmeg',
+      'clove',
+      'cardamom',
+      'sumac',
+      'zaatar',
+      "za'atar",
+    ],
+  },
   platters: {
     slugs: ['platter', 'platters', 'sliced', 'plate', 'מגש', 'מגשים'],
     needles: ['platter', 'platters', 'sliced', 'plate', 'מגש', 'لوحة', 'شرائح'],
   },
-  juices: {
-    slugs: ['juice', 'juices', 'drink', 'drinks', 'beverage', 'smoothie', 'מיץ', 'מיצים'],
-    needles: ['juice', 'juices', 'drink', 'beverage', 'smoothie', 'מיץ', 'מיצים', 'عصير', 'مشروب', 'שתייה'],
-  },
 };
 
 /**
- * @param {unknown} product
- * @param {CategoryNavId} navId
+ * @param {string} hay
+ * @param {{ slugs: string[], needles: string[] }} rule
  */
-export function productMatchesCategoryNav(product, navId) {
-  const rule = RULES[navId];
-  if (!rule || !product || typeof product !== 'object') return false;
-  const cat = /** @type {{ category?: unknown }} */ (product).category;
-  const hay = categoryHaystack(cat);
-  if (!hay) return false;
+function haystackMatchesRule(hay, rule) {
   for (const s of rule.slugs) {
     if (hay.includes(s.toLowerCase())) return true;
   }
@@ -67,4 +123,93 @@ export function productMatchesCategoryNav(product, navId) {
     if (hay.includes(needle.toLowerCase())) return true;
   }
   return false;
+}
+
+/**
+ * When a DB category slug is not in the storefront slug allowlist, map the category document
+ * to one primary nav using the same keyword rules as legacy filtering (single nav; tie-break by order).
+ * @param {unknown} category
+ * @returns {'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | null}
+ */
+export function inferPrimaryNavIdFromCategoryRecord(category) {
+  const hay = categoryHaystack(category);
+  if (!hay) return null;
+  if (isLegacyCombinedHaystack(hay)) return "herbs";
+
+  const slug =
+    category && typeof category === "object" && typeof /** @type {{ slug?: string }} */ (category).slug === "string"
+      ? /** @type {{ slug?: string }} */ (category).slug.trim().toLowerCase()
+      : "";
+  if (slug && isLegacyCombinedHaystack(slug)) return "herbs";
+
+  /** @type {Array<'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters'>} */
+  const hits = [];
+  for (const navId of /** @type {const} */ ([
+    "fruits",
+    "vegetables",
+    "herbs",
+    "spices",
+    "platters",
+  ])) {
+    const rule = RULES[navId];
+    if (navId === "spices" && isLegacyCombinedHaystack(hay)) continue;
+    if (haystackMatchesRule(hay, rule)) hits.push(navId);
+  }
+  if (hits.length === 1) return hits[0];
+  if (hits.length > 1) {
+    const order = /** @type {const} */ ([
+      "herbs",
+      "spices",
+      "vegetables",
+      "fruits",
+      "platters",
+    ]);
+    for (const navId of order) {
+      if (hits.includes(navId)) return navId;
+    }
+  }
+  return null;
+}
+
+/** Combined legacy category should map to Herbs nav only (not Spices), until DB migration splits rows. */
+export function isLegacyCombinedHaystack(hay) {
+  if (!hay) return false;
+  return (
+    hay.includes('herbs-spices')
+    || hay.includes('herbs-and-spices')
+    || hay.includes('herb-spice')
+    || hay.includes('spices-and-herbs')
+    || hay.includes('spices-herbs')
+    || hay.includes('herbs & spices')
+    || hay.includes('herbs and spices')
+    || hay.includes('עשבי תיבול ותבלינים')
+    || hay.includes('أعشاب وتوابل')
+  );
+}
+
+/**
+ * @param {unknown} product
+ * @param {CategoryNavId} navId
+ */
+export function productMatchesCategoryNav(product, navId) {
+  if (!product || typeof product !== 'object') return false;
+  const cat = /** @type {{ category?: unknown }} */ (product).category;
+  const hay = categoryHaystack(cat);
+
+  if (navId === 'other') {
+    if (!hay) return true;
+    return (
+      !haystackMatchesRule(hay, RULES.fruits)
+      && !haystackMatchesRule(hay, RULES.vegetables)
+      && !haystackMatchesRule(hay, RULES.herbs)
+      && !haystackMatchesRule(hay, RULES.spices)
+      && !haystackMatchesRule(hay, RULES.platters)
+    );
+  }
+
+  const rule = RULES[/** @type {'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters'} */ (navId)];
+  if (!rule) return false;
+  if (!hay) return false;
+  if (navId === 'spices' && isLegacyCombinedHaystack(hay)) return false;
+  return haystackMatchesRule(hay, rule);
 }

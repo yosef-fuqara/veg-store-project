@@ -33,8 +33,14 @@ describe("Seed bootstrap flow", () => {
 
     // 3) Create categories as admin.
     const categoriesToCreate = [
-      { name: "Seed Vegetables", description: "Vegetable category" },
-      { name: "Seed Fruits", description: "Fruit category" }
+      {
+        name: { ar: "خضار البذور", he: "ירקות זרעים", en: "Seed Vegetables" },
+        description: "Vegetable category"
+      },
+      {
+        name: { ar: "فواكه البذور", he: "פירות זרעים", en: "Seed Fruits" },
+        description: "Fruit category"
+      }
     ];
 
     const createdCategories = [];
@@ -79,7 +85,12 @@ describe("Seed bootstrap flow", () => {
         .set("Authorization", `Bearer ${adminToken}`);
 
       Object.entries(payload).forEach(([key, value]) => {
-        req = req.field(key, String(value));
+        if (key === "name") {
+          const n = String(value);
+          req = req.field(key, JSON.stringify({ ar: n, he: n, en: n }));
+        } else {
+          req = req.field(key, String(value));
+        }
       });
       req = attachProductImage(req);
 

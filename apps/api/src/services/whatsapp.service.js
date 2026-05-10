@@ -1,4 +1,5 @@
 const env = require("../config/env");
+const { resolveDeliveryAreaLabel } = require("../constants/delivery");
 
 const truthy = (value) =>
   typeof value === "string" && ["1", "true", "yes", "on"].includes(value.toLowerCase());
@@ -12,7 +13,11 @@ const buildOrderMessage = (order, user) => {
   const orderId = String(order?._id || "");
   const customerName = user?.name || order?.customerName || "-";
   const customerPhone = order?.customerPhone || user?.phone || "-";
-  const area = order?.deliveryArea || "-";
+  const area = resolveDeliveryAreaLabel(
+    order?.deliveryArea,
+    order?.deliveryAddress?.city,
+    "he"
+  );
   const total = typeof order?.total === "number" ? order.total : 0;
   const paymentMethod = order?.paymentMethod || "-";
   const adminBaseUrl = env.adminBaseUrl;

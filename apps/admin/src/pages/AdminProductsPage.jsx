@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { deleteProduct, getAdminProducts, setProductFrozen } from "../services/productService";
 import { useToast } from "../features/toast/ToastContext";
+import { pickLocalizedName } from "../utils/localizedDisplayName";
 
 const colors = {
   primary:      '#1e6b3c',
@@ -29,12 +31,6 @@ const STATUS_STYLES = {
 const formatCurrency = (value) => {
   if (typeof value !== 'number') return '—';
   return new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 2 }).format(value);
-};
-
-const pickLocalizedName = (name) => {
-  if (!name) return '—';
-  if (typeof name === 'string') return name;
-  return name.en || name.he || name.ar || '—';
 };
 
 const pickSubtitle = (name) => {
@@ -76,11 +72,23 @@ const AdminProductsPage = () => {
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [menuId, setMenuId] = useState('');
+  /** @type {[{ top: number, left: number } | null, (v: { top: number, left: number } | null) => void]} */
+  const [menuPos, setMenuPos] = useState(/** @type {{ top: number, left: number } | null} */ (null));
   const [hoverRowId, setHoverRowId] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const filterRef = useRef(null);
   const menuRef = useRef(null);
   const pageSize = 10;
+
+  const closeProductMenu = useCallback(() => {
+    setMenuId('');
+    setMenuPos(null);
+  }, []);
+
+  const menuProduct = useMemo(
+    () => items.find((p) => String(p._id) === String(menuId)) ?? null,
+    [items, menuId]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,11 +108,36 @@ const AdminProductsPage = () => {
   useEffect(() => {
     const handler = (e) => {
       if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false);
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuId('');
+      if (menuRef.current && !menuRef.current.contains(e.target)) closeProductMenu();
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [closeProductMenu]);
+
+  useEffect(() => {
+    if (!menuId) return undefined;
+    const onScroll = () => closeProductMenu();
+    window.addEventListener('scroll', onScroll, true);
+    return () => window.removeEventListener('scroll', onScroll, true);
+  }, [menuId, closeProductMenu]);
+
+  useEffect(() => {
+    if (!menuId) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') closeProductMenu();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuId, closeProductMenu]);
+
+  useEffect(() => {
+    setMenuId('');
+    setMenuPos(null);
+  }, [page]);
+
+  useEffect(() => {
+    if (menuId && !menuProduct) closeProductMenu();
+  }, [menuId, menuProduct, closeProductMenu]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -122,7 +155,7 @@ const AdminProductsPage = () => {
 
   const handleToggleFreeze = async (product) => {
     setBusyId(product._id);
-    setMenuId('');
+    closeProductMenu();
     try {
       await setProductFrozen(product._id, !product.isFrozen);
       showToast(product.isFrozen ? 'Product unfrozen.' : 'Product frozen.');
@@ -137,7 +170,7 @@ const AdminProductsPage = () => {
   const handleDelete = async (product) => {
     if (!window.confirm(`Delete "${pickLocalizedName(product.name)}"?`)) return;
     setBusyId(product._id);
-    setMenuId('');
+    closeProductMenu();
     try {
       await deleteProduct(product._id);
       showToast('Product deleted.');
@@ -179,6 +212,7 @@ const AdminProductsPage = () => {
         }
         .admin-products-skel { animation: adminProductsSkeletonPulse 1.4s ease-in-out infinite; }
         .admin-products-filter-btn:focus-visible,
+        .admin-products-add-category:focus-visible,
         .admin-products-add:focus-visible,
         .admin-products-menu:focus-visible,
         .admin-products-page:focus-visible,
@@ -200,31 +234,85 @@ const AdminProductsPage = () => {
         gap: '16px',
         marginBottom: '32px',
       }}>
-        <Link
-          to="/products/new"
-          className="admin-products-add"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 20px',
-            borderRadius: '10px',
-            background: colors.primary,
-            color: colors.textInverse,
-            fontSize: '14px',
-            fontWeight: 600,
-            textDecoration: 'none',
-            boxShadow: '0 4px 14px rgba(30,107,60,0.30)',
-            ...interactiveBtn,
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = colors.primaryHover; e.currentTarget.style.boxShadow = '0 4px 12px rgba(30,107,60,0.32)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = colors.primary; e.currentTarget.style.boxShadow = '0 2px 8px rgba(30,107,60,0.25)'; }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Add Product
-        </Link>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
+          <Link
+            to="/products/new"
+            className="admin-products-add"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 20px',
+              borderRadius: '10px',
+              background: colors.primary,
+              color: colors.textInverse,
+              fontSize: '14px',
+              fontWeight: 600,
+              textDecoration: 'none',
+              boxShadow: '0 4px 14px rgba(30,107,60,0.30)',
+              ...interactiveBtn,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = colors.primaryHover; e.currentTarget.style.boxShadow = '0 4px 12px rgba(30,107,60,0.32)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = colors.primary; e.currentTarget.style.boxShadow = '0 2px 8px rgba(30,107,60,0.25)'; }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Product
+          </Link>
+          <Link
+            to="/categories"
+            className="admin-products-add-category"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              borderRadius: '10px',
+              border: `1.5px solid ${colors.border}`,
+              background: colors.surface,
+              color: colors.textPrimary,
+              fontSize: '14px',
+              fontWeight: 600,
+              textDecoration: 'none',
+              ...interactiveBtn,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h10"/>
+            </svg>
+            Manage categories
+          </Link>
+          <Link
+            to="/categories/new"
+            className="admin-products-add-category"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              borderRadius: '10px',
+              border: `1.5px solid ${colors.primary}`,
+              background: colors.surface,
+              color: colors.primary,
+              fontSize: '14px',
+              fontWeight: 600,
+              textDecoration: 'none',
+              ...interactiveBtn,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h10"/>
+              <line x1="16" y1="15" x2="22" y2="15"/>
+              <line x1="19" y1="12" x2="19" y2="18"/>
+            </svg>
+            Add Category
+          </Link>
+        </div>
         <div style={{ textAlign: 'end', flex: '1 1 200px', minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: '36px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.5px' }}>
             Products
@@ -411,7 +499,6 @@ const AdminProductsPage = () => {
           <div
             style={{
               overflowX: 'auto',
-              overflowY: 'hidden',
               WebkitOverflowScrolling: 'touch',
               maxWidth: '100%',
             }}
@@ -442,7 +529,9 @@ const AdminProductsPage = () => {
                   const state = getProductState(product);
                   const stateStyle = STATUS_STYLES[state] || STATUS_STYLES.inactive;
                   const inStock = product.stockStatus === 'in_stock';
-                  const category = product.category?.name ?? (typeof product.category === 'string' ? product.category : '');
+                  const categoryRaw = product.category?.name ?? (typeof product.category === 'string' ? product.category : '');
+                  const category =
+                    categoryRaw !== '' && categoryRaw != null ? pickLocalizedName(categoryRaw) : '';
                   const price = typeof product.price === 'number' ? product.price : null;
                   const salePrice = typeof product.salePrice === 'number' ? product.salePrice : null;
                   const isBusy = busyId === product._id;
@@ -460,124 +549,59 @@ const AdminProductsPage = () => {
                       onMouseLeave={() => setHoverRowId('')}
                     >
 
-                      {/* Actions */}
-                      <td style={{ padding: '12px 16px', position: 'relative', verticalAlign: 'middle' }}>
-                        <div ref={menuId === product._id ? menuRef : null} style={{ display: 'inline-block' }}>
-                          <button
-                            type="button"
-                            className="admin-products-menu"
-                            onClick={() => setMenuId(menuId === product._id ? '' : product._id)}
-                            disabled={isBusy}
-                            aria-expanded={menuId === product._id}
-                            aria-haspopup="true"
-                            aria-label={isBusy ? 'Working…' : `Actions for ${name}`}
-                            style={{
-                              background: menuId === product._id ? colors.borderLight : 'none',
-                              border: 'none',
-                              cursor: isBusy ? 'not-allowed' : 'pointer',
-                              fontSize: '20px',
-                              color: menuId === product._id ? colors.textPrimary : colors.textMuted,
-                              padding: '4px 8px',
-                              borderRadius: '8px',
-                              lineHeight: 1,
-                              opacity: isBusy ? 0.5 : 1,
-                              transition: 'background 0.15s, color 0.15s, opacity 0.15s',
-                            }}
-                            onMouseEnter={(e) => { if (!isBusy && menuId !== product._id) { e.currentTarget.style.background = colors.borderLight; e.currentTarget.style.color = colors.textPrimary; } }}
-                            onMouseLeave={(e) => { if (menuId !== product._id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = colors.textMuted; } }}
-                          >
-                            {isBusy ? (
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ animation: 'adminProductsSpin 0.9s linear infinite', display: 'block' }}>
-                                <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
-                              </svg>
-                            ) : '⋮'}
-                          </button>
-                          {menuId === product._id && (
-                            <div style={{
-                              position: 'absolute',
-                              top: '100%',
-                              insetInlineStart: 0,
-                              zIndex: 20,
-                              background: colors.surface,
-                              borderRadius: '10px',
-                              border: `1px solid ${colors.border}`,
-                              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                              overflow: 'hidden',
-                              minWidth: '160px',
-                              maxWidth: 'min(260px, calc(100vw - 48px))',
-                            }}>
-                              <Link
-                                to={`/products/${product._id}/edit`}
-                                onClick={() => setMenuId('')}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  padding: '10px 16px',
-                                  fontSize: '13px',
-                                  color: colors.textPrimary,
-                                  textDecoration: 'none',
-                                  transition: 'background 0.12s',
-                                }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; }}
-                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                              >
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                Edit
-                              </Link>
-                              {!product.isDeleted && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleFreeze(product)}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    width: '100%',
-                                    padding: '10px 16px',
-                                    border: 'none',
-                                    background: 'none',
-                                    fontSize: '13px',
-                                    color: colors.textPrimary,
-                                    cursor: 'pointer',
-                                    textAlign: 'start',
-                                    transition: 'background 0.12s',
-                                  }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                                >
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                                  {product.isFrozen ? 'Unfreeze' : 'Freeze'}
-                                </button>
-                              )}
-                              {!product.isDeleted && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDelete(product)}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    width: '100%',
-                                    padding: '10px 16px',
-                                    border: 'none',
-                                    background: 'none',
-                                    fontSize: '13px',
-                                    color: colors.error,
-                                    cursor: 'pointer',
-                                    textAlign: 'start',
-                                    transition: 'background 0.12s',
-                                  }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.background = colors.errorBg; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                                >
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                                  Delete
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                      {/* Actions — menu is portaled to body so it is not clipped by table overflow */}
+                      <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                        <button
+                          type="button"
+                          className="admin-products-menu"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const pid = String(product._id);
+                            if (menuId === pid) {
+                              closeProductMenu();
+                              return;
+                            }
+                            const r = e.currentTarget.getBoundingClientRect();
+                            const menuWidth = 200;
+                            const left = Math.max(8, Math.min(r.left, window.innerWidth - menuWidth - 8));
+                            setMenuPos({ top: r.bottom + 4, left });
+                            setMenuId(pid);
+                          }}
+                          disabled={isBusy}
+                          aria-expanded={menuId === String(product._id)}
+                          aria-haspopup="true"
+                          aria-label={isBusy ? 'Working…' : `Actions for ${name}`}
+                          style={{
+                            background: menuId === String(product._id) ? colors.borderLight : 'none',
+                            border: 'none',
+                            cursor: isBusy ? 'not-allowed' : 'pointer',
+                            fontSize: '20px',
+                            color: menuId === String(product._id) ? colors.textPrimary : colors.textMuted,
+                            padding: '4px 8px',
+                            borderRadius: '8px',
+                            lineHeight: 1,
+                            opacity: isBusy ? 0.5 : 1,
+                            transition: 'background 0.15s, color 0.15s, opacity 0.15s',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isBusy && menuId !== String(product._id)) {
+                              e.currentTarget.style.background = colors.borderLight;
+                              e.currentTarget.style.color = colors.textPrimary;
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (menuId !== String(product._id)) {
+                              e.currentTarget.style.background = 'transparent';
+                              e.currentTarget.style.color = colors.textMuted;
+                            }
+                          }}
+                        >
+                          {isBusy ? (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ animation: 'adminProductsSpin 0.9s linear infinite', display: 'block' }}>
+                              <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
+                            </svg>
+                          ) : '⋮'}
+                        </button>
                       </td>
 
                       {/* Status */}
@@ -747,6 +771,129 @@ const AdminProductsPage = () => {
             )}
           </div>
         )}
+
+        {menuId && menuPos && menuProduct
+          ? createPortal(
+              <div
+                ref={menuRef}
+                role="menu"
+                style={{
+                  position: 'fixed',
+                  top: menuPos.top,
+                  left: menuPos.left,
+                  zIndex: 10000,
+                  background: colors.surface,
+                  borderRadius: '10px',
+                  border: `1px solid ${colors.border}`,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  overflow: 'hidden',
+                  minWidth: '160px',
+                  maxWidth: 'min(260px, calc(100vw - 48px))',
+                }}
+              >
+                {menuProduct.isDeleted && (
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      fontSize: '12px',
+                      lineHeight: 1.45,
+                      color: colors.textSecondary,
+                      background: colors.bg,
+                      borderBottom: `1px solid ${colors.borderLight}`,
+                    }}
+                  >
+                    This product is already removed from the catalog. Freeze and Delete are hidden because removal already
+                    happened (soft delete).
+                  </div>
+                )}
+                <Link
+                  to={`/products/${menuProduct._id}/edit`}
+                  onClick={closeProductMenu}
+                  role="menuitem"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 16px',
+                    fontSize: '13px',
+                    color: colors.textPrimary,
+                    textDecoration: 'none',
+                    transition: 'background 0.12s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = colors.bg;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  Edit
+                </Link>
+                {!menuProduct.isDeleted && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleToggleFreeze(menuProduct)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      width: '100%',
+                      padding: '10px 16px',
+                      border: 'none',
+                      background: 'none',
+                      fontSize: '13px',
+                      color: colors.textPrimary,
+                      cursor: 'pointer',
+                      textAlign: 'start',
+                      transition: 'background 0.12s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = colors.bg;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    {menuProduct.isFrozen ? 'Unfreeze' : 'Freeze'}
+                  </button>
+                )}
+                {!menuProduct.isDeleted && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => handleDelete(menuProduct)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      width: '100%',
+                      padding: '10px 16px',
+                      border: 'none',
+                      background: 'none',
+                      fontSize: '13px',
+                      color: colors.error,
+                      cursor: 'pointer',
+                      textAlign: 'start',
+                      transition: 'background 0.12s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = colors.errorBg;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    Remove from catalog
+                  </button>
+                )}
+              </div>,
+              document.body
+            )
+          : null}
       </div>
     </div>
   );

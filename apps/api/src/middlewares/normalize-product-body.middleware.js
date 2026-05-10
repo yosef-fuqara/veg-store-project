@@ -27,13 +27,43 @@ const asOptionalBoolean = (value) => {
   return value;
 };
 
+const tryParseNameField = (value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("{")) {
+    return value;
+  }
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return value;
+  }
+};
+
 const normalizeProductBody = (req, res, next) => {
-  req.body.price = asOptionalNumber(req.body.price);
-  req.body.salePrice = asOptionalNumber(req.body.salePrice);
-  req.body.isFeatured = asOptionalBoolean(req.body.isFeatured);
-  req.body.isFrozen = asOptionalBoolean(req.body.isFrozen);
-  req.body.isPreorderOnly = asOptionalBoolean(req.body.isPreorderOnly);
-  req.body.minAdvanceHours = asOptionalNumber(req.body.minAdvanceHours);
+  if (Object.prototype.hasOwnProperty.call(req.body, "name")) {
+    req.body.name = tryParseNameField(req.body.name);
+  }
+  if (Object.prototype.hasOwnProperty.call(req.body, "price")) {
+    req.body.price = asOptionalNumber(req.body.price);
+  }
+  if (Object.prototype.hasOwnProperty.call(req.body, "salePrice")) {
+    req.body.salePrice = asOptionalNumber(req.body.salePrice);
+  }
+  if (Object.prototype.hasOwnProperty.call(req.body, "isFeatured")) {
+    req.body.isFeatured = asOptionalBoolean(req.body.isFeatured);
+  }
+  if (Object.prototype.hasOwnProperty.call(req.body, "isFrozen")) {
+    req.body.isFrozen = asOptionalBoolean(req.body.isFrozen);
+  }
+  if (Object.prototype.hasOwnProperty.call(req.body, "isPreorderOnly")) {
+    req.body.isPreorderOnly = asOptionalBoolean(req.body.isPreorderOnly);
+  }
+  if (Object.prototype.hasOwnProperty.call(req.body, "minAdvanceHours")) {
+    req.body.minAdvanceHours = asOptionalNumber(req.body.minAdvanceHours);
+  }
   next();
 };
 

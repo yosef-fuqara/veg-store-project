@@ -16,7 +16,7 @@ const {
   OUTSIDE_FREE_DELIVERY_MIN
 } = require("../../src/constants/delivery");
 
-const OUTSIDE_AREA = "nazareth";
+const OUTSIDE_AREA = "eilabun";
 
 const baseOrderPayload = {
   deliveryAddress: {

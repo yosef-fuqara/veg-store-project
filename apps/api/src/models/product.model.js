@@ -4,17 +4,39 @@ const { PRODUCT_UNITS, PRODUCT_STOCK_STATUS } = require("../constants/product");
 const productSchema = new mongoose.Schema(
   {
     name: {
-      type: String,
+      type: mongoose.Schema.Types.Mixed,
       required: true,
-      trim: true,
-      minlength: 2,
-      maxlength: 120
+      validate: {
+        validator(value) {
+          if (value == null) return false;
+          if (typeof value === "string") {
+            const s = value.trim();
+            return s.length >= 2 && s.length <= 120;
+          }
+          if (typeof value === "object" && !Array.isArray(value)) {
+            const ar = typeof value.ar === "string" ? value.ar.trim() : "";
+            const he = typeof value.he === "string" ? value.he.trim() : "";
+            const en = typeof value.en === "string" ? value.en.trim() : "";
+            return (
+              ar.length >= 2 &&
+              ar.length <= 120 &&
+              he.length >= 2 &&
+              he.length <= 120 &&
+              en.length >= 2 &&
+              en.length <= 120
+            );
+          }
+          return false;
+        },
+        message:
+          "Product name must be a legacy string (2–120 chars) or { ar, he, en } each 2–120 chars."
+      }
     },
     description: {
       type: String,
-      required: true,
       trim: true,
-      maxlength: 2000
+      maxlength: 2000,
+      default: ""
     },
     price: {
       type: Number,
@@ -87,6 +109,11 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-productSchema.index({ name: "text", description: "text" });
+productSchema.index({
+  "name.ar": "text",
+  "name.he": "text",
+  "name.en": "text",
+  description: "text"
+});
 productSchema.index({ isActive: 1, isFrozen: 1, isDeleted: 1, category: 1 });
 module.exports = mongoose.model("Product", productSchema);

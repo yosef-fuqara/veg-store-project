@@ -1,4 +1,12 @@
 {
+  "addedToCartToast": "המוצר נוסף לסל",
+  "genericError": "משהו השתבש. נסה שוב.",
+  "signInToAdd": {
+    "message": "צריך להתחבר כדי להוסיף מוצרים לעגלה",
+    "signIn": "התחברות",
+    "createAccount": "הרשמה",
+    "close": "סגור"
+  },
   "title": "עגלה",
   "quantity": "כמות",
   "price": "מחיר",

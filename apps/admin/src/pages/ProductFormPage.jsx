@@ -1,14 +1,38 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getAdminCategories } from "../services/categoryService";
+import { getLocalizedText, pickLocalizedName } from "../utils/localizedDisplayName";
 import { createProduct, getAdminProducts, updateProduct } from "../services/productService";
 import { useToast } from "../features/toast/ToastContext";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 
 const UNIT_OPTIONS = ["kg", "gram", "unit", "box"];
 const STOCK_OPTIONS = ["in_stock", "out_of_stock"];
 
+const emptyName = () => ({ ar: "", he: "", en: "" });
+
+const parseNameFromProduct = (raw) => {
+  if (raw == null) return emptyName();
+  if (typeof raw === "string") return { ar: raw, he: raw, en: raw };
+  return {
+    ar: typeof raw.ar === "string" ? raw.ar : "",
+    he: typeof raw.he === "string" ? raw.he : "",
+    en: typeof raw.en === "string" ? raw.en : ""
+  };
+};
+
+/** Single textarea: coerce API string or { ar, he, en } to a string. */
+const parseDescriptionForForm = (raw) => {
+  if (raw == null) return "";
+  if (typeof raw === "string") return raw;
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    return getLocalizedText(raw, "en");
+  }
+  return "";
+};
+
 const EMPTY_FORM = {
-  name: "",
+  name: emptyName(),
   description: "",
   price: "",
   salePrice: "",
@@ -20,6 +44,8 @@ const EMPTY_FORM = {
   minAdvanceHours: 24,
   preparationNotes: "",
 };
+
+const VEGSTORE_ADMIN_PRODUCT_DRAFT_KEY = "vegstore_admin_product_draft";
 
 const colors = {
   primary:      '#1e6b3c',
@@ -103,6 +129,9 @@ const ProductFormPage = () => {
   const [focused, setFocused] = useState(null);
   const [dropFocused, setDropFocused] = useState(false);
 
+  const [, setStoredAdminDraft] = useLocalStorage(VEGSTORE_ADMIN_PRODUCT_DRAFT_KEY, null);
+  const draftScopeAppliedRef = useRef("");
+
   const title = useMemo(() => (isEditMode ? "Edit Product" : "Add Product"), [isEditMode]);
 
   const loadInitialData = useCallback(async () => {
@@ -116,8 +145,8 @@ const ProductFormPage = () => {
         const current = products.find((item) => item._id === productId);
         if (!current) throw new Error("Product not found");
         setForm({
-          name: current.name || "",
-          description: current.description || "",
+          name: parseNameFromProduct(current.name),
+          description: parseDescriptionForForm(current.description),
           price: current.price ?? "",
           salePrice: current.salePrice ?? "",
           category: current.category?._id || "",
@@ -141,10 +170,61 @@ const ProductFormPage = () => {
 
   useEffect(() => { loadInitialData(); }, [loadInitialData]);
 
+  useEffect(() => {
+    draftScopeAppliedRef.current = "";
+  }, [productId, isEditMode]);
+
+  useLayoutEffect(() => {
+    if (initializing) return;
+    const scope = isEditMode ? `edit:${productId}` : "new";
+    if (draftScopeAppliedRef.current === scope) return;
+    draftScopeAppliedRef.current = scope;
+    try {
+      const raw = window.localStorage.getItem(VEGSTORE_ADMIN_PRODUCT_DRAFT_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (!data || data.v !== 1 || !data.form || typeof data.form !== "object") return;
+      if (isEditMode) {
+        if (data.mode !== "edit" || data.productId !== productId) return;
+      } else if (data.mode !== "new") return;
+      setForm((prev) => {
+        const d = data.form.description;
+        const description =
+          typeof d === "string" ? d : getLocalizedText(d, "en");
+        return {
+          ...prev,
+          ...data.form,
+          name: { ...prev.name, ...(data.form.name || {}) },
+          description
+        };
+      });
+    } catch {
+      /* ignore */
+    }
+  }, [initializing, isEditMode, productId]);
+
+  useEffect(() => {
+    if (initializing) return;
+    const id = window.setTimeout(() => {
+      setStoredAdminDraft({
+        v: 1,
+        mode: isEditMode ? "edit" : "new",
+        productId: isEditMode ? productId : null,
+        form
+      });
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [form, initializing, isEditMode, productId, setStoredAdminDraft]);
+
   const BOOLEAN_FIELDS = new Set(["isFeatured", "isPreorderOnly"]);
   const onChange = (field) => (event) => {
     const value = BOOLEAN_FIELDS.has(field) ? event.target.checked : event.target.value;
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const onNameChange = (locale) => (event) => {
+    const value = event.target.value;
+    setForm((prev) => ({ ...prev, name: { ...prev.name, [locale]: value } }));
   };
 
   const handleImageChange = (event) => {
@@ -167,7 +247,14 @@ const ProductFormPage = () => {
       if (!isEditMode && !imageFile) throw new Error("Product image is required");
 
       const payload = new FormData();
-      payload.append("name", String(form.name).trim());
+      payload.append(
+        "name",
+        JSON.stringify({
+          ar: String(form.name.ar).trim(),
+          he: String(form.name.he).trim(),
+          en: String(form.name.en).trim()
+        })
+      );
       payload.append("description", String(form.description).trim());
       payload.append("price", String(form.price));
       payload.append("category", form.category);
@@ -189,6 +276,7 @@ const ProductFormPage = () => {
         await createProduct(payload);
         showToast("Product created successfully.");
       }
+      setStoredAdminDraft(null);
       navigate("/products", { replace: true });
     } catch (err) {
       const message = err.userMessage || err.message || "Failed to save product";
@@ -314,12 +402,21 @@ const ProductFormPage = () => {
             Product Info
           </h3>
 
-          <Field label="Name *">
-            <input value={form.name} onChange={onChange("name")} required minLength={2} maxLength={120} onFocus={focus("name")} onBlur={blur} style={inputStyle("name")} />
-          </Field>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: colors.textSecondary }}>Product name (all languages) *</span>
+            <Field label="Arabic (ar)">
+              <input value={form.name.ar} onChange={onNameChange("ar")} required minLength={2} maxLength={120} onFocus={focus("nameAr")} onBlur={blur} style={inputStyle("nameAr")} dir="rtl" />
+            </Field>
+            <Field label="Hebrew (he)">
+              <input value={form.name.he} onChange={onNameChange("he")} required minLength={2} maxLength={120} onFocus={focus("nameHe")} onBlur={blur} style={inputStyle("nameHe")} dir="rtl" />
+            </Field>
+            <Field label="English (en)">
+              <input value={form.name.en} onChange={onNameChange("en")} required minLength={2} maxLength={120} onFocus={focus("nameEn")} onBlur={blur} style={inputStyle("nameEn")} dir="ltr" />
+            </Field>
+          </div>
 
-          <Field label="Description *">
-            <textarea value={form.description} onChange={onChange("description")} required minLength={2} maxLength={2000} rows={4} onFocus={focus("description")} onBlur={blur} style={{ ...inputStyle("description"), resize: 'vertical', minHeight: '96px' }} />
+          <Field label="Description" hint="Optional">
+            <textarea value={form.description} onChange={onChange("description")} maxLength={2000} rows={4} onFocus={focus("description")} onBlur={blur} style={{ ...inputStyle("description"), resize: 'vertical', minHeight: '96px' }} />
           </Field>
 
           <div style={{
@@ -351,7 +448,7 @@ const ProductFormPage = () => {
               <select value={form.category} onChange={onChange("category")} required onFocus={focus("category")} onBlur={blur} style={{ ...inputStyle("category"), cursor: 'pointer' }}>
                 <option value="" disabled>Select</option>
                 {categories.map((cat) => (
-                  <option key={cat._id} value={cat._id}>{cat.name}</option>
+                  <option key={cat._id} value={cat._id}>{pickLocalizedName(cat.name)}</option>
                 ))}
               </select>
             </Field>

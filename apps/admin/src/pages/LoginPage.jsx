@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthContext";
 import { USER_ROLES } from "../constants/roles";
@@ -22,6 +23,17 @@ const colors = {
 
 const fontStack = "'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
 
+const INVALID_CREDENTIALS_MESSAGE =
+  "Invalid email or password. אימייל או סיסמה שגויים";
+
+function isInvalidLoginCredentialsError(err) {
+  if (err?.response?.status !== 401) return false;
+  const fromApi = err.response?.data?.message;
+  if (typeof fromApi === "string" && /invalid email or password/i.test(fromApi)) return true;
+  const um = err.userMessage;
+  return typeof um === "string" && /invalid email or password/i.test(um);
+}
+
 const inputBase = {
   width: '100%',
   boxSizing: 'border-box',
@@ -39,6 +51,32 @@ const inputBase = {
   fontFamily: fontStack,
 };
 
+const passwordFieldWrap = {
+  position: 'relative',
+  width: '100%',
+  alignSelf: 'stretch',
+};
+
+const passwordToggleBtn = {
+  position: 'absolute',
+  insetInlineEnd: '4px',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '40px',
+  height: '40px',
+  padding: 0,
+  border: 'none',
+  borderRadius: '8px',
+  background: 'transparent',
+  color: colors.textMuted,
+  cursor: 'pointer',
+  fontFamily: fontStack,
+  WebkitTapHighlightColor: 'transparent',
+};
+
 const LoginPage = () => {
   const { login } = useAuth();
   const { showToast } = useToast();
@@ -53,6 +91,7 @@ const LoginPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [focused, setFocused] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (reason !== "session_expired") return;
@@ -70,14 +109,15 @@ const LoginPage = () => {
     try {
       const user = await login({ email, password });
       if (user.role !== USER_ROLES.ADMIN) {
-        showToast("This account is not an admin account.", "error");
         navigate("/unauthorized", { replace: true });
         return;
       }
       showToast("Signed in successfully.");
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      const message = err.userMessage || "Login failed";
+      const message = isInvalidLoginCredentialsError(err)
+        ? INVALID_CREDENTIALS_MESSAGE
+        : err.userMessage || "Login failed";
       setError(message);
       showToast(message, "error");
     } finally {
@@ -110,6 +150,10 @@ const LoginPage = () => {
           to { transform: rotate(360deg); }
         }
         .admin-login-input:focus-visible {
+          outline: 2px solid ${colors.primary};
+          outline-offset: 2px;
+        }
+        .admin-login-password-toggle:focus-visible {
           outline: 2px solid ${colors.primary};
           outline-offset: 2px;
         }
@@ -170,18 +214,31 @@ const LoginPage = () => {
 
             <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', fontWeight: 500, color: colors.textSecondary }}>
               Password
-              <input
-                type="password"
-                className="admin-login-input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                minLength={8}
-                required
-                onFocus={() => setFocused('password')}
-                onBlur={() => setFocused(null)}
-                style={inputStyle('password')}
-              />
+              <div style={passwordFieldWrap}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="admin-login-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  minLength={8}
+                  required
+                  onFocus={() => setFocused('password')}
+                  onBlur={() => setFocused(null)}
+                  style={{ ...inputStyle('password'), paddingInlineEnd: '44px' }}
+                />
+                <button
+                  type="button"
+                  className="admin-login-password-toggle"
+                  aria-pressed={showPassword}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => setShowPassword((v) => !v)}
+                  style={passwordToggleBtn}
+                >
+                  {showPassword ? <EyeOff size={20} strokeWidth={1.75} aria-hidden /> : <Eye size={20} strokeWidth={1.75} aria-hidden />}
+                </button>
+              </div>
             </label>
 
             {error && (

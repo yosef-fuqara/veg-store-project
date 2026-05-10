@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ALLOWED_DELIVERY_AREAS as FALLBACK_AREAS,
   LOCAL_DELIVERY_AREA as FALLBACK_LOCAL_AREA,
@@ -12,9 +12,18 @@ import {
   PAYMENT_METHODS,
   estimateDeliveryFee
 } from "../config/delivery";
+import { useCart } from "../features/cart/CartContext";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 import * as cartService from "../services/cartService";
 import * as orderService from "../services/orderService";
 import { formatPrice } from "../utils/formatPrice";
+import { deliveryAreaOptionLabel } from "../utils/deliveryAreaDisplay";
+import { getLocalizedProductName } from "../utils/localizedProduct";
+import {
+  clearOrderSuccessStorage,
+  loadCheckoutDraft,
+  VEGSTORE_CHECKOUT_DRAFT_KEY
+} from "../utils/vegstorePersistence";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -105,6 +114,34 @@ const initialForm = {
   customRequest: ""
 };
 
+const mergeCheckoutDraft = (draft) => {
+  if (!draft || typeof draft !== "object") return initialForm;
+  const addr =
+    draft.deliveryAddress && typeof draft.deliveryAddress === "object"
+      ? draft.deliveryAddress
+      : {};
+  return {
+    ...initialForm,
+    deliveryAddress: {
+      street: typeof addr.street === "string" ? addr.street : initialForm.deliveryAddress.street,
+      building: typeof addr.building === "string" ? addr.building : initialForm.deliveryAddress.building,
+      apartment: typeof addr.apartment === "string" ? addr.apartment : initialForm.deliveryAddress.apartment,
+      notes: typeof addr.notes === "string" ? addr.notes : initialForm.deliveryAddress.notes
+    },
+    deliveryArea: typeof draft.deliveryArea === "string" ? draft.deliveryArea : initialForm.deliveryArea,
+    customerPhone:
+      typeof draft.customerPhone === "string" ? draft.customerPhone : initialForm.customerPhone,
+    notes: typeof draft.notes === "string" ? draft.notes : initialForm.notes,
+    paymentMethod: initialForm.paymentMethod,
+    preferredDeliveryAt:
+      typeof draft.preferredDeliveryAt === "string"
+        ? draft.preferredDeliveryAt
+        : initialForm.preferredDeliveryAt,
+    customRequest:
+      typeof draft.customRequest === "string" ? draft.customRequest : initialForm.customRequest
+  };
+};
+
 const fieldErrorsFromResponse = (err) => {
   const fields = err.response?.data?.details?.fields;
   if (!Array.isArray(fields)) return {};
@@ -113,6 +150,29 @@ const fieldErrorsFromResponse = (err) => {
     if (key && !acc[key]) acc[key] = item.message;
     return acc;
   }, {});
+};
+
+/** Visual / logical order of fields for “first error” scroll (matches form layout). */
+const CHECKOUT_FIELD_SCROLL_ORDER = [
+  "deliveryAddress.street",
+  "deliveryAddress.building",
+  "deliveryAddress.apartment",
+  "deliveryAddress.notes",
+  "deliveryArea",
+  "preferredDeliveryAt",
+  "customRequest",
+  "customerPhone",
+  "notes",
+  "paymentMethod",
+];
+
+const getFirstFieldErrorKey = (errors) => {
+  if (!errors || typeof errors !== "object") return null;
+  for (const key of CHECKOUT_FIELD_SCROLL_ORDER) {
+    if (errors[key]) return key;
+  }
+  const keys = Object.keys(errors);
+  return keys.length ? keys[0] : null;
 };
 
 const minDateTimeLocal = (hoursAhead) => {
@@ -131,6 +191,9 @@ const Skeleton = ({ height = 44, width = '100%' }) => (
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { refreshCart } = useCart();
+  const [, setCheckoutDraft] = useLocalStorage(VEGSTORE_CHECKOUT_DRAFT_KEY, null);
   const { t, i18n } = useTranslation("checkout");
   const lang = (i18n.language || "he").split("-")[0];
   const isNarrow = useIsNarrowCheckout();
@@ -148,11 +211,19 @@ const CheckoutPage = () => {
     outsideDeliveryFee: OUTSIDE_DELIVERY_FEE
   });
 
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState(() =>
+    mergeCheckoutDraft(typeof window !== "undefined" ? loadCheckoutDraft() : null)
+  );
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [focused, setFocused] = useState(null);
+
+  const fieldElRefs = useRef({});
+  const assignFieldRef = (key) => (el) => {
+    fieldElRefs.current[key] = el;
+  };
+  const pendingScrollToFirstErrorRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -179,6 +250,79 @@ const CheckoutPage = () => {
     })();
     return () => { cancelled = true; };
   }, [t]);
+
+  useEffect(() => {
+    setForm((prev) => {
+      const allowed = new Set(areas.map((a) => a.key));
+      if (!prev.deliveryArea || allowed.has(prev.deliveryArea)) return prev;
+      return { ...prev, deliveryArea: "" };
+    });
+  }, [areas]);
+
+  const checkoutDraftSlice = useMemo(
+    () => ({
+      v: 1,
+      deliveryAddress: form.deliveryAddress,
+      deliveryArea: form.deliveryArea,
+      customerPhone: form.customerPhone,
+      notes: form.notes,
+      preferredDeliveryAt: form.preferredDeliveryAt,
+      customRequest: form.customRequest
+    }),
+    [
+      form.deliveryAddress,
+      form.deliveryArea,
+      form.customerPhone,
+      form.notes,
+      form.preferredDeliveryAt,
+      form.customRequest
+    ]
+  );
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setCheckoutDraft(checkoutDraftSlice), 320);
+    return () => window.clearTimeout(id);
+  }, [checkoutDraftSlice, setCheckoutDraft]);
+
+  const scrollToDelivery = Boolean(location.state?.scrollToDelivery);
+  useLayoutEffect(() => {
+    if (previewLoading || previewError) return;
+    if (!preview?.items?.length) return;
+    if (!scrollToDelivery) return;
+    const el = document.getElementById("checkout-delivery");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: {} });
+  }, [
+    previewLoading,
+    previewError,
+    preview?.items?.length,
+    scrollToDelivery,
+    location.pathname,
+    location.search,
+    navigate,
+  ]);
+
+  useEffect(() => {
+    if (!pendingScrollToFirstErrorRef.current) return;
+    const firstKey = getFirstFieldErrorKey(fieldErrors);
+    if (!firstKey) {
+      pendingScrollToFirstErrorRef.current = false;
+      return;
+    }
+    pendingScrollToFirstErrorRef.current = false;
+    const el = fieldElRefs.current[firstKey];
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => {
+      if (firstKey === "paymentMethod") {
+        el.querySelector?.('input[type="radio"]')?.focus?.({ preventScroll: true });
+      } else if (typeof el.focus === "function") {
+        el.focus({ preventScroll: true });
+      }
+    }, 480);
+  }, [fieldErrors]);
 
   const subtotal = preview?.subtotal ?? 0;
   const wrapTotal = Number(preview?.wrapTotal) || 0;
@@ -217,18 +361,36 @@ const CheckoutPage = () => {
     : null;
 
   const validateClientSide = () => {
+    const fields = {};
+    const street = (form.deliveryAddress.street ?? "").trim();
+    if (!street) {
+      fields["deliveryAddress.street"] = t("streetEmpty");
+    }
     if (!form.deliveryArea) {
-      return { ok: false, fields: { deliveryArea: t("deliveryAreaRequired") } };
+      fields.deliveryArea = t("deliveryAreaRequired");
     }
     if (hasPreorderItems) {
       if (!form.preferredDeliveryAt) {
-        return { ok: false, fields: { preferredDeliveryAt: t("preorderDateRequired") } };
+        fields.preferredDeliveryAt = t("preorderDateRequired");
+      } else {
+        const target = new Date(form.preferredDeliveryAt);
+        const minMs = minAdvanceHours * 60 * 60 * 1000;
+        if (Number.isNaN(target.getTime()) || target.getTime() - Date.now() < minMs) {
+          fields.preferredDeliveryAt = t("preorderDateTooSoon", { hours: minAdvanceHours });
+        }
       }
-      const target = new Date(form.preferredDeliveryAt);
-      const minMs = minAdvanceHours * 60 * 60 * 1000;
-      if (Number.isNaN(target.getTime()) || target.getTime() - Date.now() < minMs) {
-        return { ok: false, fields: { preferredDeliveryAt: t("preorderDateTooSoon", { hours: minAdvanceHours }) } };
-      }
+    }
+    const phone = (form.customerPhone ?? "").trim();
+    if (!phone) {
+      fields.customerPhone = t("phoneRequired");
+    } else if (phone.length < 7) {
+      fields.customerPhone = t("phoneInvalid");
+    }
+    if (!form.paymentMethod || !PAYMENT_METHODS.some((m) => m.value === form.paymentMethod)) {
+      fields.paymentMethod = t("paymentMethodRequired");
+    }
+    if (Object.keys(fields).length > 0) {
+      return { ok: false, fields };
     }
     return { ok: true };
   };
@@ -241,6 +403,7 @@ const CheckoutPage = () => {
 
     const clientCheck = validateClientSide();
     if (!clientCheck.ok) {
+      pendingScrollToFirstErrorRef.current = true;
       setFieldErrors(clientCheck.fields);
       setSubmitting(false);
       return;
@@ -260,10 +423,17 @@ const CheckoutPage = () => {
 
     try {
       const order = await orderService.createOrder(payload);
+      clearOrderSuccessStorage();
+      try {
+        await refreshCart();
+      } catch {
+        /* cart refresh is best-effort after order */
+      }
       navigate(`/orders/${order._id}`, { replace: true });
     } catch (err) {
       const fields = fieldErrorsFromResponse(err);
       if (Object.keys(fields).length > 0) {
+        pendingScrollToFirstErrorRef.current = true;
         setFieldErrors(fields);
       } else {
         setSubmitError(err.userMessage || t("placeOrderError"));
@@ -328,29 +498,32 @@ const CheckoutPage = () => {
       }}>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, width: '100%' }}>
+        <form noValidate onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, width: '100%' }}>
 
           {/* Delivery address */}
-          <div style={sectionStyle}>
+          <div
+            id="checkout-delivery"
+            style={{ ...sectionStyle, scrollMarginTop: "80px" }}
+          >
             <h3 style={sectionTitleStyle}>{t("deliveryAddress")}</h3>
             <label style={labelStyle}>
               {t("streetRequired")}
-              <input value={form.deliveryAddress.street} onChange={updateAddress("street")} maxLength={120} required onFocus={focus("street")} onBlur={blur} style={inputStyle("deliveryAddress.street")} />
+              <input ref={assignFieldRef("deliveryAddress.street")} value={form.deliveryAddress.street} onChange={updateAddress("street")} maxLength={120} required onFocus={focus("street")} onBlur={blur} style={inputStyle("deliveryAddress.street")} />
               {fieldErr("deliveryAddress.street")}
             </label>
             <label style={labelStyle}>
               {t("building")}
-              <input value={form.deliveryAddress.building} onChange={updateAddress("building")} maxLength={50} onFocus={focus("building")} onBlur={blur} style={inputStyle("deliveryAddress.building")} />
+              <input ref={assignFieldRef("deliveryAddress.building")} value={form.deliveryAddress.building} onChange={updateAddress("building")} maxLength={50} onFocus={focus("building")} onBlur={blur} style={inputStyle("deliveryAddress.building")} />
               {fieldErr("deliveryAddress.building")}
             </label>
             <label style={labelStyle}>
               {t("apartment")}
-              <input value={form.deliveryAddress.apartment} onChange={updateAddress("apartment")} maxLength={50} onFocus={focus("apartment")} onBlur={blur} style={inputStyle("deliveryAddress.apartment")} />
+              <input ref={assignFieldRef("deliveryAddress.apartment")} value={form.deliveryAddress.apartment} onChange={updateAddress("apartment")} maxLength={50} onFocus={focus("apartment")} onBlur={blur} style={inputStyle("deliveryAddress.apartment")} />
               {fieldErr("deliveryAddress.apartment")}
             </label>
             <label style={labelStyle}>
               {t("addressNotes")}
-              <textarea value={form.deliveryAddress.notes} onChange={updateAddress("notes")} maxLength={500} rows={2} onFocus={focus("addressNotes")} onBlur={blur} style={{ ...inputStyle("deliveryAddress.notes"), resize: 'vertical' }} />
+              <textarea ref={assignFieldRef("deliveryAddress.notes")} value={form.deliveryAddress.notes} onChange={updateAddress("notes")} maxLength={500} rows={2} onFocus={focus("addressNotes")} onBlur={blur} style={{ ...inputStyle("deliveryAddress.notes"), resize: 'vertical' }} />
               {fieldErr("deliveryAddress.notes")}
             </label>
           </div>
@@ -358,11 +531,11 @@ const CheckoutPage = () => {
           {/* Delivery area */}
           <label style={labelStyle}>
             {t("deliveryAreaRequired")}
-            <select value={form.deliveryArea} onChange={updateField("deliveryArea")} required onFocus={focus("deliveryArea")} onBlur={blur} style={inputStyle("deliveryArea")}>
+            <select ref={assignFieldRef("deliveryArea")} value={form.deliveryArea} onChange={updateField("deliveryArea")} required onFocus={focus("deliveryArea")} onBlur={blur} style={inputStyle("deliveryArea")}>
               <option value="" disabled>{t("deliveryAreaPlaceholder")}</option>
               {areas.map((area) => (
                 <option key={area.key} value={area.key}>
-                  {t(`areas.${area.key}`, { defaultValue: area.label })}
+                  {deliveryAreaOptionLabel(area, lang, t)}
                   {area.key === localAreaKey ? " ★" : ""}
                 </option>
               ))}
@@ -385,12 +558,12 @@ const CheckoutPage = () => {
               <p style={{ margin: 0, fontSize: '14px', color: colors.warning }}>{t("preorderHelper", { hours: minAdvanceHours })}</p>
               <label style={labelStyle}>
                 {t("preorderDateRequired")}
-                <input type="datetime-local" value={form.preferredDeliveryAt} onChange={updateField("preferredDeliveryAt")} min={minDateTimeLocal(minAdvanceHours)} required onFocus={focus("preferredDeliveryAt")} onBlur={blur} style={inputStyle("preferredDeliveryAt")} />
+                <input ref={assignFieldRef("preferredDeliveryAt")} type="datetime-local" value={form.preferredDeliveryAt} onChange={updateField("preferredDeliveryAt")} min={minDateTimeLocal(minAdvanceHours)} required onFocus={focus("preferredDeliveryAt")} onBlur={blur} style={inputStyle("preferredDeliveryAt")} />
                 {fieldErr("preferredDeliveryAt")}
               </label>
               <label style={labelStyle}>
                 {t("customRequest")}
-                <textarea value={form.customRequest} onChange={updateField("customRequest")} placeholder={t("customRequestPlaceholder")} maxLength={1000} rows={3} onFocus={focus("customRequest")} onBlur={blur} style={{ ...inputStyle("customRequest"), resize: 'vertical' }} />
+                <textarea ref={assignFieldRef("customRequest")} value={form.customRequest} onChange={updateField("customRequest")} placeholder={t("customRequestPlaceholder")} maxLength={1000} rows={3} onFocus={focus("customRequest")} onBlur={blur} style={{ ...inputStyle("customRequest"), resize: 'vertical' }} />
                 {fieldErr("customRequest")}
               </label>
             </div>
@@ -399,18 +572,19 @@ const CheckoutPage = () => {
           {/* Phone */}
           <label style={labelStyle}>
             {t("phoneRequired")}
-            <input value={form.customerPhone} onChange={updateField("customerPhone")} minLength={7} maxLength={20} required onFocus={focus("phone")} onBlur={blur} style={inputStyle("customerPhone")} />
+            <input ref={assignFieldRef("customerPhone")} value={form.customerPhone} onChange={updateField("customerPhone")} minLength={7} maxLength={20} required onFocus={focus("phone")} onBlur={blur} style={inputStyle("customerPhone")} />
             {fieldErr("customerPhone")}
           </label>
 
           {/* Order notes */}
           <label style={labelStyle}>
             {t("orderNotes")}
-            <textarea value={form.notes} onChange={updateField("notes")} maxLength={1000} rows={3} onFocus={focus("notes")} onBlur={blur} style={{ ...inputStyle("notes"), resize: 'vertical' }} />
+            <textarea ref={assignFieldRef("notes")} value={form.notes} onChange={updateField("notes")} maxLength={1000} rows={3} onFocus={focus("notes")} onBlur={blur} style={{ ...inputStyle("notes"), resize: 'vertical' }} />
             {fieldErr("notes")}
           </label>
 
           {/* Payment method */}
+          <div ref={assignFieldRef("paymentMethod")}>
           <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
             <legend style={{ fontSize: '14px', fontWeight: 500, color: colors.textSecondary, marginBottom: '10px', display: 'block' }}>
               {t("paymentMethodRequired")}
@@ -435,6 +609,7 @@ const CheckoutPage = () => {
             </div>
             {fieldErr("paymentMethod")}
           </fieldset>
+          </div>
 
           {/* Submit error */}
           <AnimatePresence>
@@ -489,7 +664,7 @@ const CheckoutPage = () => {
               <div key={item.product} style={{ padding: '10px 0', borderBottom: `1px solid ${colors.border}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '14px' }}>
                   <span style={{ color: colors.textPrimary }}>
-                    {item.name} × {item.quantity}
+                    {getLocalizedProductName({ name: item.nameLocales ?? item.name }, lang)} × {item.quantity}
                     {item.isPreorderOnly ? " ⏱" : ""}
                     {item.wrap && (
                       <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', background: colors.successSurface, color: colors.success, border: `1px solid ${colors.successBorder}` }}>

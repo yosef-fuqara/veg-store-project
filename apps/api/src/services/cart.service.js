@@ -2,6 +2,10 @@ const { StatusCodes } = require("http-status-codes");
 const Product = require("../models/product.model");
 const AppError = require("../utils/app-error");
 const { WRAP_PRICE_PER_KG, isWrapAllowedForUnit } = require("../constants/product");
+const {
+  resolveProductNameString,
+  toProductNameLocales
+} = require("../utils/product-name");
 
 const buildCartProductQuery = (ids) => ({
   _id: { $in: ids },
@@ -104,7 +108,8 @@ const buildCheckoutPreview = async (cartItems) => {
   return {
     items: items.map((item) => ({
       product: item.product,
-      name: item.productSnapshot.name,
+      name: resolveProductNameString(item.productSnapshot.name),
+      nameLocales: toProductNameLocales(item.productSnapshot.name),
       unit: item.productSnapshot.unit,
       quantity: item.quantity,
       unitPrice: item.unitPriceSnapshot,

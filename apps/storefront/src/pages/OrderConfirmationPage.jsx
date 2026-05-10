@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import * as orderService from "../services/orderService";
 import { formatPrice } from "../utils/formatPrice";
+import { formatOrderDeliveryAreaLabel } from "../utils/deliveryAreaDisplay";
+import { getLocalizedText } from "../utils/localizedProduct";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -62,6 +64,7 @@ const Row = ({ label, value }) => (
 
 const OrderConfirmationPage = () => {
   const { t, i18n } = useTranslation("order");
+  const { t: tCheckout } = useTranslation("checkout");
   const lang = (i18n.language || "he").split("-")[0];
   const { id } = useParams();
   const [order, setOrder] = useState(null);
@@ -163,7 +166,7 @@ const OrderConfirmationPage = () => {
             {t("delivery")}
           </h2>
           <div style={{ marginTop: '4px' }}>
-            <Row label={t("area")} value={order.deliveryArea || order.deliveryZone || "—"} />
+            <Row label={t("area")} value={formatOrderDeliveryAreaLabel(order, tCheckout, lang)} />
             <Row label="" value={deliveryAddress} />
           </div>
 
@@ -202,7 +205,7 @@ const OrderConfirmationPage = () => {
             {(order.items || []).map((item, index) => (
               <div key={`${item.product}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', padding: '10px 0', borderBottom: `1px solid ${colors.border}` }}>
                 <span style={{ fontSize: '14px', color: colors.textPrimary }}>
-                  {item.name} × {item.quantity}
+                  {getLocalizedText(item.name, lang)} × {item.quantity}
                   {item.wrap && (
                     <span
                       title={t("wrapBadge")}

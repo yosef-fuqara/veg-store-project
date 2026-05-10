@@ -7,8 +7,12 @@ import LoginPage from "../pages/LoginPage";
 import UnauthorizedPage from "../pages/UnauthorizedPage";
 import AdminProductsPage from "../pages/AdminProductsPage";
 import ProductFormPage from "../pages/ProductFormPage";
+import CategoryFormPage from "../pages/CategoryFormPage";
+import AdminCategoriesPage from "../pages/AdminCategoriesPage";
 import AdminOrdersPage from "../pages/AdminOrdersPage";
 import AdminOrderDetailsPage from "../pages/AdminOrderDetailsPage";
+import AdminSalesDashboardPage from "../pages/AdminSalesDashboardPage";
+import AdminPromotionsPage from "../pages/AdminPromotionsPage";
 import AbuAlAnasLogo from "../components/common/Logo";
 
 const MOBILE_MAX_WIDTH = 767;
@@ -38,12 +42,44 @@ const NAV_ITEMS = [
     ),
   },
   {
+    to: '/categories',
+    label: 'Categories',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 7h16M4 12h16M4 17h10"/>
+        <line x1="16" y1="15" x2="22" y2="15"/>
+        <line x1="19" y1="12" x2="19" y2="18"/>
+      </svg>
+    ),
+  },
+  {
     to: '/orders',
     label: 'Orders',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+      </svg>
+    ),
+  },
+  {
+    to: '/sales',
+    label: 'Sales',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="20" x2="12" y2="10" />
+        <line x1="18" y1="20" x2="18" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="16" />
+      </svg>
+    ),
+  },
+  {
+    to: '/promotions',
+    label: 'Popups',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M7 9h10M7 13h6" />
       </svg>
     ),
   },
@@ -383,8 +419,12 @@ const App = () => {
               <Route path="/products" element={<RequireAuth><RequireAdmin><AdminProductsPage /></RequireAdmin></RequireAuth>} />
               <Route path="/products/new" element={<RequireAuth><RequireAdmin><ProductFormPage /></RequireAdmin></RequireAuth>} />
               <Route path="/products/:id/edit" element={<RequireAuth><RequireAdmin><ProductFormPage /></RequireAdmin></RequireAuth>} />
+              <Route path="/categories" element={<RequireAuth><RequireAdmin><AdminCategoriesPage /></RequireAdmin></RequireAuth>} />
+              <Route path="/categories/new" element={<RequireAuth><RequireAdmin><CategoryFormPage /></RequireAdmin></RequireAuth>} />
               <Route path="/orders" element={<RequireAuth><RequireAdmin><AdminOrdersPage /></RequireAdmin></RequireAuth>} />
               <Route path="/orders/:id" element={<RequireAuth><RequireAdmin><AdminOrderDetailsPage /></RequireAdmin></RequireAuth>} />
+              <Route path="/sales" element={<RequireAuth><RequireAdmin><AdminSalesDashboardPage /></RequireAdmin></RequireAuth>} />
+              <Route path="/promotions" element={<RequireAuth><RequireAdmin><AdminPromotionsPage /></RequireAdmin></RequireAuth>} />
               <Route path="/" element={<Navigate to="/products" replace />} />
             </Routes>
           </div>

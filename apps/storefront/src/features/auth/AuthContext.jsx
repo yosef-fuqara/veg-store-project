@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import * as authService from "../../services/authService";
 import {
+  AUTH_SESSION_EXPIRED_EVENT,
   clearAccessToken,
   getAccessToken,
   setAccessToken
@@ -19,6 +20,9 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
+    /** Snapshot so a stale /me 401 cannot clear a newer token set by login during this flight. */
+    const tokenUsedForMe = token;
+
     let cancelled = false;
     (async () => {
       try {
@@ -26,7 +30,9 @@ export const AuthProvider = ({ children }) => {
         if (!cancelled) setUser(current);
       } catch (err) {
         if (err.response?.status === 401) {
-          clearAccessToken();
+          if (getAccessToken() === tokenUsedForMe) {
+            clearAccessToken();
+          }
         }
       } finally {
         if (!cancelled) setInitializing(false);
@@ -36,6 +42,13 @@ export const AuthProvider = ({ children }) => {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const onSessionExpired = () => setUser(null);
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, onSessionExpired);
+    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, onSessionExpired);
   }, []);
 
   const login = useCallback(async (credentials) => {

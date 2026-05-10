@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../features/auth/AuthContext";
+import { PasswordFieldWithToggle } from "../components/common/PasswordFieldWithToggle";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -133,8 +134,7 @@ const LoginPage = () => {
 
             <label style={labelStyle}>
               {t('password')}
-              <input
-                type="password"
+              <PasswordFieldWithToggle
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
@@ -142,7 +142,7 @@ const LoginPage = () => {
                 required
                 onFocus={() => setFocused('password')}
                 onBlur={() => setFocused(null)}
-                style={focused === 'password' ? inputFocused : inputBase}
+                inputStyle={focused === 'password' ? inputFocused : inputBase}
               />
             </label>
 

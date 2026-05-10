@@ -47,6 +47,71 @@ describe("Products", () => {
     expect(res.body.data.product.imageUrl).toContain("test.invalid");
   });
 
+  it("POST /products accepts trilingual JSON name (multipart)", async () => {
+    const admin = await createAdminUser();
+    const token = await loginAndGetAccessToken(admin.email, DEFAULT_PASSWORD);
+    const category = await createCategory();
+    const namePayload = JSON.stringify({
+      ar: "طماطم",
+      he: "עגבנייה",
+      en: "Tomato"
+    });
+
+    let req = request(getApp())
+      .post(apiUrl("/products"))
+      .set("Authorization", `Bearer ${token}`)
+      .field("name", namePayload)
+      .field("description", "Red and ripe")
+      .field("price", "12.5")
+      .field("category", String(category._id))
+      .field("unit", "kg");
+
+    req = attachProductImage(req);
+
+    const res = await req;
+    expect(res.status).toBe(201);
+    expect(res.body.data.product.name).toEqual({
+      ar: "طماطم",
+      he: "עגבנייה",
+      en: "Tomato"
+    });
+  });
+
+  it("POST /products creates product without description", async () => {
+    const admin = await createAdminUser();
+    const token = await loginAndGetAccessToken(admin.email, DEFAULT_PASSWORD);
+    const category = await createCategory();
+
+    let req = request(getApp())
+      .post(apiUrl("/products"))
+      .set("Authorization", `Bearer ${token}`)
+      .field("name", "No Description Product")
+      .field("price", "5")
+      .field("category", String(category._id))
+      .field("unit", "kg");
+
+    req = attachProductImage(req);
+
+    const res = await req;
+    expect(res.status).toBe(201);
+    expect(res.body.data.product.description).toBe("");
+  });
+
+  it("PATCH /products/:id clears description with empty string", async () => {
+    const admin = await createAdminUser();
+    const token = await loginAndGetAccessToken(admin.email, DEFAULT_PASSWORD);
+    const product = await createProduct({ name: "Desc Clear", description: "Was here" });
+
+    const res = await request(getApp())
+      .patch(apiUrl(`/products/${product._id}`))
+      .set("Authorization", `Bearer ${token}`)
+      .field("name", "Desc Clear")
+      .field("description", "");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.product.description).toBe("");
+  });
+
   it("POST /products returns 404 for invalid category id", async () => {
     const admin = await createAdminUser();
     const token = await loginAndGetAccessToken(admin.email, DEFAULT_PASSWORD);

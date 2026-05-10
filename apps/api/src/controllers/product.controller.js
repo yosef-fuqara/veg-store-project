@@ -31,9 +31,13 @@ const getPublicProducts = async (req, res, next) => {
     }
 
     if (req.query.search) {
+      const rx = req.query.search;
       query.$or = [
-        { name: { $regex: req.query.search, $options: "i" } },
-        { description: { $regex: req.query.search, $options: "i" } }
+        { name: { $regex: rx, $options: "i" } },
+        { "name.ar": { $regex: rx, $options: "i" } },
+        { "name.he": { $regex: rx, $options: "i" } },
+        { "name.en": { $regex: rx, $options: "i" } },
+        { description: { $regex: rx, $options: "i" } }
       ];
     }
 

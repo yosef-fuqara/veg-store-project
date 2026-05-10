@@ -1,5 +1,11 @@
 import apiClient from "./apiClient";
 
+/** Public route — same catalog the storefront uses. */
+export async function getDeliveryAreas() {
+  const { data } = await apiClient.get("/orders/delivery-areas");
+  return data?.data ?? null;
+}
+
 export async function getAdminOrders(params = {}) {
   const { data } = await apiClient.get("/orders/admin/all", { params });
   return data?.data?.orders ?? [];

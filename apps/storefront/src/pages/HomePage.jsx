@@ -1,12 +1,32 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ProductCard from "../components/ProductCard";
 import { CategoryBarMobile, CategorySidebar } from "../components/CategoryNav";
 import { useCart } from "../features/cart/CartContext";
 import * as productService from "../services/productService";
+import { getCategories } from "../services/categoryService";
 import { formatApiError } from "../utils/formatApiError";
-import { productMatchesCategoryNav } from "../utils/categoryFilter";
+import { CATEGORY_NAV_IDS } from "../utils/categoryFilter";
+import {
+  buildNavCategoryResolution,
+  productMatchesStorefrontCategoryNav,
+} from "../utils/storefrontCategoryMapping";
+
+const OBJECT_ID_RE = /^[0-9a-fA-F]{24}$/;
+
+/** @param {unknown} product @param {string} categoryId */
+function productInDbCategory(product, categoryId) {
+  if (!product || typeof product !== "object" || !categoryId) return false;
+  const cat = /** @type {{ category?: unknown }} */ (product).category;
+  if (cat == null) return false;
+  if (typeof cat === "string") return String(cat) === String(categoryId);
+  if (typeof cat === "object" && /** @type {{ _id?: unknown }} */ (cat)._id != null) {
+    return String(/** @type {{ _id?: unknown }} */ (cat)._id) === String(categoryId);
+  }
+  return false;
+}
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const colors = {
@@ -247,7 +267,7 @@ const HeroSection = ({ t, isMobile }) => {
             flexDirection: 'column',
             alignItems: 'center',
             gap: '20px',
-            maxWidth: 'min(100%, 560px)',
+            maxWidth: 'min(100%, 720px)',
             marginInline: 'auto',
             width: '100%',
             boxSizing: 'border-box',
@@ -261,7 +281,7 @@ const HeroSection = ({ t, isMobile }) => {
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '20px',
+              gap: '24px',
               width: '100%',
               boxSizing: 'border-box',
             }}
@@ -281,34 +301,25 @@ const HeroSection = ({ t, isMobile }) => {
               {t('home:hero.badge')}
             </span>
 
-            <h1 style={{
-              margin: 0,
-              fontSize: isMobile ? 'clamp(28px, 8vw, 40px)' : 'clamp(32px, 4vw, 52px)',
-              fontWeight: 800,
-              lineHeight: 1.12,
-              color: colors.textInverse,
-              letterSpacing: '-0.5px',
-              textShadow: '0 2px 24px rgba(0,0,0,0.28)',
-              textAlign: 'center',
-              width: '100%',
-              boxSizing: 'border-box',
-            }}>
-              {t('home:hero.heading')}
-            </h1>
-
-            <p style={{
-              margin: 0,
-              fontSize: isMobile ? '16px' : '18px',
-              lineHeight: 1.65,
-              color: 'rgba(255,255,255,0.90)',
-              maxWidth: '400px',
-              width: '100%',
-              textAlign: 'center',
-              textShadow: '0 1px 16px rgba(0,0,0,0.22)',
-              boxSizing: 'border-box',
-            }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: isMobile
+                  ? 'clamp(28px, 7.5vw, 42px)'
+                  : 'clamp(36px, 3.6vw, 56px)',
+                fontWeight: 800,
+                lineHeight: 1.18,
+                color: colors.textInverse,
+                letterSpacing: isMobile ? '-0.02em' : '-0.025em',
+                textShadow: '0 2px 28px rgba(0,0,0,0.32)',
+                textAlign: 'center',
+                width: '100%',
+                maxWidth: 'min(100%, 680px)',
+                boxSizing: 'border-box',
+              }}
+            >
               {t('home:hero.subtitle')}
-            </p>
+            </h1>
 
             <HeroTrustBar t={t} isMobile={isMobile} />
 
@@ -511,7 +522,7 @@ const MarqueeBar = ({ lang }) => {
           '--marquee-x': halfWidthPx != null && halfWidthPx > 0 ? `${-halfWidthPx}px` : '0px',
           animation:
             halfWidthPx != null && halfWidthPx > 0
-              ? 'homeMarqueeDrift 42s linear infinite'
+              ? 'homeMarqueeDrift 120s linear infinite'
               : 'none',
           animationPlayState: hoverPaused ? 'paused' : 'running',
         }}
@@ -568,11 +579,34 @@ const HomePage = () => {
   const { error: cartError } = useCart();
   const lang = (i18n.language || 'he').split('-')[0];
   const isMobile = useIsMobile();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const catParam = searchParams.get('cat');
+  const categoryIdParamRaw = searchParams.get('categoryId');
+  const productIdParamRaw = searchParams.get('product');
+  const categoryIdParam =
+    categoryIdParamRaw && OBJECT_ID_RE.test(categoryIdParamRaw) ? categoryIdParamRaw : null;
+  const productIdParam =
+    productIdParamRaw && OBJECT_ID_RE.test(productIdParamRaw) ? productIdParamRaw : null;
+
+  const activeCategoryId =
+    !categoryIdParam &&
+    catParam &&
+    CATEGORY_NAV_IDS.includes(/** @type {typeof CATEGORY_NAV_IDS[number]} */ (catParam))
+      ? catParam
+      : null;
 
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState(/** @type {unknown[]} */ ([]));
+  const [categoriesRequestOk, setCategoriesRequestOk] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeCategoryId, setActiveCategoryId] = useState(/** @type {string | null} */ (null));
+  const prevActiveCategoryRef = useRef(/** @type {string | null} */ (null));
+  const prevCategoryIdParamRef = useRef(/** @type {string | null} */ (null));
+
+  const categoryResolution = useMemo(
+    () => buildNavCategoryResolution(categories, categoriesRequestOk),
+    [categories, categoriesRequestOk]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -583,29 +617,136 @@ const HomePage = () => {
     } catch (err) {
       setProducts([]);
       setError(err.userMessage || formatApiError(err));
-    } finally {
-      setLoading(false);
     }
+    let catOk = false;
+    let cats = [];
+    try {
+      const c = await getCategories();
+      cats = Array.isArray(c) ? c : [];
+      catOk = true;
+    } catch {
+      catOk = false;
+      cats = [];
+    }
+    setCategories(cats);
+    setCategoriesRequestOk(catOk);
+    setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    if (catParam && !CATEGORY_NAV_IDS.includes(/** @type {typeof CATEGORY_NAV_IDS[number]} */ (catParam))) {
+      setSearchParams((sp) => {
+        const next = new URLSearchParams(sp);
+        next.delete('cat');
+        return next;
+      }, { replace: true });
+    }
+  }, [catParam, setSearchParams]);
+
+  useEffect(() => {
+    if (categoryIdParamRaw && !categoryIdParam) {
+      setSearchParams((sp) => {
+        const next = new URLSearchParams(sp);
+        next.delete('categoryId');
+        return next;
+      }, { replace: true });
+    }
+  }, [categoryIdParamRaw, categoryIdParam, setSearchParams]);
+
+  useEffect(() => {
+    if (productIdParamRaw && !productIdParam) {
+      setSearchParams((sp) => {
+        const next = new URLSearchParams(sp);
+        next.delete('product');
+        return next;
+      }, { replace: true });
+    }
+  }, [productIdParamRaw, productIdParam, setSearchParams]);
+
+  useEffect(() => {
+    if (activeCategoryId && prevActiveCategoryRef.current !== activeCategoryId) {
+      requestAnimationFrame(() => {
+        document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+    prevActiveCategoryRef.current = activeCategoryId;
+  }, [activeCategoryId]);
+
+  useEffect(() => {
+    if (categoryIdParam && prevCategoryIdParamRef.current !== categoryIdParam) {
+      requestAnimationFrame(() => {
+        document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+    prevCategoryIdParamRef.current = categoryIdParam;
+  }, [categoryIdParam]);
+
   const displayedProducts = useMemo(() => {
-    if (!activeCategoryId) return products;
-    return products.filter((p) => productMatchesCategoryNav(p, activeCategoryId));
-  }, [products, activeCategoryId]);
+    let list = products;
+    if (categoryIdParam) {
+      list = list.filter((p) => productInDbCategory(p, categoryIdParam));
+    } else if (activeCategoryId) {
+      list = list.filter((p) =>
+        productMatchesStorefrontCategoryNav(p, activeCategoryId, categoryResolution)
+      );
+    }
+    if (productIdParam) {
+      const inList = list.some((p) => String(p._id) === productIdParam);
+      const exists = products.some((p) => String(p._id) === productIdParam);
+      if (!inList && exists) {
+        list = products;
+      }
+    }
+    return list;
+  }, [products, categoryIdParam, activeCategoryId, productIdParam, categoryResolution]);
 
   const handleCategorySelect = useCallback((id) => {
-    setActiveCategoryId((prev) => {
-      const next = prev === id ? null : id;
-      if (next != null) {
-        requestAnimationFrame(() => {
-          document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
+    setSearchParams((sp) => {
+      const next = new URLSearchParams(sp);
+      next.delete('categoryId');
+      next.delete('product');
+      const current = next.get('cat');
+      if (current === id) {
+        next.delete('cat');
+      } else {
+        next.set('cat', id);
       }
       return next;
-    });
-  }, []);
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const handleShowAllCategories = useCallback(() => {
+    setSearchParams((sp) => {
+      const next = new URLSearchParams(sp);
+      next.delete('cat');
+      next.delete('categoryId');
+      next.delete('product');
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  useEffect(() => {
+    if (loading || !productIdParam) return undefined;
+    const el = document.getElementById(`product-${productIdParam}`);
+    if (el) {
+      const id = requestAnimationFrame(() => {
+        document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      return () => cancelAnimationFrame(id);
+    }
+    const missing = !products.some((p) => String(p._id) === productIdParam);
+    if (missing) {
+      setSearchParams((sp) => {
+        const next = new URLSearchParams(sp);
+        next.delete('product');
+        return next;
+      }, { replace: true });
+    }
+    return undefined;
+  }, [loading, productIdParam, products, displayedProducts.length, setSearchParams]);
 
   return (
     <div>
@@ -649,7 +790,11 @@ const HomePage = () => {
           </motion.div>
 
           {isMobile && (
-            <CategoryBarMobile activeId={activeCategoryId} onSelect={handleCategorySelect} />
+            <CategoryBarMobile
+              activeId={activeCategoryId}
+              onSelect={handleCategorySelect}
+              onShowAll={handleShowAllCategories}
+            />
           )}
 
           {/* Error banner */}
@@ -700,7 +845,13 @@ const HomePage = () => {
               gap: '24px',
             }}
           >
-            {!isMobile && <CategorySidebar activeId={activeCategoryId} onSelect={handleCategorySelect} />}
+            {!isMobile && (
+              <CategorySidebar
+                activeId={activeCategoryId}
+                onSelect={handleCategorySelect}
+                onShowAll={handleShowAllCategories}
+              />
+            )}
 
             <div style={{ flex: 1, minWidth: 0 }}>
               {/* Grid */}
@@ -710,7 +861,7 @@ const HomePage = () => {
                 </div>
               ) : products.length === 0 && !error ? (
                 <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:empty')}</p>
-              ) : displayedProducts.length === 0 && activeCategoryId ? (
+              ) : displayedProducts.length === 0 && (activeCategoryId || categoryIdParam) ? (
                 <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:categories.filterEmpty')}</p>
               ) : (
                 <motion.div
@@ -721,7 +872,11 @@ const HomePage = () => {
                   style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}
                 >
                   {displayedProducts.map((product) => (
-                    <motion.div key={product._id} variants={itemVariants}>
+                    <motion.div
+                      key={product._id}
+                      id={product._id ? `product-${product._id}` : undefined}
+                      variants={itemVariants}
+                    >
                       <ProductCard product={product} lang={lang} />
                     </motion.div>
                   ))}

@@ -39,7 +39,10 @@ describe("Categories", () => {
     const res = await request(getApp())
       .post(apiUrl("/categories"))
       .set("Authorization", `Bearer ${token}`)
-      .send({ name: "Fresh Produce", description: "Veggies" });
+      .send({
+        name: { ar: "منتجات طازجة", he: "תוצרת טרייה", en: "Fresh Produce" },
+        description: "Veggies"
+      });
 
     expect(res.status).toBe(201);
     expect(res.body.data.category.slug).toBe("fresh-produce");
@@ -49,16 +52,17 @@ describe("Categories", () => {
     const admin = await createAdminUser();
     const token = await loginAndGetAccessToken(admin.email, DEFAULT_PASSWORD);
 
+    const dupName = { ar: "اختبار مكرر", he: "בדיקה כפולה", en: "Dup Test" };
     const first = await request(getApp())
       .post(apiUrl("/categories"))
       .set("Authorization", `Bearer ${token}`)
-      .send({ name: "Dup Test", description: "" });
+      .send({ name: dupName, description: "" });
     expect(first.status).toBe(201);
 
     const second = await request(getApp())
       .post(apiUrl("/categories"))
       .set("Authorization", `Bearer ${token}`)
-      .send({ name: "Dup Test", description: "" });
+      .send({ name: dupName, description: "" });
 
     expect(second.status).toBe(409);
   });
@@ -71,10 +75,16 @@ describe("Categories", () => {
     const res = await request(getApp())
       .patch(apiUrl(`/categories/${cat._id}`))
       .set("Authorization", `Bearer ${token}`)
-      .send({ name: "New Name" });
+      .send({
+        name: { ar: "اسم جديد", he: "שם חדש", en: "New Name" }
+      });
 
     expect(res.status).toBe(200);
-    expect(res.body.data.category.name).toBe("New Name");
+    expect(res.body.data.category.name).toMatchObject({
+      ar: "اسم جديد",
+      he: "שם חדש",
+      en: "New Name"
+    });
   });
 
   it("PATCH /categories/:id/freeze freezes and unfreezes", async () => {

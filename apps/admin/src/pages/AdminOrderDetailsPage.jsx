@@ -3,9 +3,12 @@ import { Link, useParams } from "react-router-dom";
 import { useToast } from "../features/toast/ToastContext";
 import {
   getAdminOrderById,
+  getDeliveryAreas,
   updateAdminOrderPaymentStatus,
   updateAdminOrderStatus
 } from "../services/orderService";
+import { getLocalizedText } from "../utils/localizedDisplayName";
+import { resolveAdminDeliveryAreaLabel } from "../utils/deliveryAreaLabel";
 
 const ORDER_STATUS_OPTIONS = [
   "new", "confirmed", "preparing", "ready_for_delivery",
@@ -118,6 +121,19 @@ const AdminOrderDetailsPage = () => {
   const [updating, setUpdating] = useState(false);
   const [nextOrderStatus, setNextOrderStatus] = useState("");
   const [nextPaymentStatus, setNextPaymentStatus] = useState("");
+  const [deliveryAreaCatalog, setDeliveryAreaCatalog] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getDeliveryAreas()
+      .then((data) => {
+        if (!cancelled) setDeliveryAreaCatalog(data);
+      })
+      .catch(() => {
+        if (!cancelled) setDeliveryAreaCatalog(null);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -305,9 +321,9 @@ const AdminOrderDetailsPage = () => {
             </thead>
             <tbody>
               {(order.items || []).map((item, idx) => (
-                <tr key={`${item.product || item.name}-${idx}`} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
+                <tr key={`${item.product || getLocalizedText(item.name, "en")}-${idx}`} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
                   <td style={{ padding: '10px 10px', fontSize: '14px', color: colors.textPrimary }}>
-                    <span>{item.name}</span>
+                    <span>{getLocalizedText(item.name, "en")}</span>
                     {item.isPreorderOnly && (
                       <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', fontWeight: 600, background: colors.warningBg, color: colors.warning, border: `1px solid ${colors.warningBorder}` }}>
                         Preorder
@@ -355,7 +371,7 @@ const AdminOrderDetailsPage = () => {
         {/* Delivery */}
         <Card>
           <CardTitle>Delivery</CardTitle>
-          <InfoRow label="Area">{order.deliveryArea || order.deliveryZone || '—'}</InfoRow>
+          <InfoRow label="Area">{resolveAdminDeliveryAreaLabel(order, deliveryAreaCatalog?.areas)}</InfoRow>
           {deliveryAddress && <InfoRow label="Address">{deliveryAddress}</InfoRow>}
           {order.deliveryAddress?.label && <InfoRow label="Address label">{order.deliveryAddress.label}</InfoRow>}
           {order.preferredDeliveryAt && (

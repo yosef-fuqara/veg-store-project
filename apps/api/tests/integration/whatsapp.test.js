@@ -9,7 +9,7 @@ const {
 
 const orderPayload = {
   deliveryAddress: { street: "Main", building: "1" },
-  deliveryArea: "nazareth",
+  deliveryArea: "eilabun",
   customerPhone: "0501234567",
   paymentMethod: "credit_card"
 };
@@ -70,7 +70,7 @@ describe("WhatsApp admin notification", () => {
       expect(msg).toMatch(/order_123/);
       expect(msg).toMatch(/Yossi/);
       expect(msg).toMatch(/0509999999/);
-      expect(msg).toMatch(/nazareth/);
+      expect(msg).toMatch(/נצרת/);
       expect(msg).toMatch(/270/);
       expect(msg).toMatch(/credit_card/);
       expect(msg).toMatch(/preorder/i);

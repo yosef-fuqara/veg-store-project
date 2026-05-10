@@ -15,7 +15,7 @@ const addressOrderBase = {
     street: "Herzl",
     building: "1"
   },
-  deliveryArea: "nazareth",
+  deliveryArea: "eilabun",
   customerPhone: "0501234567"
 };
 

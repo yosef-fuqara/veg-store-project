@@ -3,6 +3,7 @@ const request = require("supertest");
 const User = require("../../src/models/user.model");
 const Category = require("../../src/models/category.model");
 const Product = require("../../src/models/product.model");
+const Announcement = require("../../src/models/announcement.model");
 const { USER_ROLES } = require("../../src/constants/roles");
 const { PRODUCT_UNITS, PRODUCT_STOCK_STATUS } = require("../../src/constants/product");
 const { getApp, apiUrl } = require("./test-app");
@@ -105,12 +106,27 @@ async function registerCustomer(body) {
   return request(getApp()).post(apiUrl("/auth/register")).send(body);
 }
 
+async function createAnnouncement(overrides = {}) {
+  const now = new Date();
+  const ends = new Date(now.getTime() + 86400000);
+  return Announcement.create({
+    title: "Test promo",
+    message: "Test message",
+    isActive: true,
+    startsAt: now,
+    endsAt: ends,
+    archivedAt: null,
+    ...overrides
+  });
+}
+
 module.exports = {
   DEFAULT_PASSWORD,
   createCustomerUser,
   createAdminUser,
   createCategory,
   createProduct,
+  createAnnouncement,
   loginAndGetAccessToken,
   registerCustomer,
   hashPassword

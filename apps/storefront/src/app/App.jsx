@@ -6,10 +6,13 @@ import PageTransition from "../components/common/PageTransition";
 import AbuAlAnasLogo from "../components/common/Logo";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Footer from "../components/Footer";
+import WhatsAppFloat from "../components/WhatsAppFloat";
+import PromotionPopup from "../components/PromotionPopup";
 import RequireAuth from "../components/RequireAuth";
 import { useDir } from "../i18n/useDir";
 import { useAuth } from "../features/auth/AuthContext";
 import { useCart } from "../features/cart/CartContext";
+import { useCartVisualFeedback } from "../features/cart/CartVisualFeedbackContext";
 import CartPage from "../pages/CartPage";
 import CheckoutPage from "../pages/CheckoutPage";
 import HomePage from "../pages/HomePage";
@@ -124,6 +127,29 @@ const mobileItemStyle = (isActive = false) => ({
   transition: 'background 0.12s, color 0.12s',
 });
 
+/** Cart icon target for fly animation + pulse; no pulse on first paint (bumpKey === 0). */
+const CartAnchorPulse = ({ bumpKey, anchorRef, inlineFlexStyle, children }) => {
+  if (bumpKey === 0) {
+    return (
+      <span ref={anchorRef} style={inlineFlexStyle}>
+        {children}
+      </span>
+    );
+  }
+  return (
+    <motion.span
+      key={`cart-pulse-${bumpKey}`}
+      ref={anchorRef}
+      initial={{ scale: 1 }}
+      animate={{ scale: [1, 1.14, 1] }}
+      transition={{ duration: 0.42, ease: [0.25, 0.1, 0.25, 1] }}
+      style={inlineFlexStyle}
+    >
+      {children}
+    </motion.span>
+  );
+};
+
 // ─── Cart badge link ──────────────────────────────────────────────────────────
 const CartBadge = ({ qty }) =>
   qty > 0 ? (
@@ -150,13 +176,20 @@ const CartBadge = ({ qty }) =>
 
 const CartNavLink = ({ t }) => {
   const { cart } = useCart();
+  const { desktopCartAnchorRef, cartBumpKey } = useCartVisualFeedback();
   const qty = cart.items.reduce((s, i) => s + (i.quantity || 0), 0);
   return (
     <NavLink to="/cart" style={getLinkStyle}>
       {({ isActive }) => (
-        <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          <CartIcon size={17} />
-          <CartBadge qty={qty} />
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <CartAnchorPulse
+            bumpKey={cartBumpKey}
+            anchorRef={desktopCartAnchorRef}
+            inlineFlexStyle={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+          >
+            <CartIcon size={17} />
+            <CartBadge qty={qty} />
+          </CartAnchorPulse>
           {t('cart')}
         </span>
       )}
@@ -167,17 +200,31 @@ const CartNavLink = ({ t }) => {
 // Mobile cart icon (top bar — icon only)
 const MobileCartIcon = ({ t }) => {
   const { cart } = useCart();
+  const { mobileCartAnchorRef, cartBumpKey } = useCartVisualFeedback();
   const qty = cart.items.reduce((s, i) => s + (i.quantity || 0), 0);
   return (
     <NavLink
       to="/cart"
       aria-label={t('cart')}
-      style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: '40px', height: '40px', borderRadius: '10px', color: colors.textPrimary, textDecoration: 'none',
-        transition: 'background 0.15s' }}
+        transition: 'background 0.15s'
+      }}
     >
-      <CartIcon size={20} />
-      <CartBadge qty={qty} />
+      <CartAnchorPulse
+        bumpKey={cartBumpKey}
+        anchorRef={mobileCartAnchorRef}
+        inlineFlexStyle={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <CartIcon size={20} />
+        <CartBadge qty={qty} />
+      </CartAnchorPulse>
     </NavLink>
   );
 };
@@ -210,6 +257,15 @@ const AppNav = () => {
     }
   };
 
+  /** Home nav + logo: on the homepage, same-route clicks do not run ScrollToTop — scroll up explicitly. */
+  const handleHomeNavClick = (e) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
+    setMenuOpen(false);
+  };
+
   return (
     <>
       <nav style={{
@@ -229,6 +285,7 @@ const AppNav = () => {
         {/* Brand */}
         <Link
           to="/"
+          onClick={handleHomeNavClick}
           style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', flexShrink: 0 }}
           aria-label="Home"
         >
@@ -273,7 +330,7 @@ const AppNav = () => {
           /* ── Desktop nav ────────────────────────────────── */
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-              <NavLink to="/" end style={getLinkStyle}>{t('home')}</NavLink>
+              <NavLink to="/" end style={getLinkStyle} onClick={handleHomeNavClick}>{t('home')}</NavLink>
               <button
                 onClick={handleProductsClick}
                 style={{ ...navLinkBase, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
@@ -375,7 +432,7 @@ const AppNav = () => {
                 gap: '2px',
               }}
             >
-              <NavLink to="/" end style={({ isActive }) => mobileItemStyle(isActive)}>{t('home')}</NavLink>
+              <NavLink to="/" end style={({ isActive }) => mobileItemStyle(isActive)} onClick={handleHomeNavClick}>{t('home')}</NavLink>
               <button onClick={handleProductsClick} style={mobileItemStyle()}>{t('products')}</button>
               <NavLink to="/cart" style={({ isActive }) => mobileItemStyle(isActive)}>{t('cart')}</NavLink>
 
@@ -445,6 +502,8 @@ const App = () => {
         <Route path="/orders/:id" element={<RequireAuth><OrderConfirmationPage /></RequireAuth>} />
       </Routes>
       <Footer />
+      <WhatsAppFloat />
+      <PromotionPopup />
     </div>
   );
 };
