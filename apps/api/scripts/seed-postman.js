@@ -26,6 +26,7 @@ const env = require("../src/config/env");
 const { connectDatabase } = require("../src/config/db");
 const User = require("../src/models/user.model");
 const { USER_ROLES } = require("../src/constants/roles");
+const { normalizeIsraeliMobile } = require("../src/utils/israeliMobilePhone");
 
 const DEFAULT_ADMIN_EMAIL = "admin@local.test";
 const DEFAULT_ADMIN_PASSWORD = "Admin12345!";
@@ -76,14 +77,27 @@ async function upsertAdmin({ email, password, name, phone }) {
     existing.role = USER_ROLES.ADMIN;
     existing.isActive = true;
     if (name) existing.name = name;
-    if (phone) existing.phone = phone;
+    if (phone) {
+      const normalized = normalizeIsraeliMobile(String(phone).trim());
+      if (!normalized) {
+        throw new Error(`Invalid admin phone: ${phone}`);
+      }
+      existing.phone = normalized;
+    }
     await existing.save();
     return { user: existing, created: false };
   }
 
+  const rawCreatePhone =
+    phone != null && String(phone).trim() ? String(phone).trim() : DEFAULT_ADMIN_PHONE;
+  const normalizedCreatePhone = normalizeIsraeliMobile(rawCreatePhone);
+  if (!normalizedCreatePhone) {
+    throw new Error(`Invalid admin phone: ${rawCreatePhone}`);
+  }
+
   const user = await User.create({
     name: name || DEFAULT_ADMIN_NAME,
-    phone: phone || DEFAULT_ADMIN_PHONE,
+    phone: normalizedCreatePhone,
     email: lowerEmail,
     password: passwordHash,
     role: USER_ROLES.ADMIN,

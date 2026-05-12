@@ -1,0 +1,95 @@
+{
+  "pageTitle": "Popups / Promotions",
+  "pageSubtitle": "Create storefront popups with a start time and either an end time or a duration. Only one active, in-window promotion is shown to customers at a time (the most recently updated match wins).",
+  "showArchived": "Show archived",
+  "form": {
+    "titleNew": "New promotion",
+    "titleEdit": "Edit promotion",
+    "fields": {
+      "title": "Title",
+      "message": "Message",
+      "image": "Promotion image (optional)",
+      "imageHint": "JPEG, PNG, or WebP up to 3 MB. You can choose a file from this device; on a phone the gallery or camera may open depending on your browser.",
+      "ctaSection": "Call-to-action button",
+      "ctaHint": "Optional. Send customers to a product, a category, or any path or external link. Button labels can be set per language (Hebrew, English, Arabic).",
+      "ctaTarget": "CTA target",
+      "ctaTargetOptions": {
+        "none": "No button",
+        "product": "Product",
+        "category": "Category",
+        "custom": "Custom link or path"
+      },
+      "btnHe": "Button text (HE)",
+      "btnEn": "Button text (EN)",
+      "btnAr": "Button text (AR)",
+      "btnHePlaceholder": "e.g. Buy now",
+      "btnEnPlaceholder": "e.g. Shop now",
+      "product": "Product",
+      "category": "Category",
+      "loadingProducts": "Loading products…",
+      "loadingCategories": "Loading categories…",
+      "selectProduct": "Select a product",
+      "selectCategory": "Select a category",
+      "urlOrPath": "URL or path",
+      "urlOrPathPlaceholder": "https://… or /cart",
+      "startsAt": "Starts at",
+      "scheduleSection": "How long it stays valid",
+      "scheduleDuration": "Run for a number of hours from start",
+      "scheduleEnd": "End at specific date & time",
+      "activeCheckbox": "Active (visible on storefront when inside the time window)",
+      "clearNewSelection": "Clear new selection",
+      "removeSavedImage": "Remove saved image"
+    },
+    "buttons": {
+      "submitNew": "Create promotion",
+      "submitEdit": "Save changes",
+      "saving": "Saving…",
+      "cancelEdit": "Cancel edit"
+    },
+    "errors": {
+      "schedule": "Check schedule fields",
+      "ctaProduct": "Choose a product for the CTA.",
+      "ctaCategory": "Choose a category for the CTA.",
+      "ctaUrl": "Enter a URL or path for the CTA.",
+      "saveFailed": "Could not save promotion"
+    },
+    "toasts": {
+      "updated": "Promotion updated.",
+      "created": "Promotion created.",
+      "turnedOn": "Promotion turned on.",
+      "turnedOff": "Promotion turned off.",
+      "statusFailed": "Could not update status",
+      "archived": "Promotion archived.",
+      "archiveFailed": "Could not archive",
+      "deleted": "Promotion deleted.",
+      "deleteFailed": "Could not delete"
+    }
+  },
+  "loadFailed": "Failed to load promotions",
+  "table": {
+    "title": "Title",
+    "window": "Window",
+    "status": "Status",
+    "actions": "Actions",
+    "empty": "No promotions yet."
+  },
+  "row": {
+    "archived": "Archived",
+    "on": "On",
+    "off": "Off",
+    "turnOn": "Turn on",
+    "turnOff": "Turn off",
+    "edit": "Edit",
+    "archive": "Archive",
+    "delete": "Delete"
+  },
+  "modal": {
+    "deleteTitle": "Delete promotion?",
+    "archiveTitle": "Archive promotion?",
+    "deleteBody": "This permanently removes the promotion. Customers will no longer see it.",
+    "archiveBody": "Archived promotions stay in the list (if “Show archived” is on) but no longer appear on the storefront.",
+    "cancel": "Cancel",
+    "confirmDelete": "Delete",
+    "confirmArchive": "Archive"
+  }
+}

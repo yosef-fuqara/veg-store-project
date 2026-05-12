@@ -1,0 +1,124 @@
+{
+  "list": {
+    "pageTitle": "Products",
+    "pageSubtitle": "Manage your fruit and vegetable inventory",
+    "addProduct": "Add Product",
+    "manageCategories": "Manage categories",
+    "addCategory": "Add Category",
+    "searchPlaceholder": "Search products…",
+    "searchAria": "Search products",
+    "loadFailed": "Failed to load products",
+    "empty": {
+      "title": "No products found",
+      "withSearch": "Try adjusting your search or filter.",
+      "withoutSearch": "Add your first product to get started."
+    },
+    "tableHeaders": {
+      "actions": "Actions",
+      "status": "Status",
+      "stock": "Stock",
+      "price": "Price",
+      "category": "Category",
+      "productName": "Product Name",
+      "image": "Image"
+    },
+    "perUnit": "Per {{unit}}",
+    "actionsMenuAria": "Actions for {{name}}",
+    "workingAria": "Working…",
+    "menu": {
+      "edit": "Edit",
+      "freeze": "Freeze",
+      "unfreeze": "Unfreeze",
+      "removeFromCatalog": "Remove from catalog",
+      "deletedNote": "This product is already removed from the catalog. Freeze and Delete are hidden because removal already happened (soft delete)."
+    },
+    "confirmDelete": "Delete \"{{name}}\"?",
+    "toasts": {
+      "frozen": "Product frozen.",
+      "unfrozen": "Product unfrozen.",
+      "actionFailed": "Action failed",
+      "deleted": "Product deleted.",
+      "deleteFailed": "Delete failed"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "frozen": "Frozen",
+      "deleted": "Deleted"
+    },
+    "stock": {
+      "in": "In Stock",
+      "out": "Out of Stock"
+    }
+  },
+  "form": {
+    "titleNew": "Add Product",
+    "titleEdit": "Edit Product",
+    "subtitleNew": "Fill in the details to add a new product",
+    "subtitleEdit": "Update the product information below",
+    "sections": {
+      "info": "Product Info",
+      "classification": "Classification",
+      "preorder": "Preorder / Custom Platter",
+      "imageRequired": "Product Image (required)",
+      "imageOptional": "Product Image (optional)"
+    },
+    "fields": {
+      "nameAllLangs": "Product name (all languages) *",
+      "nameAr": "Arabic (ar)",
+      "nameHe": "Hebrew (he)",
+      "nameEn": "English (en)",
+      "description": "Description",
+      "descriptionHint": "Optional",
+      "price": "Price (₪) *",
+      "salePrice": "Sale Price (₪)",
+      "salePriceHint": "Optional — leave empty for no sale",
+      "allowByAmount": "Allow customers to buy by money amount (₪)",
+      "allowByAmountHint": "For kg/gram items the server derives weight from the chosen ILS amount. For unit/box, the derived quantity must be a whole number.",
+      "category": "Category *",
+      "unit": "Unit *",
+      "stockStatus": "Stock Status *",
+      "featured": "Featured product",
+      "featuredHint": "Shown prominently on storefront",
+      "preorderOnly": "Preorder only (requires advance notice)",
+      "minAdvance": "Minimum advance notice (hours) *",
+      "preparationNotes": "Preparation notes (internal)",
+      "preparationNotesHint": "Not shown to customers"
+    },
+    "image": {
+      "newSelected": "New image selected",
+      "current": "Current image",
+      "pendingUpload": "Pending upload",
+      "currentReplaceHint": "Replace by choosing a file below.",
+      "newAppearsOnStorefront": "This image will appear on the storefront.",
+      "discardNewImage": "Discard new image",
+      "uploadReplace": "Upload a new image to replace the current one",
+      "selectImage": "Select image",
+      "clickOrDrop": "Click or drop an image here",
+      "fileTypes": "PNG, JPG, WebP — max size per server limits",
+      "previewAlt": "Product preview",
+      "uploadReplacementAria": "Upload replacement product image",
+      "selectImageAria": "Select product image"
+    },
+    "buttons": {
+      "submitNew": "Create Product",
+      "submitEdit": "Save Changes",
+      "saving": "Saving…",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "loadFailed": "Failed to load form data",
+      "productNotFound": "Product not found",
+      "imageRequired": "Product image is required",
+      "saveFailed": "Failed to save product"
+    },
+    "toasts": {
+      "created": "Product created successfully.",
+      "updated": "Product updated successfully."
+    },
+    "stockOptions": {
+      "in_stock": "in stock",
+      "out_of_stock": "out of stock"
+    }
+  }
+}

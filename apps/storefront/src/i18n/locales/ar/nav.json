@@ -2,6 +2,7 @@
   "home": "الرئيسية",
   "products": "منتجات",
   "cart": "السلة",
+  "orders": "طلباتي",
   "checkout": "الدفع",
   "login": "تسجيل الدخول",
   "register": "إنشاء حساب",
@@ -9,5 +10,6 @@
   "greeting": "مرحبًا، {{name}}",
   "language": "اللغة",
   "brandName": "أبو الأنس",
-  "brandTagline": "فواكه وخضروات"
+  "brandTagline": "فواكه وخضروات",
+  "storeHoursLabel": "ساعات العمل"
 }

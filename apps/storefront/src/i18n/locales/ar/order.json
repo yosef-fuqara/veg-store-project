@@ -1,6 +1,8 @@
 {
   "title": "الطلب",
   "confirmationTitle": "تأكيد الطلب",
+  "confirmationTitleAwaitingPayment": "تم استلام الطلب — بانتظار تأكيد الدفع",
+  "confirmationTitleOrderRecord": "تفاصيل الطلب",
   "loading": "جار تحميل الطلب...",
   "loadError": "تعذر تحميل الطلب.",
   "notFound": "الطلب غير موجود.",
@@ -9,6 +11,8 @@
   "status": "الحالة",
   "payment": "الدفع",
   "paymentMethod": "طريقة الدفع",
+  "bankTransferProofTitle": "إيصال التحويل البنكي",
+  "bankTransferProofAlt": "لقطة شاشة للدفع المرفوعة",
   "phone": "الهاتف",
   "delivery": "التوصيل",
   "area": "منطقة التوصيل",
@@ -24,6 +28,39 @@
   "total": "الإجمالي",
   "refreshStatus": "تحديث الحالة",
   "continueShopping": "متابعة التسوق",
+  "history": {
+    "title": "طلباتي",
+    "subtitle": "يمكنك مراجعة ما طلبته سابقًا، تاريخ الطلب، وحالة الطلب والدفع الحالية.",
+    "loadError": "تعذر تحميل طلباتك.",
+    "emptyTitle": "لا توجد لديك طلبات بعد",
+    "emptyText": "بعد إتمام أول طلب، سيظهر هنا مع كل التفاصيل.",
+    "orderNumber": "طلب #{{id}}",
+    "createdAt": "تاريخ الطلب",
+    "viewDetails": "عرض تفاصيل الطلب"
+  },
+  "orderStatus": {
+    "new": "جديد",
+    "seen": "تمت المعاينة",
+    "confirmed": "تم التأكيد",
+    "preparing": "قيد التحضير",
+    "ready_for_delivery": "جاهز للتوصيل",
+    "sent_with_delivery_company": "أُرسل مع شركة التوصيل",
+    "delivered": "تم التسليم",
+    "cancelled": "ملغي"
+  },
+  "paymentStatus": {
+    "pending_payment": "بانتظار الدفع",
+    "paid": "مدفوع",
+    "failed": "فشل الدفع",
+    "cancelled": "تم إلغاء الدفع",
+    "bank_transfer_pending": "تحويل بنكي بانتظار الموافقة",
+    "bank_transfer_approved": "تمت الموافقة على التحويل البنكي"
+  },
+  "paymentMethods": {
+    "credit_card": "بطاقة ائتمان",
+    "bit": "بيت",
+    "bank_transfer": "تحويل بنكي"
+  },
   "paymentStatusMessage": {
     "pending_payment": "بانتظار تأكيد الدفع.",
     "bank_transfer_pending": "يرجى إتمام التحويل البنكي، وسيقوم المشرف بالتأكيد.",

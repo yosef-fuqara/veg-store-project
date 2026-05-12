@@ -31,6 +31,7 @@ const createProductSchema = Joi.object({
     .valid(...Object.values(PRODUCT_STOCK_STATUS))
     .optional(),
   isFeatured: Joi.boolean().optional(),
+  allowPurchaseByAmount: Joi.boolean().optional(),
   isPreorderOnly: Joi.boolean().optional(),
   minAdvanceHours: Joi.number().integer().min(0).max(720).optional(),
   preparationNotes: Joi.string().trim().max(1000).allow("").optional()
@@ -55,6 +56,7 @@ const updateProductSchema = Joi.object({
     .valid(...Object.values(PRODUCT_STOCK_STATUS))
     .optional(),
   isFeatured: Joi.boolean().optional(),
+  allowPurchaseByAmount: Joi.boolean().optional(),
   isPreorderOnly: Joi.boolean().optional(),
   minAdvanceHours: Joi.number().integer().min(0).max(720).optional(),
   preparationNotes: Joi.string().trim().max(1000).allow("").optional()
@@ -68,6 +70,7 @@ const updateProductSchema = Joi.object({
     "unit",
     "stockStatus",
     "isFeatured",
+    "allowPurchaseByAmount",
     "isPreorderOnly",
     "minAdvanceHours",
     "preparationNotes"

@@ -1,6 +1,7 @@
 const Joi = require("joi");
 const { ORDER_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } = require("../constants/order");
 const { ALLOWED_DELIVERY_AREA_KEYS } = require("../constants/delivery");
+const { israeliMobileString } = require("./phone.joi");
 
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
@@ -26,7 +27,7 @@ const createOrderSchema = Joi.object({
   deliveryArea: Joi.string()
     .valid(...ALLOWED_DELIVERY_AREA_KEYS)
     .required(),
-  customerPhone: Joi.string().trim().min(7).max(20).required(),
+  customerPhone: israeliMobileString,
   notes: Joi.string().trim().max(1000).allow("").optional(),
   paymentMethod: Joi.string()
     .valid(...Object.values(PAYMENT_METHOD))

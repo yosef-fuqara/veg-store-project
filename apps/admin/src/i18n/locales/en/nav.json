@@ -1,0 +1,22 @@
+{
+  "brand": "Abu Al-Anas",
+  "adminPanel": "Admin Panel",
+  "admin": "Admin",
+  "signOut": "Sign Out",
+  "loadingSession": "Loading session…",
+  "items": {
+    "products": "Products",
+    "categories": "Categories",
+    "orders": "Orders",
+    "sales": "Sales",
+    "popups": "Popups",
+    "storeStatus": "Store Status"
+  },
+  "languageSwitcher": {
+    "label": "Language",
+    "english": "English",
+    "hebrew": "עברית",
+    "shortEnglish": "EN",
+    "shortHebrew": "HE"
+  }
+}

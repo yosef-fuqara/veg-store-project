@@ -13,6 +13,8 @@ const { requireAuth } = require("../middlewares/auth.middleware");
 const { requireRole } = require("../middlewares/role.middleware");
 const { USER_ROLES } = require("../constants/roles");
 const validate = require("../middlewares/validate.middleware");
+const { upload, handleUploadErrors } = require("../middlewares/upload.middleware");
+const parseOrderCreateBody = require("../middlewares/parse-order-create-body.middleware");
 const {
   orderIdParamSchema,
   createOrderSchema,
@@ -61,6 +63,9 @@ router.post(
   "/",
   requireAuth,
   requireRole(USER_ROLES.CUSTOMER),
+  upload.single("bankTransferProof"),
+  handleUploadErrors,
+  parseOrderCreateBody,
   validate(createOrderSchema),
   createOrder
 );

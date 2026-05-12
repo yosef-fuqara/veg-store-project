@@ -38,6 +38,26 @@ export function getLocalizedProductName(product, lang) {
 }
 
 /**
+ * Space-joined lowercase string of all known name locales — for client-side substring search.
+ * @param {{ name?: unknown } | null | undefined} product
+ */
+export function getProductNameSearchHaystack(product) {
+  if (!product || typeof product !== "object") return "";
+  const n = /** @type {{ name?: unknown }} */ (product).name;
+  const parts = [];
+  if (typeof n === "string" && n.trim()) {
+    parts.push(n.trim());
+  } else if (n && typeof n === "object" && !Array.isArray(n)) {
+    const o = /** @type {Record<string, unknown>} */ (n);
+    for (const k of ["he", "en", "ar"]) {
+      const v = o[k];
+      if (typeof v === "string" && v.trim()) parts.push(v.trim());
+    }
+  }
+  return parts.join(" ").toLowerCase();
+}
+
+/**
  * @param {{ description?: unknown } | null | undefined} product
  * @param {string} lang
  */

@@ -25,11 +25,6 @@ const pick = (names, lang) => {
   return get("he") || get("ar") || get("en") || "";
 };
 
-const preferredUiLang = () => {
-  if (typeof navigator === "undefined" || !navigator.language) return "he";
-  return String(navigator.language).split("-")[0].toLowerCase();
-};
-
 /**
  * @param {object} order
  * @param {Array<{ key: string, names?: { ar?: string, he?: string, en?: string } }>} [areasList] - from GET /orders/delivery-areas
@@ -37,7 +32,7 @@ const preferredUiLang = () => {
 export function resolveAdminDeliveryAreaLabel(order, areasList) {
   const key = order?.deliveryArea || order?.deliveryZone;
   const city = order?.deliveryAddress?.city;
-  const lang = preferredUiLang();
+  const lang = "en";
 
   const list = Array.isArray(areasList) ? areasList : [];
   const hit = list.find((a) => a.key === key);

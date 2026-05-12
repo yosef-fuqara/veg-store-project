@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
 import { getAdminCategories, softDeleteCategory } from "../services/categoryService";
 import { getAdminProducts } from "../services/productService";
 import { useToast } from "../features/toast/ToastContext";
@@ -22,10 +23,10 @@ const colors = {
 };
 
 const STATUS_STYLES = {
-  active: { bg: "#dcfce7", color: "#166534", border: "#bbf7d0", label: "Active" },
-  inactive: { bg: "#f1f5f9", color: "#475569", border: "#e2e8f0", label: "Inactive" },
-  frozen: { bg: "#e0f2fe", color: "#0369a1", border: "#bae6fd", label: "Frozen" },
-  removed: { bg: "#fef2f2", color: "#991b1b", border: "#fecaca", label: "Removed" },
+  active: { bg: "#dcfce7", color: "#166534", border: "#bbf7d0" },
+  inactive: { bg: "#f1f5f9", color: "#475569", border: "#e2e8f0" },
+  frozen: { bg: "#e0f2fe", color: "#0369a1", border: "#bae6fd" },
+  removed: { bg: "#fef2f2", color: "#991b1b", border: "#fecaca" },
 };
 
 const Pill = ({ bg, color, border, children }) => (
@@ -65,6 +66,7 @@ function productCategoryId(product) {
 }
 
 const AdminCategoriesPage = () => {
+  const { t } = useTranslation(["categories", "common"]);
   const { showToast } = useToast();
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -82,11 +84,11 @@ const AdminCategoriesPage = () => {
       setCategories(cats);
       setProducts(prods);
     } catch (err) {
-      setError(err.userMessage || "Failed to load categories");
+      setError(err.userMessage || t("categories:list.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -120,11 +122,11 @@ const AdminCategoriesPage = () => {
     setDeleting(true);
     try {
       await softDeleteCategory(pendingDelete._id);
-      showToast("Category removed. Linked products are hidden from the storefront.");
+      showToast(t("categories:list.toasts.removed"));
       setPendingDelete(null);
       await load();
     } catch (err) {
-      showToast(err.userMessage || "Could not remove category", "error");
+      showToast(err.userMessage || t("categories:list.toasts.removeFailed"), "error");
     } finally {
       setDeleting(false);
     }
@@ -193,7 +195,7 @@ const AdminCategoriesPage = () => {
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Add category
+            {t("categories:list.addCategory")}
           </Link>
           <Link
             to="/products"
@@ -219,7 +221,7 @@ const AdminCategoriesPage = () => {
               e.currentTarget.style.background = colors.surface;
             }}
           >
-            Products
+            {t("categories:list.productsLink")}
           </Link>
         </div>
         <div style={{ textAlign: "end", flex: "1 1 200px", minWidth: 0 }}>
@@ -232,10 +234,10 @@ const AdminCategoriesPage = () => {
               letterSpacing: "-0.5px",
             }}
           >
-            Categories
+            {t("categories:list.pageTitle")}
           </h1>
           <p style={{ margin: "8px 0 0", fontSize: "14px", color: colors.textMuted, lineHeight: 1.5 }}>
-            Organize catalog groups; removing a category hides its products on the storefront
+            {t("categories:list.pageSubtitle")}
           </p>
         </div>
       </div>
@@ -275,7 +277,7 @@ const AdminCategoriesPage = () => {
               ...interactiveBtn,
             }}
           >
-            Retry
+            {t("common:retry")}
           </button>
         </div>
       )}
@@ -302,7 +304,7 @@ const AdminCategoriesPage = () => {
                 letterSpacing: "0.04em",
               }}
             >
-              Loading
+              {t("common:loadingDots")}
             </div>
             <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", maxWidth: "100%" }}>
               <table style={{ width: "100%", minWidth: "640px", borderCollapse: "collapse" }}>
@@ -332,16 +334,22 @@ const AdminCategoriesPage = () => {
         ) : sortedCategories.length === 0 ? (
           <div style={{ padding: "64px 24px", textAlign: "center", color: colors.textMuted }}>
             <div style={{ fontSize: "15px", fontWeight: 600, color: colors.textPrimary, marginBottom: "6px" }}>
-              No categories yet
+              {t("categories:list.empty.title")}
             </div>
-            <div style={{ fontSize: "13px", lineHeight: 1.5 }}>Create a category to group products.</div>
+            <div style={{ fontSize: "13px", lineHeight: 1.5 }}>{t("categories:list.empty.subtitle")}</div>
           </div>
         ) : (
           <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", maxWidth: "100%" }}>
             <table style={{ width: "100%", minWidth: "720px", borderCollapse: "collapse" }}>
               <thead>
                 <tr>
-                  {["Actions", "Products", "Status", "Slug", "Name"].map((h) => (
+                  {[
+                    t("categories:list.tableHeaders.actions"),
+                    t("categories:list.tableHeaders.products"),
+                    t("categories:list.tableHeaders.status"),
+                    t("categories:list.tableHeaders.slug"),
+                    t("categories:list.tableHeaders.name")
+                  ].map((h) => (
                     <th
                       key={h}
                       style={{
@@ -388,7 +396,7 @@ const AdminCategoriesPage = () => {
                               ...interactiveBtn,
                             }}
                           >
-                            Delete category
+                            {t("categories:list.deleteButton")}
                           </button>
                         ) : (
                           <span style={{ fontSize: "13px", color: colors.textMuted }}>—</span>
@@ -406,7 +414,7 @@ const AdminCategoriesPage = () => {
                       </td>
                       <td style={{ padding: "14px 16px", verticalAlign: "middle" }}>
                         <Pill bg={st.bg} color={st.color} border={st.border}>
-                          {st.label}
+                          {t(`categories:list.status.${state}`)}
                         </Pill>
                       </td>
                       <td
@@ -477,20 +485,22 @@ const AdminCategoriesPage = () => {
               id="admin-delete-category-title"
               style={{ margin: "0 0 12px", fontSize: "18px", fontWeight: 700, color: colors.textPrimary }}
             >
-              Delete category?
+              {t("categories:list.modal.title")}
             </h2>
             <p style={{ margin: "0 0 12px", fontSize: "14px", color: colors.textSecondary, lineHeight: 1.55 }}>
-              <strong>{pickLocalizedName(pendingDelete.name) || pendingDelete.slug}</strong> may contain products.
-              This action <strong>removes the category from the public storefront</strong> (soft delete). Products stay
-              in admin but are hidden from shoppers until you move them to another category.
+              <Trans
+                i18nKey="categories:list.modal.body"
+                values={{ name: pickLocalizedName(pendingDelete.name) || pendingDelete.slug }}
+                components={{ bold: <strong /> }}
+              />
             </p>
             <p style={{ margin: "0 0 20px", fontSize: "14px", color: colors.textPrimary, lineHeight: 1.55 }}>
               {(() => {
                 const count = productCountByCategoryId.get(String(pendingDelete._id)) ?? 0;
                 if (count === 0) {
-                  return "This category currently has no products assigned.";
+                  return t("categories:list.modal.noProducts");
                 }
-                return `This category currently has ${count} product${count === 1 ? "" : "s"} assigned.`;
+                return t("categories:list.modal.withProducts", { count });
               })()}
             </p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "flex-end" }}>
@@ -513,7 +523,7 @@ const AdminCategoriesPage = () => {
                   ...interactiveBtn,
                 }}
               >
-                Cancel
+                {t("common:cancel")}
               </button>
               <button
                 type="button"
@@ -533,7 +543,7 @@ const AdminCategoriesPage = () => {
                   ...interactiveBtn,
                 }}
               >
-                {deleting ? "Removing…" : "Delete category"}
+                {deleting ? t("categories:list.modal.removing") : t("categories:list.modal.confirm")}
               </button>
             </div>
           </div>

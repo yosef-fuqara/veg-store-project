@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { getAdminOrders } from "../services/orderService";
+import { formatAdminOrderStatusLabel } from "../utils/adminOrderStatusLabel";
 
 const colors = {
   primary: "#1e6b3c",
@@ -19,6 +21,7 @@ const colors = {
 
 const ORDER_STATUS_STYLES = {
   new: { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+  seen: { bg: "#f1f5f9", color: "#475569", border: "#cbd5e1" },
   confirmed: { bg: "#ecfeff", color: "#0e7490", border: "#a5f3fc" },
   preparing: { bg: "#f5f3ff", color: "#6d28d9", border: "#ddd6fe" },
   ready_for_delivery: { bg: "#ecfccb", color: "#3f6212", border: "#bef264" },
@@ -68,7 +71,8 @@ function sumTotals(orders) {
 
 const Pill = ({ value }) => {
   const s = ORDER_STATUS_STYLES[value] || { bg: "#f8fafc", color: "#475569", border: "#e2e8f0" };
-  const label = String(value || "—").replaceAll("_", " ");
+  const label = formatAdminOrderStatusLabel(value);
+  const textTransform = /[\u0590-\u05FF]/.test(label) ? "none" : "capitalize";
   return (
     <span
       style={{
@@ -81,7 +85,7 @@ const Pill = ({ value }) => {
         fontSize: "11px",
         fontWeight: 600,
         whiteSpace: "nowrap",
-        textTransform: "capitalize",
+        textTransform,
       }}
     >
       {label}
@@ -144,6 +148,7 @@ const interactiveBtn = {
 };
 
 const AdminSalesDashboardPage = () => {
+  const { t } = useTranslation(["sales", "common"]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -154,11 +159,11 @@ const AdminSalesDashboardPage = () => {
     try {
       setOrders(await getAdminOrders({}));
     } catch (err) {
-      setError(err.userMessage || "Failed to load orders");
+      setError(err.userMessage || t("sales:loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -228,7 +233,7 @@ const AdminSalesDashboardPage = () => {
           className="admin-sales-refresh"
           onClick={load}
           disabled={loading}
-          aria-label={loading ? "Refreshing sales data" : "Refresh sales data"}
+          aria-label={loading ? t("sales:refreshingAria") : t("sales:refreshAria")}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -267,14 +272,14 @@ const AdminSalesDashboardPage = () => {
             <polyline points="1 20 1 14 7 14" />
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
           </svg>
-          {loading ? "Refreshing…" : "Refresh"}
+          {loading ? t("sales:refreshing") : t("sales:refresh")}
         </button>
         <div style={{ textAlign: "end", flex: "1 1 200px", minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: "36px", fontWeight: 800, color: colors.textPrimary, letterSpacing: "-0.5px" }}>
-            Sales
+            {t("sales:pageTitle")}
           </h1>
           <p style={{ margin: "8px 0 0", fontSize: "14px", color: colors.textMuted, lineHeight: 1.5 }}>
-            Totals exclude cancelled orders · Week starts Monday (local time)
+            {t("sales:pageSubtitle")}
           </p>
         </div>
       </div>
@@ -314,7 +319,7 @@ const AdminSalesDashboardPage = () => {
               ...interactiveBtn,
             }}
           >
-            Retry
+            {t("common:retry")}
           </button>
         </div>
       )}
@@ -344,12 +349,12 @@ const AdminSalesDashboardPage = () => {
               marginBottom: "24px",
             }}
           >
-            <StatCard label="Today · sales" value={formatCurrency(metrics.todayTotal)} />
-            <StatCard label="Today · orders" value={String(metrics.todayCount)} />
-            <StatCard label="This week · sales" value={formatCurrency(metrics.weekTotal)} />
-            <StatCard label="This week · orders" value={String(metrics.weekCount)} />
-            <StatCard label="This month · sales" value={formatCurrency(metrics.monthTotal)} />
-            <StatCard label="This month · orders" value={String(metrics.monthCount)} />
+            <StatCard label={t("sales:cards.todaySales")} value={formatCurrency(metrics.todayTotal)} />
+            <StatCard label={t("sales:cards.todayOrders")} value={String(metrics.todayCount)} />
+            <StatCard label={t("sales:cards.weekSales")} value={formatCurrency(metrics.weekTotal)} />
+            <StatCard label={t("sales:cards.weekOrders")} value={String(metrics.weekCount)} />
+            <StatCard label={t("sales:cards.monthSales")} value={formatCurrency(metrics.monthTotal)} />
+            <StatCard label={t("sales:cards.monthOrders")} value={String(metrics.monthCount)} />
           </div>
 
           <div
@@ -362,22 +367,29 @@ const AdminSalesDashboardPage = () => {
             }}
           >
             <div style={{ padding: "20px 20px 12px", borderBottom: `1px solid ${colors.borderLight}` }}>
-              <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: colors.textPrimary }}>Who bought today</h2>
+              <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: colors.textPrimary }}>{t("sales:buyers.title")}</h2>
               <p style={{ margin: "6px 0 0", fontSize: "13px", color: colors.textMuted, lineHeight: 1.5 }}>
-                Non-cancelled orders placed since midnight (your local time)
+                {t("sales:buyers.subtitle")}
               </p>
             </div>
 
             {metrics.todayBuyers.length === 0 ? (
               <div style={{ padding: "48px 24px", textAlign: "center", color: colors.textMuted, fontSize: "14px" }}>
-                No qualifying orders yet today.
+                {t("sales:buyers.empty")}
               </div>
             ) : (
               <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch", maxWidth: "100%" }}>
                 <table style={{ width: "100%", minWidth: "640px", borderCollapse: "collapse" }}>
                   <thead>
                     <tr>
-                      {["Customer", "Phone", "Total", "Order time", "Status", "Actions"].map((h) => (
+                      {[
+                        t("sales:buyers.tableHeaders.customer"),
+                        t("sales:buyers.tableHeaders.phone"),
+                        t("sales:buyers.tableHeaders.total"),
+                        t("sales:buyers.tableHeaders.orderTime"),
+                        t("sales:buyers.tableHeaders.status"),
+                        t("sales:buyers.tableHeaders.actions")
+                      ].map((h) => (
                         <th
                           key={h}
                           style={{
@@ -443,7 +455,7 @@ const AdminSalesDashboardPage = () => {
                               e.currentTarget.style.borderColor = colors.border;
                             }}
                           >
-                            View
+                            {t("sales:buyers.view")}
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="9 18 15 12 9 6" />
                             </svg>

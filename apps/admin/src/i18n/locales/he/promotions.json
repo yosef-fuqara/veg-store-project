@@ -1,0 +1,95 @@
+{
+  "pageTitle": "פופאפים / מבצעים",
+  "pageSubtitle": "צור פופאפים לחנות עם זמן התחלה ויחד עם זמן סיום או משך זמן. בכל רגע מוצג ללקוח רק פופאפ אחד פעיל בתוך החלון (האחרון שעודכן זוכה).",
+  "showArchived": "הצג בארכיון",
+  "form": {
+    "titleNew": "מבצע חדש",
+    "titleEdit": "עריכת מבצע",
+    "fields": {
+      "title": "כותרת",
+      "message": "הודעה",
+      "image": "תמונת מבצע (אופציונלי)",
+      "imageHint": "JPEG, PNG או WebP עד 3 MB. ניתן לבחור קובץ מהמכשיר; בנייד הגלריה או המצלמה עשויות להיפתח לפי הדפדפן.",
+      "ctaSection": "כפתור קריאה לפעולה",
+      "ctaHint": "אופציונלי. שלח לקוחות למוצר, קטגוריה או כל נתיב/קישור חיצוני. ניתן להגדיר טקסט כפתור לפי שפה (עברית, אנגלית, ערבית).",
+      "ctaTarget": "יעד הכפתור",
+      "ctaTargetOptions": {
+        "none": "ללא כפתור",
+        "product": "מוצר",
+        "category": "קטגוריה",
+        "custom": "קישור או נתיב מותאם"
+      },
+      "btnHe": "טקסט כפתור (עברית)",
+      "btnEn": "טקסט כפתור (אנגלית)",
+      "btnAr": "טקסט כפתור (ערבית)",
+      "btnHePlaceholder": "למשל: קנה עכשיו",
+      "btnEnPlaceholder": "e.g. Shop now",
+      "product": "מוצר",
+      "category": "קטגוריה",
+      "loadingProducts": "טוען מוצרים…",
+      "loadingCategories": "טוען קטגוריות…",
+      "selectProduct": "בחר מוצר",
+      "selectCategory": "בחר קטגוריה",
+      "urlOrPath": "URL או נתיב",
+      "urlOrPathPlaceholder": "https://… או /cart",
+      "startsAt": "מתחיל ב",
+      "scheduleSection": "כמה זמן זה תקף",
+      "scheduleDuration": "להפעיל למספר שעות מההתחלה",
+      "scheduleEnd": "להסתיים בתאריך ושעה ספציפיים",
+      "activeCheckbox": "פעיל (מוצג בחנות כשבתוך חלון הזמן)",
+      "clearNewSelection": "נקה את הבחירה החדשה",
+      "removeSavedImage": "הסר את התמונה השמורה"
+    },
+    "buttons": {
+      "submitNew": "צור מבצע",
+      "submitEdit": "שמור שינויים",
+      "saving": "שומר…",
+      "cancelEdit": "בטל עריכה"
+    },
+    "errors": {
+      "schedule": "בדוק את שדות הלוח זמנים",
+      "ctaProduct": "בחר מוצר עבור הכפתור.",
+      "ctaCategory": "בחר קטגוריה עבור הכפתור.",
+      "ctaUrl": "הזן URL או נתיב עבור הכפתור.",
+      "saveFailed": "שמירת המבצע נכשלה"
+    },
+    "toasts": {
+      "updated": "המבצע עודכן.",
+      "created": "המבצע נוצר.",
+      "turnedOn": "המבצע הופעל.",
+      "turnedOff": "המבצע כובה.",
+      "statusFailed": "לא ניתן לעדכן את הסטטוס",
+      "archived": "המבצע נשלח לארכיון.",
+      "archiveFailed": "ההעברה לארכיון נכשלה",
+      "deleted": "המבצע נמחק.",
+      "deleteFailed": "המחיקה נכשלה"
+    }
+  },
+  "loadFailed": "טעינת המבצעים נכשלה",
+  "table": {
+    "title": "כותרת",
+    "window": "חלון",
+    "status": "סטטוס",
+    "actions": "פעולות",
+    "empty": "אין מבצעים עדיין."
+  },
+  "row": {
+    "archived": "בארכיון",
+    "on": "פעיל",
+    "off": "לא פעיל",
+    "turnOn": "הפעל",
+    "turnOff": "כבה",
+    "edit": "עריכה",
+    "archive": "ארכיון",
+    "delete": "מחק"
+  },
+  "modal": {
+    "deleteTitle": "למחוק מבצע?",
+    "archiveTitle": "להעביר מבצע לארכיון?",
+    "deleteBody": "פעולה זו מסירה את המבצע לצמיתות. לקוחות לא יראו אותו יותר.",
+    "archiveBody": "מבצעים בארכיון נשארים ברשימה (אם \"הצג בארכיון\" פעיל) אך לא מוצגים בחנות.",
+    "cancel": "ביטול",
+    "confirmDelete": "מחק",
+    "confirmArchive": "העבר לארכיון"
+  }
+}

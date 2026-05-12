@@ -19,7 +19,8 @@
   "feeEstimateNote": "تقدير فقط — رسوم التوصيل النهائية يحددها المتجر.",
   "fee": "رسوم",
   "phoneRequired": "الهاتف *",
-  "phoneInvalid": "أدخل رقم هاتف صالح (7 أرقام على الأقل).",
+  "phoneEmpty": "يرجى إدخال رقم الهاتف.",
+  "phoneInvalid": "يرجى إدخال رقم هاتف إسرائيلي صحيح",
   "orderNotes": "ملاحظات الطلب",
   "paymentMethodRequired": "طريقة الدفع *",
   "placeOrder": "تأكيد الطلب",
@@ -58,5 +59,15 @@
     "credit_card": "بطاقة ائتمان",
     "bit": "Bit",
     "bank_transfer": "تحويل بنكي"
+  },
+  "bankTransferProofLabel": "لقطة شاشة / إيصال التحويل (اختياري)",
+  "bankTransferProofHint": "JPEG أو PNG أو WebP — حتى 3 ميجابايت. يساعد المتجر على التحقق من الدفع.",
+  "bankTransferProofTooLarge": "الملف كبير جداً (الحد الأقصى 3 ميجابايت).",
+  "bankTransferProofInvalidType": "يرجى اختيار صورة (JPEG أو PNG أو WebP).",
+  "businessHoursNotice": {
+    "title": "تنبيه بخصوص ساعات العمل",
+    "message": "سيتم استلام الطلب في النظام، لكن التوصيل سيتم فقط خلال ساعات عمل المتجر. شكرًا لتفهمك 🌿",
+    "declineButton": "لا، لا أريد المتابعة بالطلب",
+    "confirmButton": "نعم، أريد إتمام الطلب"
   }
 }

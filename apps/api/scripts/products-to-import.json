@@ -1,0 +1,1269 @@
+{
+  "settings": {
+    "lemonJuiceCategorySlug": "natural-juices",
+    "pomegranateJuiceCategorySlug": "natural-juices",
+    "_comment": "If you split juices into two categories, set each slug from GET /api/v1/categories."
+  },
+  "products": [
+    {
+      "image": "אבוקדו.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 9,
+      "name": {
+        "ar": "أفوكادو",
+        "he": "אבוקדו",
+        "en": "Avocado"
+      },
+      "description": ""
+    },
+    {
+      "image": "אבטיח קטן.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 22,
+      "name": {
+        "ar": "بطيخ صغير",
+        "he": "אבטיח קטן",
+        "en": "Small watermelon"
+      },
+      "description": ""
+    },
+    {
+      "image": "אבטיח.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 35,
+      "name": {
+        "ar": "بطيخ",
+        "he": "אבטיח",
+        "en": "Watermelon"
+      },
+      "description": ""
+    },
+    {
+      "image": "אגס סבדונה.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 18,
+      "name": {
+        "ar": "كمثرى سبادونا",
+        "he": "אגס סבדונה",
+        "en": "Spadona pear"
+      },
+      "description": ""
+    },
+    {
+      "image": "אוכמניות.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 32,
+      "name": {
+        "ar": "توت أزرق",
+        "he": "אוכמניות",
+        "en": "Blueberries"
+      },
+      "description": ""
+    },
+    {
+      "image": "אנונה.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 28,
+      "name": {
+        "ar": "أنونا",
+        "he": "אנונה",
+        "en": "Cherimoya"
+      },
+      "description": ""
+    },
+    {
+      "image": "אננס.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 28,
+      "name": {
+        "ar": "أناناس",
+        "he": "אננס",
+        "en": "Pineapple"
+      },
+      "description": ""
+    },
+    {
+      "image": "אספרגוס.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 22,
+      "name": {
+        "ar": "هليون",
+        "he": "אספרגוס",
+        "en": "Asparagus"
+      },
+      "description": ""
+    },
+    {
+      "image": "אפונה.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 18,
+      "name": {
+        "ar": "بازلاء",
+        "he": "אפונה",
+        "en": "Green peas"
+      },
+      "description": ""
+    },
+    {
+      "image": "אפרסמון.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 22,
+      "name": {
+        "ar": "كاكي",
+        "he": "אפרסמון",
+        "en": "Persimmon"
+      },
+      "description": ""
+    },
+    {
+      "image": "אפרסק לבן.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 24,
+      "name": {
+        "ar": "خوخ أبيض",
+        "he": "אפרסק לבן",
+        "en": "White peach"
+      },
+      "description": ""
+    },
+    {
+      "image": "אפרסק קטן.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 24,
+      "name": {
+        "ar": "خوخ صغير",
+        "he": "אפרסק קטן",
+        "en": "Small peach"
+      },
+      "description": ""
+    },
+    {
+      "image": "אשכולית אדומה.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 14,
+      "name": {
+        "ar": "جريب فروت أحمر",
+        "he": "אשכולית אדומה",
+        "en": "Red grapefruit"
+      },
+      "description": ""
+    },
+    {
+      "image": "אשכולית.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 12,
+      "name": {
+        "ar": "جريب فروت",
+        "he": "אשכולית",
+        "en": "Grapefruit"
+      },
+      "description": ""
+    },
+    {
+      "image": "באמיה.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 16,
+      "name": {
+        "ar": "بامية",
+        "he": "באמיה",
+        "en": "Okra"
+      },
+      "description": ""
+    },
+    {
+      "image": "בזיליקום.png",
+      "categorySlug": "herbs",
+      "unit": "unit",
+      "price": 8,
+      "name": {
+        "ar": "ريحان",
+        "he": "בזיליקום",
+        "en": "Basil"
+      },
+      "description": ""
+    },
+    {
+      "image": "במיה.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 16,
+      "name": {
+        "ar": "بامية",
+        "he": "במיה",
+        "en": "Okra"
+      },
+      "description": ""
+    },
+    {
+      "image": "בננה.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 12,
+      "name": {
+        "ar": "موز",
+        "he": "בננה",
+        "en": "Banana"
+      },
+      "description": ""
+    },
+    {
+      "image": "בעג'יר.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 14,
+      "name": {
+        "ar": "طماطم باغير",
+        "he": "עגבניית בגירה",
+        "en": "Bagira tomato"
+      },
+      "description": ""
+    },
+    {
+      "image": "בצל ירוק.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 8,
+      "name": {
+        "ar": "بصل أخضر",
+        "he": "בצל ירוק",
+        "en": "Green onion"
+      },
+      "description": ""
+    },
+    {
+      "image": "בצל לבן.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 6,
+      "name": {
+        "ar": "بصل أبيض",
+        "he": "בצל לבן",
+        "en": "White onion"
+      },
+      "description": ""
+    },
+    {
+      "image": "בצל קטן.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 7,
+      "name": {
+        "ar": "بصل صغير",
+        "he": "בצל קטן",
+        "en": "Small onion"
+      },
+      "description": ""
+    },
+    {
+      "image": "ברוקלי.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 12,
+      "name": {
+        "ar": "بروكلي",
+        "he": "ברוקלי",
+        "en": "Broccoli"
+      },
+      "description": ""
+    },
+    {
+      "image": "גויאבה.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 18,
+      "name": {
+        "ar": "جوافة",
+        "he": "גויאבה",
+        "en": "Guava"
+      },
+      "description": ""
+    },
+    {
+      "image": "גזר.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 8,
+      "name": {
+        "ar": "جزر",
+        "he": "גזר",
+        "en": "Carrot"
+      },
+      "description": ""
+    },
+    {
+      "image": "גינגיר.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 28,
+      "name": {
+        "ar": "زنجبيل",
+        "he": "גינגיר",
+        "en": "Ginger"
+      },
+      "description": ""
+    },
+    {
+      "image": "גרגיר.png",
+      "categorySlug": "herbs",
+      "unit": "unit",
+      "price": 8,
+      "name": {
+        "ar": "رشاد",
+        "he": "גרגיר",
+        "en": "Garden cress"
+      },
+      "description": ""
+    },
+    {
+      "image": "דובדובן.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 38,
+      "name": {
+        "ar": "كرز",
+        "he": "דובדבן",
+        "en": "Cherries"
+      },
+      "description": ""
+    },
+    {
+      "image": "דלעת.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 10,
+      "name": {
+        "ar": "قرع",
+        "he": "דלעת",
+        "en": "Pumpkin"
+      },
+      "description": ""
+    },
+    {
+      "image": "זעתר.png",
+      "categorySlug": "spices",
+      "unit": "unit",
+      "price": 14,
+      "name": {
+        "ar": "زعتر",
+        "he": "זעתר",
+        "en": "Za’atar mix"
+      },
+      "description": ""
+    },
+    {
+      "image": "חומוס ירוק.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 22,
+      "name": {
+        "ar": "حمص أخضر",
+        "he": "חומוס ירוק",
+        "en": "Fresh green chickpeas"
+      },
+      "description": ""
+    },
+    {
+      "image": "חמוצים .png",
+      "categorySlug": "pickles",
+      "unit": "unit",
+      "price": 16,
+      "name": {
+        "ar": "مخلل",
+        "he": "חמוצים",
+        "en": "Pickles"
+      },
+      "description": ""
+    },
+    {
+      "image": "חמוצים זיתים.png",
+      "categorySlug": "pickles",
+      "unit": "unit",
+      "price": 18,
+      "name": {
+        "ar": "مخلل زيتون",
+        "he": "חמוצים זיתים",
+        "en": "Pickled olives"
+      },
+      "description": ""
+    },
+    {
+      "image": "חסה לבבות קיסר.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 12,
+      "name": {
+        "ar": "خس قلوب قيصر",
+        "he": "חסה לבבות קיסר",
+        "en": "Romaine hearts"
+      },
+      "description": ""
+    },
+    {
+      "image": "חסה סלנובה.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 10,
+      "name": {
+        "ar": "خس سلانوفا",
+        "he": "חסה סלנובה",
+        "en": "Iceberg lettuce"
+      },
+      "description": ""
+    },
+    {
+      "image": "חסה.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 9,
+      "name": {
+        "ar": "خس",
+        "he": "חסה",
+        "en": "Lettuce"
+      },
+      "description": ""
+    },
+    {
+      "image": "חציל לממולאים.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 12,
+      "name": {
+        "ar": "باذنجان للحشو",
+        "he": "חציל לממולאים",
+        "en": "Eggplant for stuffing"
+      },
+      "description": ""
+    },
+    {
+      "image": "חציל עגמי.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 12,
+      "name": {
+        "ar": "باذنجان عجمي",
+        "he": "חציל עגמי",
+        "en": "Agami eggplant"
+      },
+      "description": ""
+    },
+    {
+      "image": "כוסברה.png",
+      "categorySlug": "herbs",
+      "unit": "unit",
+      "price": 6,
+      "name": {
+        "ar": "كزبرة",
+        "he": "כוסברה",
+        "en": "Cilantro"
+      },
+      "description": ""
+    },
+    {
+      "image": "כרוב אדום.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 10,
+      "name": {
+        "ar": "ملفوف أحمر",
+        "he": "כרוב אדום",
+        "en": "Red cabbage"
+      },
+      "description": ""
+    },
+    {
+      "image": "כרוב לבן.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 8,
+      "name": {
+        "ar": "ملفوف أبيض",
+        "he": "כרוב לבן",
+        "en": "White cabbage"
+      },
+      "description": ""
+    },
+    {
+      "image": "כרובית.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 14,
+      "name": {
+        "ar": "قرنبيط",
+        "he": "כרובית",
+        "en": "Cauliflower"
+      },
+      "description": ""
+    },
+    {
+      "image": "לוביה ירוק.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 18,
+      "name": {
+        "ar": "فاصوليا خضراء",
+        "he": "לוביה ירוק",
+        "en": "Green beans"
+      },
+      "description": ""
+    },
+    {
+      "image": "לוז טרי ירוק.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 55,
+      "name": {
+        "ar": "لوز أخضر طازج",
+        "he": "לוז טרי ירוק",
+        "en": "Fresh green almonds"
+      },
+      "description": ""
+    },
+    {
+      "image": "לימון.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 10,
+      "name": {
+        "ar": "ليمون",
+        "he": "לימון",
+        "en": "Lemon"
+      },
+      "description": ""
+    },
+    {
+      "image": "ליצי.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 28,
+      "name": {
+        "ar": "ليتشي",
+        "he": "ליצי",
+        "en": "Lychee"
+      },
+      "description": ""
+    },
+    {
+      "image": "לפת.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 10,
+      "name": {
+        "ar": "لفت",
+        "he": "לפת",
+        "en": "Turnip"
+      },
+      "description": ""
+    },
+    {
+      "image": "מטלי.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 16,
+      "name": {
+        "ar": "برقوق",
+        "he": "שזיף",
+        "en": "Plum"
+      },
+      "description": ""
+    },
+    {
+      "image": "מילון .png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 18,
+      "name": {
+        "ar": "شمام",
+        "he": "מלון",
+        "en": "Melon"
+      },
+      "description": ""
+    },
+    {
+      "image": "מיץ לימון .png",
+      "categorySlug": "__JUICE_LEMON__",
+      "unit": "unit",
+      "price": 16,
+      "name": {
+        "ar": "عصير ليمون",
+        "he": "מיץ לימון",
+        "en": "Lemon juice"
+      },
+      "description": ""
+    },
+    {
+      "image": "מיץ רימונים.png",
+      "categorySlug": "__JUICE_POM__",
+      "unit": "unit",
+      "price": 18,
+      "name": {
+        "ar": "عصير رمان",
+        "he": "מיץ רימונים",
+        "en": "Pomegranate juice"
+      },
+      "description": ""
+    },
+    {
+      "image": "מלוכיה.png",
+      "categorySlug": "herbs",
+      "unit": "unit",
+      "price": 10,
+      "name": {
+        "ar": "ملوخية",
+        "he": "מלוכיה",
+        "en": "Molokhia"
+      },
+      "description": ""
+    },
+    {
+      "image": "מלפפון חמוץ.png",
+      "categorySlug": "pickles",
+      "unit": "unit",
+      "price": 14,
+      "name": {
+        "ar": "مخلل خيار",
+        "he": "מלפפון חמוץ",
+        "en": "Pickled cucumber"
+      },
+      "description": ""
+    },
+    {
+      "image": "מלפפון.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 8,
+      "name": {
+        "ar": "خيار",
+        "he": "מלפפון",
+        "en": "Cucumber"
+      },
+      "description": ""
+    },
+    {
+      "image": "מנגו.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 12,
+      "name": {
+        "ar": "مانجو",
+        "he": "מנגו",
+        "en": "Mango"
+      },
+      "description": ""
+    },
+    {
+      "image": "מנדלינה.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 14,
+      "name": {
+        "ar": "ماندارين",
+        "he": "מנדלינה",
+        "en": "Mandarin"
+      },
+      "description": ""
+    },
+    {
+      "image": "משמש.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 22,
+      "name": {
+        "ar": "مشمش",
+        "he": "משמש",
+        "en": "Apricot"
+      },
+      "description": ""
+    },
+    {
+      "image": "נבטים.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 10,
+      "name": {
+        "ar": "براعم",
+        "he": "נבטים",
+        "en": "Sprouts"
+      },
+      "description": ""
+    },
+    {
+      "image": "נענע.png",
+      "categorySlug": "herbs",
+      "unit": "unit",
+      "price": 8,
+      "name": {
+        "ar": "نعناع",
+        "he": "נענע",
+        "en": "Mint"
+      },
+      "description": ""
+    },
+    {
+      "image": "נקטרינה גדול.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 22,
+      "name": {
+        "ar": "نكتارين كبير",
+        "he": "נקטרינה גדול",
+        "en": "Large nectarine"
+      },
+      "description": ""
+    },
+    {
+      "image": "נקטרינה צהוב.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 22,
+      "name": {
+        "ar": "نكتارين أصفر",
+        "he": "נקטרינה צהוב",
+        "en": "Yellow nectarine"
+      },
+      "description": ""
+    },
+    {
+      "image": "סברס.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 6,
+      "name": {
+        "ar": "تين شوكي",
+        "he": "סברס",
+        "en": "Prickly pear"
+      },
+      "description": ""
+    },
+    {
+      "image": "סלק אדום.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 8,
+      "name": {
+        "ar": "شمندر",
+        "he": "סלק אדום",
+        "en": "Beetroot"
+      },
+      "description": ""
+    },
+    {
+      "image": "סלרי.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 10,
+      "name": {
+        "ar": "كرفس",
+        "he": "סלרי",
+        "en": "Celery"
+      },
+      "description": ""
+    },
+    {
+      "image": "עגבניה מגי.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 12,
+      "name": {
+        "ar": "طماطم مجي",
+        "he": "עגבניה מגי",
+        "en": "Magi tomato"
+      },
+      "description": ""
+    },
+    {
+      "image": "עגבניה שירי.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 16,
+      "name": {
+        "ar": "طماطم كرزية",
+        "he": "עגבניה שירי",
+        "en": "Cherry tomatoes"
+      },
+      "description": ""
+    },
+    {
+      "image": "עלי גפן.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 12,
+      "name": {
+        "ar": "ورق عنب",
+        "he": "עלי גפן",
+        "en": "Grape leaves"
+      },
+      "description": ""
+    },
+    {
+      "image": "ענבים טאלי.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 22,
+      "name": {
+        "ar": "عنب تالي",
+        "he": "ענבים טאלי",
+        "en": "Table grapes (Tali)"
+      },
+      "description": ""
+    },
+    {
+      "image": "ענבים לבן.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 22,
+      "name": {
+        "ar": "عنب أبيض",
+        "he": "ענבים לבן",
+        "en": "White grapes"
+      },
+      "description": ""
+    },
+    {
+      "image": "ענבים שחור.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 22,
+      "name": {
+        "ar": "عنب أسود",
+        "he": "ענבים שחור",
+        "en": "Black grapes"
+      },
+      "description": ""
+    },
+    {
+      "image": "ערמון.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 48,
+      "name": {
+        "ar": "كستناء",
+        "he": "ערמון",
+        "en": "Chestnut"
+      },
+      "description": ""
+    },
+    {
+      "image": "פול.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 14,
+      "name": {
+        "ar": "فول",
+        "he": "פול",
+        "en": "Fava beans"
+      },
+      "description": ""
+    },
+    {
+      "image": "פומלה.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 18,
+      "name": {
+        "ar": "بوملي",
+        "he": "פומלה",
+        "en": "Pomelo"
+      },
+      "description": ""
+    },
+    {
+      "image": "פטריות בלדי.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 24,
+      "name": {
+        "ar": "فطر بلدي",
+        "he": "פטריות בלדי",
+        "en": "Local mushrooms"
+      },
+      "description": ""
+    },
+    {
+      "image": "פיספלורה.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 6,
+      "name": {
+        "ar": "ماراكويا",
+        "he": "פסיפלורה",
+        "en": "Passion fruit"
+      },
+      "description": ""
+    },
+    {
+      "image": "פלפל אדום.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 14,
+      "name": {
+        "ar": "فلفل أحمر",
+        "he": "פלפל אדום",
+        "en": "Red bell pepper"
+      },
+      "description": ""
+    },
+    {
+      "image": "פלפל.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 14,
+      "name": {
+        "ar": "فلفل",
+        "he": "פלפל",
+        "en": "Bell pepper"
+      },
+      "description": ""
+    },
+    {
+      "image": "פנק לידי.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 16,
+      "name": {
+        "ar": "تفاح بينك ليدي",
+        "he": "פנק לידי",
+        "en": "Pink Lady apple"
+      },
+      "description": ""
+    },
+    {
+      "image": "פקוס.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 12,
+      "name": {
+        "ar": "فكوس / خيار عرائي",
+        "he": "פקוס מלפפון ערבי",
+        "en": "Lebanese cucumber (Beit Alpha)"
+      },
+      "description": ""
+    },
+    {
+      "image": "פתאיה.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 22,
+      "name": {
+        "ar": "دراقون فروت",
+        "he": "פיטאיה",
+        "en": "Dragon fruit"
+      },
+      "description": ""
+    },
+    {
+      "image": "קולורבי.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 12,
+      "name": {
+        "ar": "كولرابي",
+        "he": "קולורבי",
+        "en": "Kohlrabi"
+      },
+      "description": ""
+    },
+    {
+      "image": "קיוי.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 22,
+      "name": {
+        "ar": "كيوي",
+        "he": "קיוי",
+        "en": "Kiwi"
+      },
+      "description": ""
+    },
+    {
+      "image": "קישואים.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 10,
+      "name": {
+        "ar": "كوسا",
+        "he": "קישואים",
+        "en": "Zucchini"
+      },
+      "description": ""
+    },
+    {
+      "image": "קסטנה.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 48,
+      "name": {
+        "ar": "كستناء",
+        "he": "קסטנה",
+        "en": "Chestnuts"
+      },
+      "description": ""
+    },
+    {
+      "image": "קרמבולה.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 8,
+      "name": {
+        "ar": "كرمبولا",
+        "he": "קרמבולה",
+        "en": "Star fruit"
+      },
+      "description": ""
+    },
+    {
+      "image": "קשואים גדולים.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 10,
+      "name": {
+        "ar": "كوسا كبيرة",
+        "he": "קשואים גדולים",
+        "en": "Large zucchini"
+      },
+      "description": ""
+    },
+    {
+      "image": "קשואים למילואים.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 12,
+      "name": {
+        "ar": "كوسا للحشو",
+        "he": "קשואים למילואים",
+        "en": "Zucchini for stuffing"
+      },
+      "description": ""
+    },
+    {
+      "image": "רימונים .png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 18,
+      "name": {
+        "ar": "رمان",
+        "he": "רימונים",
+        "en": "Pomegranate"
+      },
+      "description": ""
+    },
+    {
+      "image": "שום ארוז.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 10,
+      "name": {
+        "ar": "ثوم معبأ",
+        "he": "שום ארוז",
+        "en": "Packaged garlic"
+      },
+      "description": ""
+    },
+    {
+      "image": "שום עלים.png",
+      "categorySlug": "herbs",
+      "unit": "unit",
+      "price": 10,
+      "name": {
+        "ar": "ثوم أخضر",
+        "he": "שום עלים",
+        "en": "Green garlic"
+      },
+      "description": ""
+    },
+    {
+      "image": "שומר.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 12,
+      "name": {
+        "ar": "شمر",
+        "he": "שומר",
+        "en": "Fennel"
+      },
+      "description": ""
+    },
+    {
+      "image": "שזיף אורפה.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 18,
+      "name": {
+        "ar": "برقوق أورفا",
+        "he": "שזיף אורפה",
+        "en": "Orphe plum"
+      },
+      "description": ""
+    },
+    {
+      "image": "שזיף צהוב אדום ענק.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 18,
+      "name": {
+        "ar": "برقوق أصفر-أحمر عملاق",
+        "he": "שזיף צהוב אדום ענק",
+        "en": "Large yellow-red plum"
+      },
+      "description": ""
+    },
+    {
+      "image": "שזיף.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 16,
+      "name": {
+        "ar": "برقوق",
+        "he": "שזיף",
+        "en": "Plum"
+      },
+      "description": ""
+    },
+    {
+      "image": "שק תפוחי אדמה ביבי.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 22,
+      "name": {
+        "ar": "كيس بطاطا بيبي",
+        "he": "שק תפוחי אדמה ביבי",
+        "en": "Baby potato bag"
+      },
+      "description": ""
+    },
+    {
+      "image": "שק תפוחי אדמה.png",
+      "categorySlug": "vegetables",
+      "unit": "unit",
+      "price": 28,
+      "name": {
+        "ar": "كيس بطاطا",
+        "he": "שק תפוחי אדמה",
+        "en": "Potato sack"
+      },
+      "description": ""
+    },
+    {
+      "image": "תות שדה.png",
+      "categorySlug": "fruits",
+      "unit": "unit",
+      "price": 28,
+      "name": {
+        "ar": "فراولة",
+        "he": "תות שדה",
+        "en": "Strawberries"
+      },
+      "description": ""
+    },
+    {
+      "image": "תמר מג'הול.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 42,
+      "name": {
+        "ar": "تمر مجهول",
+        "he": "תמר מג'הול",
+        "en": "Medjool dates"
+      },
+      "description": ""
+    },
+    {
+      "image": "תפוז זהוב סמיט.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 12,
+      "name": {
+        "ar": "برتقال ذهبي سميت",
+        "he": "תפוז זהוב סמיט",
+        "en": "Golden Smitt orange"
+      },
+      "description": ""
+    },
+    {
+      "image": "תפוז עלים.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 12,
+      "name": {
+        "ar": "برتقال بأوراق",
+        "he": "תפוז עלים",
+        "en": "Orange with leaves"
+      },
+      "description": ""
+    },
+    {
+      "image": "תפוז רשת.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 12,
+      "name": {
+        "ar": "برتقال شبكة",
+        "he": "תפוז רשת",
+        "en": "Net bag oranges"
+      },
+      "description": ""
+    },
+    {
+      "image": "תפוז.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 10,
+      "name": {
+        "ar": "برتقال",
+        "he": "תפוז",
+        "en": "Orange"
+      },
+      "description": ""
+    },
+    {
+      "image": "תפוח יונתן.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 14,
+      "name": {
+        "ar": "تفاح جوناثان",
+        "he": "תפוח יונתן",
+        "en": "Jonathan apple"
+      },
+      "description": ""
+    },
+    {
+      "image": "תפוח סטרקינג.png",
+      "categorySlug": "fruits",
+      "unit": "kg",
+      "price": 14,
+      "name": {
+        "ar": "تفاح ستاركن",
+        "he": "תפוח סטרקינג",
+        "en": "Starkin apple"
+      },
+      "description": ""
+    },
+    {
+      "image": "תפוחי אדמה לבן.png",
+      "categorySlug": "vegetables",
+      "unit": "kg",
+      "price": 8,
+      "name": {
+        "ar": "بطاطا بيضاء",
+        "he": "תפוחי אדמה לבן",
+        "en": "White potatoes"
+      },
+      "description": ""
+    }
+  ]
+}

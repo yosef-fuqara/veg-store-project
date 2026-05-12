@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../features/auth/AuthContext";
 import { USER_ROLES } from "../constants/roles";
 import { useToast } from "../features/toast/ToastContext";
 import AbuAlAnasLogo from "../components/common/Logo";
+import LanguageSwitcher from "../i18n/LanguageSwitcher";
 
 const colors = {
   primary:      '#1e6b3c',
@@ -22,9 +24,6 @@ const colors = {
 };
 
 const fontStack = "'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
-
-const INVALID_CREDENTIALS_MESSAGE =
-  "Invalid email or password. אימייל או סיסמה שגויים";
 
 function isInvalidLoginCredentialsError(err) {
   if (err?.response?.status !== 401) return false;
@@ -81,6 +80,7 @@ const LoginPage = () => {
   const { login } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation(["auth", "nav"]);
   const [searchParams] = useSearchParams();
   const requestedRedirect = searchParams.get("redirect");
   const redirectTo = requestedRedirect && requestedRedirect.startsWith("/") ? requestedRedirect : "/products";
@@ -95,12 +95,12 @@ const LoginPage = () => {
 
   useEffect(() => {
     if (reason !== "session_expired") return;
-    showToast("Session expired. Please sign in again.", "error");
+    showToast(t("auth:login.sessionExpiredToast"), "error");
     const next = new URLSearchParams(searchParams);
     next.delete("reason");
     const nextQuery = next.toString();
     navigate(`/login${nextQuery ? `?${nextQuery}` : ""}`, { replace: true });
-  }, [navigate, reason, searchParams, showToast]);
+  }, [navigate, reason, searchParams, showToast, t]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -112,12 +112,12 @@ const LoginPage = () => {
         navigate("/unauthorized", { replace: true });
         return;
       }
-      showToast("Signed in successfully.");
+      showToast(t("auth:login.signedInToast"));
       navigate(redirectTo, { replace: true });
     } catch (err) {
       const message = isInvalidLoginCredentialsError(err)
-        ? INVALID_CREDENTIALS_MESSAGE
-        : err.userMessage || "Login failed";
+        ? t("auth:login.invalidCredentials")
+        : err.userMessage || t("auth:login.loginFailed");
       setError(message);
       showToast(message, "error");
     } finally {
@@ -171,13 +171,16 @@ const LoginPage = () => {
       `}</style>
       <div style={{ width: '100%', maxWidth: '400px', minWidth: 0 }}>
 
-        {/* Brand */}
+        {/* Brand + language */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+          <LanguageSwitcher size="sm" />
+        </div>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
             <AbuAlAnasLogo size={48} />
             <div style={{ textAlign: 'start' }}>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: colors.textPrimary }}>Abu Al-Anas</div>
-              <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1px', color: colors.textMuted, textTransform: 'uppercase', marginTop: '4px' }}>Admin Panel</div>
+              <div style={{ fontSize: '16px', fontWeight: 700, color: colors.textPrimary }}>{t('nav:brand')}</div>
+              <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '1px', color: colors.textMuted, textTransform: 'uppercase', marginTop: '4px' }}>{t('nav:adminPanel')}</div>
             </div>
           </div>
         </div>
@@ -193,12 +196,12 @@ const LoginPage = () => {
           boxSizing: 'border-box',
         }}>
           <h2 style={{ margin: '0 0 24px', fontSize: '22px', fontWeight: 700, color: colors.textPrimary, letterSpacing: '-0.02em' }}>
-            Sign In
+            {t('auth:login.title')}
           </h2>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', fontWeight: 500, color: colors.textSecondary }}>
-              Email
+              {t('auth:login.email')}
               <input
                 type="email"
                 className="admin-login-input"
@@ -213,7 +216,7 @@ const LoginPage = () => {
             </label>
 
             <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '14px', fontWeight: 500, color: colors.textSecondary }}>
-              Password
+              {t('auth:login.password')}
               <div style={passwordFieldWrap}>
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -231,7 +234,7 @@ const LoginPage = () => {
                   type="button"
                   className="admin-login-password-toggle"
                   aria-pressed={showPassword}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? t('auth:login.hidePassword') : t('auth:login.showPassword')}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => setShowPassword((v) => !v)}
                   style={passwordToggleBtn}
@@ -278,7 +281,7 @@ const LoginPage = () => {
                   <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
                 </svg>
               )}
-              {submitting ? 'Signing in…' : 'Sign In'}
+              {submitting ? t('auth:login.submitting') : t('auth:login.submit')}
             </button>
           </form>
         </div>

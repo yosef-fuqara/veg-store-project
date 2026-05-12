@@ -1,6 +1,18 @@
 {
+  "drawerTitle": "העגלה שלך",
+  "drawerClose": "סגור",
+  "drawerOpen": "פתח עגלה",
+  "drawerSignInHint": "התחבר כדי לראות את העגלה ולהמשיך לתשלום.",
+  "drawerViewFullCart": "לעמוד העגלה המלא",
+  "drawerCheckout": "לתשלום",
   "addedToCartToast": "המוצר נוסף לסל",
   "genericError": "משהו השתבש. נסה שוב.",
+  "errors": {
+    "addByAmountBlockedQuantityLine": "המוצר כבר בעגלה לפי כמות. הסירו את השורה או המשיכו באותו אופן — לא ניתן להוסיף לפי סכום עד אז.",
+    "addByQuantityBlockedAmountLine": "המוצר כבר בעגלה לפי סכום. הסירו את השורה או המשיכו באותו אופן — לא ניתן להוסיף לפי כמות עד אז.",
+    "updateQuantityBlockedAmountLine": "שורה זו נוספה לפי סכום. עדכנו רק את הסכום או הסירו את הפריט.",
+    "updateAmountBlockedQuantityLine": "שורה זו לפי כמות. עדכנו כמות או הסירו את הפריט כדי לעבור לפי סכום."
+  },
   "signInToAdd": {
     "message": "צריך להתחבר כדי להוסיף מוצרים לעגלה",
     "signIn": "התחברות",
@@ -11,6 +23,7 @@
   "quantity": "כמות",
   "price": "מחיר",
   "subtotal": "סכום ביניים",
+  "payableTotalLabel": "סכום לתשלום (מוצרים ושירותים)",
   "remove": "הסר",
   "clearCart": "נקה עגלה",
   "proceedToCheckout": "להמשך לתשלום",
@@ -24,5 +37,8 @@
     "lineFee": "עטיפה: {{amount}}",
     "summaryLabel": "תוספת עטיפה",
     "unavailable": "העטיפה זמינה רק למוצרים הנמכרים לפי ק״ג."
-  }
+  },
+  "purchaseByAmountBadge": "לפי {{amount}}",
+  "purchaseByAmountNote": "נבחר סכום {{amount}}; הכמות נקבעת לפי המחיר בחנות.",
+  "purchaseByAmountLineDetail": "{{unitPrice}} ל-{{unitLabel}} · משקל משוער {{weight}} {{unitLabel}}"
 }

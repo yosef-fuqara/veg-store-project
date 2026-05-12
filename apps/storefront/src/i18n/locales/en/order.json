@@ -1,6 +1,8 @@
 {
   "title": "Order",
   "confirmationTitle": "Order confirmation",
+  "confirmationTitleAwaitingPayment": "Order received — awaiting payment confirmation",
+  "confirmationTitleOrderRecord": "Order details",
   "loading": "Loading order...",
   "loadError": "Could not load order.",
   "notFound": "Order not found.",
@@ -9,6 +11,8 @@
   "status": "Status",
   "payment": "Payment",
   "paymentMethod": "Payment method",
+  "bankTransferProofTitle": "Bank transfer receipt",
+  "bankTransferProofAlt": "Uploaded payment screenshot",
   "phone": "Phone",
   "delivery": "Delivery",
   "area": "Delivery area",
@@ -24,6 +28,39 @@
   "total": "Total",
   "refreshStatus": "Refresh status",
   "continueShopping": "Continue shopping",
+  "history": {
+    "title": "My orders",
+    "subtitle": "Review what you ordered before, when it was placed, and the current order and payment status.",
+    "loadError": "Could not load your orders.",
+    "emptyTitle": "You do not have any orders yet",
+    "emptyText": "After you place an order, it will appear here with all details.",
+    "orderNumber": "Order #{{id}}",
+    "createdAt": "Order date",
+    "viewDetails": "View order details"
+  },
+  "orderStatus": {
+    "new": "New",
+    "seen": "Seen",
+    "confirmed": "Confirmed",
+    "preparing": "Preparing",
+    "ready_for_delivery": "Ready for delivery",
+    "sent_with_delivery_company": "Sent with delivery company",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled"
+  },
+  "paymentStatus": {
+    "pending_payment": "Awaiting payment",
+    "paid": "Paid",
+    "failed": "Payment failed",
+    "cancelled": "Payment cancelled",
+    "bank_transfer_pending": "Bank transfer pending approval",
+    "bank_transfer_approved": "Bank transfer approved"
+  },
+  "paymentMethods": {
+    "credit_card": "Credit card",
+    "bit": "Bit",
+    "bank_transfer": "Bank transfer"
+  },
   "paymentStatusMessage": {
     "pending_payment": "Awaiting payment confirmation.",
     "bank_transfer_pending": "Please complete the bank transfer; an admin will confirm.",

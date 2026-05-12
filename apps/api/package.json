@@ -12,7 +12,10 @@
     "seed:postman": "node scripts/seed-postman.js",
     "migrate:product-names-i18n": "node scripts/migrate-product-names-i18n.js",
     "migrate:category-names-i18n": "node scripts/migrate-category-names-i18n.js",
-    "migrate:split-herbs-spices": "node scripts/split-herbs-spices-category.js"
+    "migrate:split-herbs-spices": "node scripts/split-herbs-spices-category.js",
+    "seed:storefront-categories": "node scripts/seed-storefront-categories.js",
+    "import:products": "node scripts/import-products.js",
+    "test:email": "node scripts/test-email.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -25,9 +28,10 @@
     "http-status-codes": "^2.3.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^2.0.2",
     "mongoose": "^8.19.2",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "multer": "^2.0.2",
+    "nodemailer": "^8.0.7"
   },
   "devDependencies": {
     "jest": "^29.7.0",

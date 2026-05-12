@@ -17,13 +17,13 @@ const FLY_SIZE = 46;
 const PRIMARY = "#1e6b3c";
 const PRIMARY_SURFACE = "#eef7f1";
 
-function resolveVisibleAnchor(desktopEl, mobileEl) {
-  for (const el of [mobileEl, desktopEl]) {
+function resolveVisibleAnchor(fabEl, mobileEl, desktopEl) {
+  for (const el of [fabEl, mobileEl, desktopEl]) {
     if (!el) continue;
     const r = el.getBoundingClientRect();
     if (r.width > 0 && r.height > 0) return el;
   }
-  return mobileEl || desktopEl;
+  return fabEl || mobileEl || desktopEl;
 }
 
 function CartFlyParticle({ spec, onDone }) {
@@ -133,6 +133,7 @@ function AddedToCartToast({ visible }) {
 export function CartVisualFeedbackProvider({ children }) {
   const desktopCartAnchorRef = useRef(null);
   const mobileCartAnchorRef = useRef(null);
+  const fabCartAnchorRef = useRef(null);
   const [flySpec, setFlySpec] = useState(null);
   const [cartBumpKey, setCartBumpKey] = useState(0);
   const [toastVisible, setToastVisible] = useState(false);
@@ -148,8 +149,9 @@ export function CartVisualFeedbackProvider({ children }) {
   const notifyProductAddedToCart = useCallback((detail) => {
     const fromRect = detail?.fromRect;
     const anchor = resolveVisibleAnchor(
-      desktopCartAnchorRef.current,
-      mobileCartAnchorRef.current
+      fabCartAnchorRef.current,
+      mobileCartAnchorRef.current,
+      desktopCartAnchorRef.current
     );
 
     if (fromRect && anchor) {
@@ -178,6 +180,7 @@ export function CartVisualFeedbackProvider({ children }) {
     () => ({
       desktopCartAnchorRef,
       mobileCartAnchorRef,
+      fabCartAnchorRef,
       cartBumpKey,
       notifyProductAddedToCart
     }),

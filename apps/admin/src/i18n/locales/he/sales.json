@@ -1,0 +1,31 @@
+{
+  "pageTitle": "מכירות",
+  "pageSubtitle": "הסכומים לא כוללים הזמנות שבוטלו · השבוע מתחיל ביום שני (שעון מקומי)",
+  "refresh": "רענון",
+  "refreshing": "מרענן…",
+  "refreshAria": "רענן נתוני מכירות",
+  "refreshingAria": "מרענן נתוני מכירות",
+  "loadFailed": "טעינת ההזמנות נכשלה",
+  "cards": {
+    "todaySales": "היום · מכירות",
+    "todayOrders": "היום · הזמנות",
+    "weekSales": "השבוע · מכירות",
+    "weekOrders": "השבוע · הזמנות",
+    "monthSales": "החודש · מכירות",
+    "monthOrders": "החודש · הזמנות"
+  },
+  "buyers": {
+    "title": "מי קנה היום",
+    "subtitle": "הזמנות שלא בוטלו, שהוזמנו מאז חצות (שעון מקומי שלך)",
+    "empty": "אין הזמנות מתאימות היום עדיין.",
+    "tableHeaders": {
+      "customer": "לקוח",
+      "phone": "טלפון",
+      "total": "סה״כ",
+      "orderTime": "שעת הזמנה",
+      "status": "סטטוס",
+      "actions": "פעולות"
+    },
+    "view": "צפייה"
+  }
+}

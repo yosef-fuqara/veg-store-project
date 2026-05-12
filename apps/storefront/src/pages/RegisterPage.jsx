@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../features/auth/AuthContext";
 import { PasswordFieldWithToggle } from "../components/common/PasswordFieldWithToggle";
+import { normalizeIsraeliMobile } from "../utils/israeliMobilePhone";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -103,9 +104,19 @@ const RegisterPage = () => {
     event.preventDefault();
     setError('');
     setFieldErrors({});
+    const trimmedPhone = form.phone.trim();
+    if (!trimmedPhone) {
+      setFieldErrors({ phone: t('phoneEmpty') });
+      return;
+    }
+    const normalizedPhone = normalizeIsraeliMobile(trimmedPhone);
+    if (!normalizedPhone) {
+      setFieldErrors({ phone: t('phoneInvalid') });
+      return;
+    }
     setSubmitting(true);
     try {
-      await register(form);
+      await register({ ...form, phone: normalizedPhone });
       navigate(redirectTo, { replace: true });
     } catch (err) {
       const fields = fieldErrorsFromResponse(err);
@@ -174,9 +185,12 @@ const RegisterPage = () => {
             <label style={labelStyle}>
               {t('phone')}
               <input
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel-national"
                 value={form.phone}
                 onChange={update('phone')}
-                minLength={7} maxLength={20} required
+                maxLength={22}
                 onFocus={focus('phone')} onBlur={blur}
                 style={inputStyle('phone')}
               />

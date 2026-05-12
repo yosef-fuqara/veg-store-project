@@ -1,0 +1,115 @@
+{
+  "list": {
+    "pageTitle": "הזמנות",
+    "pageSubtitle": "מעקב ועיבוד הזמנות לקוחות",
+    "refresh": "רענון",
+    "refreshing": "מרענן…",
+    "refreshAria": "רענן הזמנות",
+    "refreshingAria": "מרענן הזמנות",
+    "searchPlaceholder": "חיפוש מספר הזמנה או לקוח…",
+    "searchAria": "חיפוש הזמנות",
+    "loadFailed": "טעינת ההזמנות נכשלה",
+    "empty": {
+      "title": "לא נמצאו הזמנות",
+      "withSearch": "נסה לשנות את החיפוש או הסינון.",
+      "withoutSearch": "הזמנות חדשות יופיעו כאן כשיתקבלו."
+    },
+    "tableHeaders": {
+      "actions": "פעולות",
+      "status": "סטטוס",
+      "payment": "תשלום",
+      "total": "סה״כ",
+      "date": "תאריך",
+      "customer": "לקוח",
+      "orderNumber": "# הזמנה"
+    },
+    "view": "צפייה",
+    "preorder": "הזמנה מראש",
+    "footer_one": "הזמנה אחת",
+    "footer_two": "{{count}} הזמנות",
+    "footer_many": "{{count}} הזמנות",
+    "footer_other": "{{count}} הזמנות"
+  },
+  "details": {
+    "pageTitle": "פרטי הזמנה",
+    "allOrders": "כל ההזמנות",
+    "preorderBadge": "הזמנה מראש",
+    "preorderBanner": "כוללת פריטים הדורשים הכנה מראש.",
+    "preferredLabel": "מועד מועדף: {{value}}",
+    "notFound": "ההזמנה לא נמצאה.",
+    "loadFailed": "טעינת ההזמנה נכשלה",
+    "cards": {
+      "customer": "לקוח",
+      "items": "פריטים",
+      "delivery": "משלוח",
+      "paymentStatus": "תשלום וסטטוס"
+    },
+    "customer": {
+      "name": "שם",
+      "email": "אימייל",
+      "phone": "טלפון",
+      "orderPlaced": "תאריך הזמנה",
+      "lastUpdated": "עודכן לאחרונה",
+      "customerNotes": "הערות לקוח",
+      "customRequest": "בקשה מיוחדת"
+    },
+    "itemsTable": {
+      "product": "מוצר",
+      "qty": "כמות",
+      "unitPrice": "מחיר ליחידה",
+      "lineTotal": "סה״כ לשורה"
+    },
+    "itemBadges": {
+      "preorder": "הזמנה מראש",
+      "wrap": "אריזה",
+      "wrapWithFee": "אריזה (+{{fee}})"
+    },
+    "requestedAmount": "ביקש: {{value}} · מצב: סכום",
+    "totals": {
+      "subtotal": "סכום ביניים",
+      "wrapFees": "דמי אריזה",
+      "deliveryFee": "דמי משלוח",
+      "total": "סה״כ"
+    },
+    "delivery": {
+      "area": "אזור",
+      "address": "כתובת",
+      "addressLabel": "תווית כתובת",
+      "preferredDelivery": "מועד משלוח מועדף",
+      "buildingPrefix": "מס׳",
+      "apartmentPrefix": "דירה"
+    },
+    "payment": {
+      "orderStatus": "סטטוס הזמנה",
+      "paymentStatus": "סטטוס תשלום",
+      "methodPrefix": "אמצעי:",
+      "update": "עדכן",
+      "bankProofTitle": "אסמכתת העברה בנקאית (העלאת לקוח)",
+      "bankProofAlt": "אסמכתת העברה בנקאית"
+    },
+    "toasts": {
+      "orderStatusUpdated": "סטטוס ההזמנה עודכן.",
+      "orderStatusFailed": "עדכון סטטוס ההזמנה נכשל",
+      "paymentStatusUpdated": "סטטוס התשלום עודכן.",
+      "paymentStatusFailed": "עדכון סטטוס התשלום נכשל"
+    }
+  },
+  "orderStatuses": {
+    "new": "חדשה",
+    "seen": "נצפתה",
+    "confirmed": "אושרה",
+    "preparing": "בהכנה",
+    "ready_for_delivery": "מוכנה למשלוח",
+    "sent_with_delivery_company": "נשלחה עם השליח",
+    "delivered": "נמסרה",
+    "cancelled": "בוטלה"
+  },
+  "paymentStatuses": {
+    "pending_payment": "ממתין לתשלום",
+    "paid": "שולם",
+    "failed": "נכשל",
+    "cancelled": "בוטל",
+    "bank_transfer_pending": "העברה בנקאית בהמתנה",
+    "bank_transfer_approved": "העברה בנקאית אושרה"
+  }
+}

@@ -2,7 +2,7 @@ const { StatusCodes } = require("http-status-codes");
 const Cart = require("../models/cart.model");
 const Order = require("../models/order.model");
 const AppError = require("../utils/app-error");
-const { buildCheckoutPreview } = require("../services/cart.service");
+const { buildCheckoutPreview, floorPayableIls } = require("../services/cart.service");
 const {
   calculateDeliveryFee,
   getDeliveryArea,
@@ -23,7 +23,16 @@ const {
   OUTSIDE_DELIVERY_FEE,
   snapshotCityForOrder
 } = require("../constants/delivery");
-const { ORDER_STATUS } = require("../constants/order");
+const { ORDER_STATUS, PAYMENT_METHOD } = require("../constants/order");
+const {
+  scheduleBankTransferOrderCreated,
+  scheduleOrderStatusChange
+} = require("../services/order-email.service");
+const {
+  uploadBufferToCloudinary,
+  destroyCloudinaryImage
+} = require("../services/image-upload.service");
+const { getOrderCreationBlockResponse } = require("../services/store-settings.service");
 
 const getOrCreateCart = async (userId) => {
   let cart = await Cart.findOne({ user: userId });
@@ -40,6 +49,11 @@ const createOrder = async (req, res, next) => {
       throw new AppError("Cart is empty", StatusCodes.BAD_REQUEST);
     }
 
+    const orderBlock = await getOrderCreationBlockResponse();
+    if (orderBlock) {
+      return res.status(orderBlock.statusCode).json(orderBlock.body);
+    }
+
     const { deliveryArea } = req.body;
 
     // Reject unsupported delivery areas before doing any expensive work.
@@ -53,7 +67,7 @@ const createOrder = async (req, res, next) => {
     // wrap is a service surcharge and shouldn't push an order over the
     // "free delivery" line.
     const deliveryFee = calculateDeliveryFee(deliveryArea, subtotal);
-    const total = subtotal + wrapTotal + deliveryFee;
+    const total = floorPayableIls(subtotal + wrapTotal + deliveryFee);
 
     const { hasPreorderItems, preferredDeliveryAt } = assertPreorderTiming(
       preview.items,
@@ -75,24 +89,51 @@ const createOrder = async (req, res, next) => {
       notes: submittedAddress.notes || ""
     };
 
-    const order = await Order.create({
-      user: req.user._id,
-      items,
-      subtotal,
-      wrapTotal,
-      deliveryFee,
-      total,
-      deliveryAddress,
-      deliveryArea,
-      customerPhone: req.body.customerPhone,
-      notes: req.body.notes || "",
-      customRequest: req.body.customRequest || "",
-      preferredDeliveryAt,
-      hasPreorderItems,
-      paymentMethod: req.body.paymentMethod,
-      paymentStatus,
-      orderStatus: ORDER_STATUS.NEW
-    });
+    let bankTransferProofUrl = "";
+    let bankTransferProofPublicId = "";
+    if (req.file) {
+      if (req.body.paymentMethod !== PAYMENT_METHOD.BANK_TRANSFER) {
+        throw new AppError(
+          "Payment proof image is only allowed for bank transfer orders",
+          StatusCodes.BAD_REQUEST
+        );
+      }
+      const folderBase = process.env.CLOUDINARY_FOLDER || "veg-store";
+      const folder = `${folderBase}/bank-transfer-proofs`;
+      const uploadResult = await uploadBufferToCloudinary(req.file.buffer, folder);
+      bankTransferProofUrl = uploadResult.secure_url;
+      bankTransferProofPublicId = uploadResult.public_id;
+    }
+
+    let order;
+    try {
+      order = await Order.create({
+        user: req.user._id,
+        items,
+        subtotal,
+        wrapTotal,
+        deliveryFee,
+        total,
+        deliveryAddress,
+        deliveryArea,
+        customerPhone: req.body.customerPhone,
+        notes: req.body.notes || "",
+        customRequest: req.body.customRequest || "",
+        preferredDeliveryAt,
+        hasPreorderItems,
+        paymentMethod: req.body.paymentMethod,
+        paymentStatus,
+        orderStatus: ORDER_STATUS.NEW,
+        ...(bankTransferProofUrl
+          ? { bankTransferProofUrl, bankTransferProofPublicId }
+          : {})
+      });
+    } catch (err) {
+      if (bankTransferProofPublicId) {
+        await destroyCloudinaryImage(bankTransferProofPublicId).catch(() => {});
+      }
+      throw err;
+    }
 
     cart.items = [];
     await cart.save();
@@ -104,6 +145,10 @@ const createOrder = async (req, res, next) => {
       // eslint-disable-next-line no-console
       console.warn("[orders] admin notification dispatch error:", err?.message);
     });
+
+    if (req.body.paymentMethod === PAYMENT_METHOD.BANK_TRANSFER) {
+      scheduleBankTransferOrderCreated(order._id);
+    }
 
     return res.status(StatusCodes.CREATED).json({
       success: true,
@@ -207,6 +252,11 @@ const adminGetOrder = async (req, res, next) => {
       throw new AppError("Order not found", StatusCodes.NOT_FOUND);
     }
 
+    if (order.orderStatus === ORDER_STATUS.NEW) {
+      order.orderStatus = ORDER_STATUS.SEEN;
+      await order.save();
+    }
+
     return res.status(StatusCodes.OK).json({
       success: true,
       data: { order }
@@ -223,9 +273,14 @@ const adminUpdateOrderStatus = async (req, res, next) => {
       throw new AppError("Order not found", StatusCodes.NOT_FOUND);
     }
 
+    const previousOrderStatus = order.orderStatus;
     assertOrderStatusTransition(order.orderStatus, req.body.orderStatus);
     order.orderStatus = req.body.orderStatus;
     await order.save();
+
+    if (previousOrderStatus !== order.orderStatus) {
+      scheduleOrderStatusChange(order._id, order.orderStatus);
+    }
 
     return res.status(StatusCodes.OK).json({
       success: true,

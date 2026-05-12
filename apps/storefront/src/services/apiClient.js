@@ -39,7 +39,10 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
     const reqUrl = String(error.config?.url || "");
     const isCredentialRoute =
-      reqUrl.includes("/auth/login") || reqUrl.includes("/auth/register");
+      reqUrl.includes("/auth/login") ||
+      reqUrl.includes("/auth/register") ||
+      reqUrl.includes("/auth/forgot-password") ||
+      reqUrl.includes("/auth/reset-password");
     if (status === 401 && !isCredentialRoute && getAccessToken()) {
       clearAccessToken();
       if (typeof window !== "undefined") {

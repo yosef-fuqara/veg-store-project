@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import * as orderService from "../services/orderService";
-import { formatPrice } from "../utils/formatPrice";
+import { formatPrice, formatChargedTotal } from "../utils/formatPrice";
+import { formatQtyDisplay, formatApproxWeightQuantity } from "../utils/cartLineQuantity";
 import { formatOrderDeliveryAreaLabel } from "../utils/deliveryAreaDisplay";
 import { getLocalizedText } from "../utils/localizedProduct";
 
@@ -47,6 +48,49 @@ const paymentStatusMessage = (status, t) => {
   }
 };
 
+const confirmationTitleForPaymentStatus = (status, t) => {
+  if (status === "paid" || status === "bank_transfer_approved") {
+    return t("confirmationTitle");
+  }
+  if (status === "bank_transfer_pending" || status === "pending_payment") {
+    return t("confirmationTitleAwaitingPayment");
+  }
+  return t("confirmationTitleOrderRecord");
+};
+
+const confirmationHeaderPresentation = (status) => {
+  if (status === "paid" || status === "bank_transfer_approved") {
+    return {
+      surface: colors.successSurface,
+      border: colors.successBorder,
+      accent: colors.success,
+      icon: "✓",
+    };
+  }
+  if (status === "bank_transfer_pending" || status === "pending_payment") {
+    return {
+      surface: colors.warningSurface,
+      border: colors.warningBorder,
+      accent: colors.warning,
+      icon: "⏳",
+    };
+  }
+  if (status === "failed" || status === "cancelled") {
+    return {
+      surface: colors.errorSurface,
+      border: colors.errorBorder,
+      accent: colors.error,
+      icon: "✕",
+    };
+  }
+  return {
+    surface: colors.primarySurface,
+    border: colors.primaryBorder,
+    accent: colors.primary,
+    icon: "ℹ",
+  };
+};
+
 const Skeleton = ({ height = 20, width = '100%' }) => (
   <motion.div
     animate={{ opacity: [0.4, 0.8, 0.4] }}
@@ -63,7 +107,7 @@ const Row = ({ label, value }) => (
 );
 
 const OrderConfirmationPage = () => {
-  const { t, i18n } = useTranslation("order");
+  const { t, i18n } = useTranslation(["order", "cart", "home"]);
   const { t: tCheckout } = useTranslation("checkout");
   const lang = (i18n.language || "he").split("-")[0];
   const { id } = useParams();
@@ -119,6 +163,7 @@ const OrderConfirmationPage = () => {
   }
 
   const statusNote = paymentStatusMessage(order.paymentStatus, t);
+  const headerUi = confirmationHeaderPresentation(order.paymentStatus);
   const deliveryAddress = order.deliveryAddress
     ? [order.deliveryAddress.label, order.deliveryAddress.city, order.deliveryAddress.street, order.deliveryAddress.building, order.deliveryAddress.apartment, order.deliveryAddress.notes].filter(Boolean).join(", ")
     : "—";
@@ -130,11 +175,11 @@ const OrderConfirmationPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
       >
-        {/* Success header */}
-        <div style={{ background: colors.successSurface, border: `1px solid ${colors.successBorder}`, borderRadius: '14px', padding: '28px 24px', marginBottom: '24px', textAlign: 'center' }}>
-          <div style={{ fontSize: '36px', lineHeight: 1, marginBottom: '12px', color: colors.success }}>✓</div>
-          <h1 style={{ margin: '0 0 8px', fontSize: '22px', fontWeight: 700, color: colors.success }}>
-            {t("confirmationTitle")}
+        {/* Status header (tone follows payment status) */}
+        <div style={{ background: headerUi.surface, border: `1px solid ${headerUi.border}`, borderRadius: '14px', padding: '28px 24px', marginBottom: '24px', textAlign: 'center' }}>
+          <div style={{ fontSize: '36px', lineHeight: 1, marginBottom: '12px', color: headerUi.accent }} aria-hidden>{headerUi.icon}</div>
+          <h1 style={{ margin: '0 0 8px', fontSize: '22px', fontWeight: 700, color: headerUi.accent }}>
+            {confirmationTitleForPaymentStatus(order.paymentStatus, t)}
           </h1>
           <p style={{ margin: 0, fontSize: '13px', color: colors.textSecondary, fontFamily: 'monospace' }}>
             {order._id}
@@ -147,15 +192,35 @@ const OrderConfirmationPage = () => {
             {t("title")}
           </h2>
           <div style={{ marginTop: '4px' }}>
-            <Row label={t("status")} value={order.orderStatus} />
-            <Row label={t("payment")} value={order.paymentStatus} />
-            <Row label={t("paymentMethod")} value={order.paymentMethod} />
+            <Row label={t("status")} value={t(`orderStatus.${order.orderStatus}`, { defaultValue: order.orderStatus })} />
+            <Row label={t("payment")} value={t(`paymentStatus.${order.paymentStatus}`, { defaultValue: order.paymentStatus })} />
+            <Row label={t("paymentMethod")} value={t(`paymentMethods.${order.paymentMethod}`, { defaultValue: order.paymentMethod })} />
             <Row label={t("phone")} value={order.customerPhone} />
           </div>
 
           {statusNote && (
             <div style={{ marginTop: '12px', padding: '12px 16px', borderRadius: '10px', background: colors.primarySurface, border: `1px solid ${colors.primaryBorder}`, color: colors.primary, fontSize: '14px', lineHeight: 1.5 }}>
               {statusNote}
+            </div>
+          )}
+
+          {order.paymentMethod === "bank_transfer" && order.bankTransferProofUrl && (
+            <div style={{ marginTop: '16px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: colors.textSecondary, marginBottom: '8px' }}>
+                {t("bankTransferProofTitle")}
+              </div>
+              <a
+                href={order.bankTransferProofUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'inline-block', maxWidth: '100%' }}
+              >
+                <img
+                  src={order.bankTransferProofUrl}
+                  alt={t("bankTransferProofAlt")}
+                  style={{ maxWidth: '100%', maxHeight: '280px', borderRadius: '10px', border: `1px solid ${colors.border}`, objectFit: 'contain', background: colors.surfaceRaised }}
+                />
+              </a>
             </div>
           )}
         </div>
@@ -202,10 +267,33 @@ const OrderConfirmationPage = () => {
           </h2>
 
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {(order.items || []).map((item, index) => (
+            {(order.items || []).map((item, index) => {
+              const lineDisplay =
+                typeof item.lineTotal === "number"
+                  ? item.lineTotal
+                  : Number(item.price) * Number(item.quantity);
+              return (
               <div key={`${item.product}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', padding: '10px 0', borderBottom: `1px solid ${colors.border}` }}>
                 <span style={{ fontSize: '14px', color: colors.textPrimary }}>
-                  {getLocalizedText(item.name, lang)} × {item.quantity}
+                  {getLocalizedText(item.name, lang)}
+                  {item.purchaseMode === "amount" && item.requestedAmountIls != null ? (
+                    <>
+                      {" · "}
+                      {item.unit === "kg" || item.unit === "gram" ? (
+                        t("cart:purchaseByAmountLineDetail", {
+                          unitPrice: formatPrice(item.price, lang),
+                          unitLabel: t(`home:units.${item.unit}`),
+                          weight: formatApproxWeightQuantity(item.quantity, item.unit)
+                        })
+                      ) : (
+                        t("cart:purchaseByAmountNote", {
+                          amount: formatPrice(item.requestedAmountIls, lang)
+                        })
+                      )}
+                    </>
+                  ) : (
+                    <> × {formatQtyDisplay(item.quantity)}</>
+                  )}
                   {item.wrap && (
                     <span
                       title={t("wrapBadge")}
@@ -216,10 +304,11 @@ const OrderConfirmationPage = () => {
                   )}
                 </span>
                 <span style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, flexShrink: 0 }}>
-                  {formatPrice(item.price * item.quantity, lang)}
+                  {formatPrice(lineDisplay, lang)}
                 </span>
               </div>
-            ))}
+            );
+            })}
           </div>
 
           {/* Totals */}
@@ -240,7 +329,7 @@ const OrderConfirmationPage = () => {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700, color: colors.textPrimary, paddingTop: '10px', borderTop: `1px solid ${colors.border}`, marginTop: '4px' }}>
               <span>{t("total")}</span>
-              <span>{formatPrice(order.total, lang)}</span>
+              <span>{formatChargedTotal(order.total, lang)}</span>
             </div>
           </div>
         </div>

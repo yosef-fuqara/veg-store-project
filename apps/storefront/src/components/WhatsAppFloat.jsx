@@ -1,17 +1,17 @@
 import { useTranslation } from "react-i18next";
+import { STORE_CONTACT_PHONES } from "../config/storeContactPhones";
 
-/**
- * Floating WhatsApp chat button (fixed, always visible).
- * Number: digits only, country code without + (e.g. Israel 972…).
- */
-const WHATSAPP_DIGITS = '972543486348';
+/** Digits only for wa.me (no +). */
+const defaultWaDigits = "972543486348";
+const WHATSAPP_DIGITS =
+  STORE_CONTACT_PHONES[0]?.tel?.replace(/\D/g, "") || defaultWaDigits;
 
 const WHATSAPP_HREF = `https://wa.me/${WHATSAPP_DIGITS}`;
 
-const colors = {
-  whatsapp: '#25D366',
-  whatsappHover: '#20bd5a',
-  shadow: '0 8px 24px rgba(37, 211, 102, 0.45), 0 2px 8px rgba(0, 0, 0, 0.12)',
+const waColors = {
+  whatsapp: "#25D366",
+  whatsappHover: "#20bd5a",
+  shadow: "0 8px 24px rgba(37, 211, 102, 0.45), 0 2px 8px rgba(0, 0, 0, 0.12)",
 };
 
 const WhatsAppIcon = () => (
@@ -20,55 +20,56 @@ const WhatsAppIcon = () => (
   </svg>
 );
 
-const WhatsAppFloat = () => {
+const fabBase = {
+  width: 56,
+  height: 56,
+  borderRadius: 9999,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+};
+
+/** Round WhatsApp link for use inside a fixed bottom bar (e.g. next to cart FAB). */
+export function WhatsAppFabCircle() {
   const { t } = useTranslation("home");
   const ariaLabel = t("footer.whatsappAria");
 
   return (
-  <a
-    href={WHATSAPP_HREF}
-    target="_blank"
-    rel="noopener noreferrer"
-    aria-label={ariaLabel}
-    title={ariaLabel}
-    style={{
-      position: 'fixed',
-      insetInlineEnd: '24px',
-      bottom: '24px',
-      zIndex: 95,
-      width: '56px',
-      height: '56px',
-      borderRadius: '9999px',
-      background: colors.whatsapp,
-      color: '#fff',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      boxShadow: colors.shadow,
-      textDecoration: 'none',
-      transition: 'transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease',
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.background = colors.whatsappHover;
-      e.currentTarget.style.transform = 'scale(1.06)';
-      e.currentTarget.style.boxShadow = '0 10px 28px rgba(37, 211, 102, 0.5), 0 4px 12px rgba(0, 0, 0, 0.14)';
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.background = colors.whatsapp;
-      e.currentTarget.style.transform = 'scale(1)';
-      e.currentTarget.style.boxShadow = colors.shadow;
-    }}
-    onFocus={(e) => {
-      e.currentTarget.style.outline = '2px solid #1e6b3c';
-      e.currentTarget.style.outlineOffset = '3px';
-    }}
-    onBlur={(e) => {
-      e.currentTarget.style.outline = 'none';
-    }}
-  >
-    <WhatsAppIcon />
-  </a>
+    <a
+      href={WHATSAPP_HREF}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={ariaLabel}
+      title={ariaLabel}
+      style={{
+        ...fabBase,
+        background: waColors.whatsapp,
+        color: "#fff",
+        boxShadow: waColors.shadow,
+        textDecoration: "none",
+        transition: "transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = waColors.whatsappHover;
+        e.currentTarget.style.transform = "scale(1.06)";
+        e.currentTarget.style.boxShadow =
+          "0 10px 28px rgba(37, 211, 102, 0.5), 0 4px 12px rgba(0, 0, 0, 0.14)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = waColors.whatsapp;
+        e.currentTarget.style.transform = "scale(1)";
+        e.currentTarget.style.boxShadow = waColors.shadow;
+      }}
+      onFocus={(e) => {
+        e.currentTarget.style.outline = "2px solid #1e6b3c";
+        e.currentTarget.style.outlineOffset = "3px";
+      }}
+      onBlur={(e) => {
+        e.currentTarget.style.outline = "none";
+      }}
+    >
+      <WhatsAppIcon />
+    </a>
   );
-};
-
-export default WhatsAppFloat;
+}

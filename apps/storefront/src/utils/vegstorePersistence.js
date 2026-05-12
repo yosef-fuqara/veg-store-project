@@ -21,7 +21,7 @@ export function persistCartFromServerCart(cart) {
     }
     const lines = items.map((i) => ({
       product: i.product,
-      quantity: Math.max(1, Number(i.quantity) || 1),
+      quantity: Math.max(0.01, Number(i.quantity) || 1),
       wrap: Boolean(i.wrap)
     }));
     window.localStorage.setItem(VEGSTORE_CART_KEY, JSON.stringify(lines));
@@ -39,7 +39,7 @@ export function loadPersistedCartLines() {
       .filter((l) => l && l.product)
       .map((l) => ({
         product: l.product,
-        quantity: Math.max(1, Number(l.quantity) || 1),
+        quantity: Math.max(0.01, Number(l.quantity) || 1),
         wrap: Boolean(l.wrap)
       }));
   } catch {

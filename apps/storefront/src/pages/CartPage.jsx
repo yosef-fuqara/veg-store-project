@@ -3,8 +3,14 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCart } from "../features/cart/CartContext";
-import { formatPrice } from "../utils/formatPrice";
+import { useStoreSettings } from "../features/store/StoreSettingsContext";
+import { formatPrice, formatChargedTotal } from "../utils/formatPrice";
 import { getLocalizedProductName } from "../utils/localizedProduct";
+import {
+  formatQtyDisplay,
+  formatApproxWeightQuantity,
+  PURCHASE_AMOUNT_CART_STEP_ILS
+} from "../utils/cartLineQuantity";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -21,6 +27,9 @@ const colors = {
   error:          '#991b1b',
   errorSurface:   '#fef2f2',
   errorBorder:    '#fecaca',
+  warning:        '#92400e',
+  warningSurface: '#fffbeb',
+  warningBorder:  '#fde68a',
 };
 
 const shadowPrimary = '0 4px 14px rgba(30,107,60,0.30)';
@@ -33,7 +42,8 @@ const pageStyle = {
 
 const CartPage = () => {
   const { cart, loading, error, refreshCart, updateItem, setWrap, removeItem, clear } = useCart();
-  const { t, i18n } = useTranslation(["cart", "common"]);
+  const { canOrderNow } = useStoreSettings();
+  const { t, i18n } = useTranslation(["cart", "common", "home", "storeClosed"]);
   const lang = (i18n.language || "he").split("-")[0];
 
   useEffect(() => {
@@ -43,7 +53,8 @@ const CartPage = () => {
   const wrapPricePerKg = Number(cart.wrapPricePerKg) || 2;
   const wrapTotal = Number(cart.wrapTotal) || 0;
   const subtotal = Number(cart.subtotal) || 0;
-  const grandTotal = subtotal + wrapTotal;
+  const payableTotal =
+    typeof cart.payableTotal === "number" ? cart.payableTotal : Math.floor(subtotal + wrapTotal + Number.EPSILON);
   const anyWrapAvailable = cart.items.some((item) => item.productSnapshot?.wrapAvailable);
 
   return (
@@ -51,6 +62,25 @@ const CartPage = () => {
       <h1 style={{ margin: '0 0 24px', fontSize: '30px', lineHeight: '36px', fontWeight: 700, color: colors.textPrimary }}>
         {t("cart:title")}
       </h1>
+
+      {!canOrderNow ? (
+        <div
+          role="status"
+          style={{
+            marginBottom: 20,
+            padding: "14px 16px",
+            borderRadius: 12,
+            background: colors.warningSurface,
+            border: `1px solid ${colors.warningBorder}`,
+            color: colors.warning,
+            fontSize: 15,
+            lineHeight: 1.5,
+            fontWeight: 500,
+          }}
+        >
+          {t("cannotOrderNow", { ns: "storeClosed" })}
+        </div>
+      ) : null}
 
       <AnimatePresence>
         {error && (
@@ -82,9 +112,40 @@ const CartPage = () => {
       ) : (
         <div>
           {cart.items.map((item) => {
-            const lineTotal = item.quantity * item.unitPriceSnapshot;
+            const lineTotal =
+              typeof item.lineProductSubtotal === 'number'
+                ? item.lineProductSubtotal
+                : item.quantity * item.unitPriceSnapshot;
             const wrapAvailable = Boolean(item.productSnapshot?.wrapAvailable);
             const wrapFee = Number(item.wrapFee) || 0;
+            const unit = item.productSnapshot?.unit;
+            const allowFrac =
+              Boolean(item.productSnapshot?.allowPurchaseByAmount) &&
+              (unit === 'kg' || unit === 'gram');
+            const step = allowFrac ? 0.25 : 1;
+            const minQ = allowFrac ? 0.01 : 1;
+            const maxQ = allowFrac ? 500 : 100;
+            const bumpQty = (delta) => {
+              const n = Number(item.quantity);
+              const nextRaw = allowFrac ? Math.round((n + delta) * 10000) / 10000 : n + delta;
+              const next = Math.min(maxQ, Math.max(minQ, nextRaw));
+              updateItem(item.product, { quantity: next });
+            };
+            const bumpPurchaseAmount = (delta) => {
+              const cur = Number(item.requestedAmountIls);
+              const nextRaw = Math.round((cur + delta) * 100) / 100;
+              const next = Math.min(50000, Math.max(1, nextRaw));
+              updateItem(item.product, { purchaseAmountIls: next });
+            };
+            const isAmountLine = item.purchaseMode === 'amount' && item.requestedAmountIls != null;
+            const showApproxWeight = isAmountLine && (unit === 'kg' || unit === 'gram');
+            const unitLabel =
+              unit === 'kg' || unit === 'gram' || unit === 'unit' || unit === 'box'
+                ? t(`home:units.${unit}`)
+                : unit || '';
+            const atMinPurchaseAmount = isAmountLine && Number(item.requestedAmountIls) <= 1 + 1e-9;
+            const thumbUrl =
+              typeof item.productSnapshot?.imageUrl === 'string' ? item.productSnapshot.imageUrl.trim() : '';
             return (
               <div
                 key={item.product}
@@ -92,12 +153,55 @@ const CartPage = () => {
               >
                 {/* Name + line total */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
-                  <div>
-                    <div style={{ fontSize: '16px', fontWeight: 600, color: colors.textPrimary }}>
-                      {getLocalizedProductName({ name: item.productSnapshot?.name }, lang) || String(item.product)}
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: '10px',
+                        background: colors.surfaceRaised,
+                        border: `1px solid ${colors.border}`,
+                        flexShrink: 0,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {thumbUrl ? (
+                        <img
+                          src={thumbUrl}
+                          alt=""
+                          draggable={false}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                      ) : null}
                     </div>
-                    <div style={{ fontSize: '13px', color: colors.textSecondary, marginTop: '2px' }}>
-                      {item.quantity} × {formatPrice(item.unitPriceSnapshot, lang)}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '16px', fontWeight: 600, color: colors.textPrimary }}>
+                        {getLocalizedProductName({ name: item.productSnapshot?.name }, lang) || String(item.product)}
+                      </div>
+                      {isAmountLine && (
+                        <div style={{ fontSize: '12px', color: colors.primary, marginTop: '4px', fontWeight: 600 }}>
+                          {t('cart:purchaseByAmountBadge', { amount: formatPrice(item.requestedAmountIls, lang) })}
+                        </div>
+                      )}
+                      <div style={{ fontSize: '13px', color: colors.textSecondary, marginTop: '2px' }}>
+                        {isAmountLine ? (
+                          showApproxWeight ? (
+                            t('cart:purchaseByAmountLineDetail', {
+                              unitPrice: formatPrice(item.unitPriceSnapshot, lang),
+                              unitLabel,
+                              weight: formatApproxWeightQuantity(item.quantity, unit)
+                            })
+                          ) : (
+                            t('cart:purchaseByAmountNote', {
+                              amount: formatPrice(item.requestedAmountIls, lang)
+                            })
+                          )
+                        ) : (
+                          <>
+                            {formatQtyDisplay(item.quantity)} × {formatPrice(item.unitPriceSnapshot, lang)}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <span style={{ fontSize: '16px', fontWeight: 600, color: colors.textPrimary, flexShrink: 0 }}>
@@ -109,17 +213,23 @@ const CartPage = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', border: `1px solid ${colors.border}`, borderRadius: '10px', overflow: 'hidden' }}>
                     <button
-                      onClick={() => updateItem(item.product, Math.max(item.quantity - 1, 1))}
-                      disabled={loading}
+                      onClick={() =>
+                        isAmountLine ? bumpPurchaseAmount(-PURCHASE_AMOUNT_CART_STEP_ILS) : bumpQty(-step)
+                      }
+                      disabled={loading || (isAmountLine && atMinPurchaseAmount)}
                       style={{ width: '32px', height: '32px', border: 'none', borderInlineEnd: `1px solid ${colors.border}`, background: colors.surface, color: colors.textPrimary, fontSize: '18px', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       −
                     </button>
                     <span style={{ minWidth: '36px', textAlign: 'center', fontSize: '14px', fontWeight: 600, color: colors.textPrimary }}>
-                      {item.quantity}
+                      {isAmountLine
+                        ? formatPrice(item.requestedAmountIls, lang)
+                        : formatQtyDisplay(item.quantity)}
                     </span>
                     <button
-                      onClick={() => updateItem(item.product, item.quantity + 1)}
+                      onClick={() =>
+                        isAmountLine ? bumpPurchaseAmount(PURCHASE_AMOUNT_CART_STEP_ILS) : bumpQty(step)
+                      }
                       disabled={loading}
                       style={{ width: '32px', height: '32px', border: 'none', borderInlineStart: `1px solid ${colors.border}`, background: colors.surface, color: colors.textPrimary, fontSize: '18px', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
@@ -174,6 +284,10 @@ const CartPage = () => {
                 <span>{formatPrice(wrapTotal, lang)}</span>
               </div>
             )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: 700, color: colors.textPrimary, paddingTop: '8px', marginTop: '4px', borderTop: `1px solid ${colors.border}` }}>
+              <span>{t("cart:payableTotalLabel")}</span>
+              <span>{formatChargedTotal(payableTotal, lang)}</span>
+            </div>
           </div>
         </div>
       )}
@@ -203,6 +317,26 @@ const CartPage = () => {
           <button type="button" disabled style={{ padding: '10px 20px', borderRadius: '10px', border: 'none', background: colors.border, color: colors.textMuted, fontSize: '15px', fontWeight: 600, cursor: 'not-allowed' }}>
             {t("cart:proceedToCheckout")}
           </button>
+        ) : !canOrderNow ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
+            <button
+              type="button"
+              disabled
+              title={t("cannotOrderNow", { ns: "storeClosed" })}
+              style={{
+                padding: '10px 24px',
+                borderRadius: '10px',
+                border: 'none',
+                background: colors.border,
+                color: colors.textMuted,
+                fontSize: '15px',
+                fontWeight: 600,
+                cursor: 'not-allowed',
+              }}
+            >
+              {t("cart:proceedToCheckout")}
+            </button>
+          </div>
         ) : (
           <Link
             to="/checkout"
@@ -210,7 +344,7 @@ const CartPage = () => {
             style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '10px 24px', borderRadius: '10px', background: colors.primary, color: colors.textInverse, fontSize: '15px', fontWeight: 600, textDecoration: 'none', boxShadow: shadowPrimary }}
           >
             {t("cart:proceedToCheckout")}
-            {grandTotal > 0 ? <> ({formatPrice(grandTotal, lang)})</> : null}
+            {payableTotal > 0 ? <> ({formatChargedTotal(payableTotal, lang)})</> : null}
           </Link>
         )}
       </div>

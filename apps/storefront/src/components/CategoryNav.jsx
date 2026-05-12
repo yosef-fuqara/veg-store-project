@@ -1,6 +1,7 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Apple, Carrot, Flame, LayoutGrid, ShoppingBasket, Sprout, Store } from 'lucide-react';
+import { Apple, Beaker, Carrot, Droplets, Flame, LayoutGrid, ShoppingBasket, Sprout, Store } from 'lucide-react';
 import { CATEGORY_NAV_IDS } from '../utils/categoryFilter';
 
 const colors = {
@@ -16,6 +17,7 @@ const colors = {
 
 const shadow = {
   sm: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
+  active: '0 6px 18px rgba(30,107,60,0.22), 0 2px 8px rgba(30,107,60,0.12)',
 };
 
 const navIconProps = {
@@ -30,6 +32,8 @@ const ICONS = {
   herbs: () => <Sprout {...navIconProps} />,
   spices: () => <Flame {...navIconProps} />,
   platters: () => <ShoppingBasket {...navIconProps} />,
+  pickles: () => <Beaker {...navIconProps} />,
+  'natural-juices': () => <Droplets {...navIconProps} />,
   other: () => <Store {...navIconProps} />,
 };
 
@@ -62,25 +66,53 @@ function CategoryButton({
         aria-label={label}
         title={label}
         onClick={() => onSelect(id)}
+        animate={{
+          scale: isActive ? 1.05 : 1,
+        }}
         whileHover={{ scale: 1.06 }}
         whileTap={{ scale: 0.94 }}
-        transition={{ duration: 0.14 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 28 }}
         style={{
+          position: 'relative',
+          overflow: 'visible',
           width: '48px',
           height: '48px',
           borderRadius: '9999px',
-          border: `1.5px solid ${isActive ? colors.primary : colors.border}`,
-          background: isActive ? colors.primarySurface : colors.surface,
+          border: `2px solid ${isActive ? colors.primary : colors.border}`,
+          background: isActive
+            ? `linear-gradient(145deg, ${colors.primarySurface}, #e3f4ea)`
+            : colors.surface,
           color: isActive ? colors.primary : colors.textSecondary,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: isActive ? shadow.sm : 'none',
-          transition: 'background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s',
+          boxShadow: isActive
+            ? `${shadow.active}, 0 0 0 1px rgba(30,107,60,0.08)`
+            : 'none',
+          transition: 'background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
         }}
       >
-        <Icon />
+        {isActive && (
+          <motion.span
+            aria-hidden
+            style={{
+              position: 'absolute',
+              width: '54px',
+              height: '54px',
+              borderRadius: '9999px',
+              background: 'radial-gradient(circle, rgba(30,107,60,0.14) 0%, rgba(30,107,60,0) 70%)',
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+          />
+        )}
+        <span style={{ position: 'relative', zIndex: 1, display: 'flex' }}>
+          <Icon />
+        </span>
       </motion.button>
 
       {showFlyoutLabel && (
@@ -134,25 +166,51 @@ function ShowAllButtonDesktop({ activeId, onShowAll, label }) {
         aria-label={label}
         title={label}
         onClick={onShowAll}
+        animate={{ scale: isActive ? 1.05 : 1 }}
         whileHover={{ scale: 1.06 }}
         whileTap={{ scale: 0.94 }}
-        transition={{ duration: 0.14 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 28 }}
         style={{
+          position: 'relative',
+          overflow: 'visible',
           width: '48px',
           height: '48px',
           borderRadius: '9999px',
-          border: `1.5px solid ${isActive ? colors.primary : colors.border}`,
-          background: isActive ? colors.primarySurface : colors.surface,
+          border: `2px solid ${isActive ? colors.primary : colors.border}`,
+          background: isActive
+            ? `linear-gradient(145deg, ${colors.primarySurface}, #e3f4ea)`
+            : colors.surface,
           color: isActive ? colors.primary : colors.textSecondary,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: isActive ? shadow.sm : 'none',
-          transition: 'background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s',
+          boxShadow: isActive
+            ? `${shadow.active}, 0 0 0 1px rgba(30,107,60,0.08)`
+            : 'none',
+          transition: 'background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
         }}
       >
-        <LayoutGrid {...navIconProps} />
+        {isActive && (
+          <motion.span
+            aria-hidden
+            style={{
+              position: 'absolute',
+              width: '54px',
+              height: '54px',
+              borderRadius: '9999px',
+              background: 'radial-gradient(circle, rgba(30,107,60,0.14) 0%, rgba(30,107,60,0) 70%)',
+              pointerEvents: 'none',
+              zIndex: 0,
+            }}
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+          />
+        )}
+        <span style={{ position: 'relative', zIndex: 1, display: 'flex' }}>
+          <LayoutGrid {...navIconProps} />
+        </span>
       </motion.button>
       <span
         aria-hidden
@@ -249,9 +307,19 @@ export function CategorySidebar({ activeId, onSelect, onShowAll }) {
 /** Mobile: horizontal scroll strip */
 export function CategoryBarMobile({ activeId, onSelect, onShowAll }) {
   const { t } = useTranslation('home');
+  const navRef = useRef(null);
+
+  useEffect(() => {
+    const root = navRef.current;
+    if (!root || activeId == null) return;
+    const escaped = typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(activeId) : activeId;
+    const item = root.querySelector(`[data-category-nav-item="${escaped}"]`);
+    item?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [activeId]);
 
   return (
     <nav
+      ref={navRef}
       aria-label={t('categories.navAria')}
       style={{
         display: 'flex',
@@ -269,6 +337,7 @@ export function CategoryBarMobile({ activeId, onSelect, onShowAll }) {
         <motion.button
           key="show-all"
           type="button"
+          data-category-nav-item="__all__"
           aria-pressed={activeId == null}
           aria-label={t('categories.showAll')}
           onClick={onShowAll}
@@ -284,8 +353,10 @@ export function CategoryBarMobile({ activeId, onSelect, onShowAll }) {
             borderRadius: '14px',
             border: `1px solid ${activeId == null ? colors.primaryBorder : colors.border}`,
             background: activeId == null ? colors.primarySurface : colors.surface,
+            boxShadow: activeId == null ? shadow.active : 'none',
             cursor: 'pointer',
             fontFamily: 'inherit',
+            transition: 'background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
           }}
         >
           <span
@@ -293,12 +364,15 @@ export function CategoryBarMobile({ activeId, onSelect, onShowAll }) {
               width: '44px',
               height: '44px',
               borderRadius: '9999px',
-              border: `1.5px solid ${activeId == null ? colors.primary : colors.border}`,
-              background: activeId == null ? colors.primarySurface : colors.surfaceRaised,
+              border: `2px solid ${activeId == null ? colors.primary : colors.border}`,
+              background: activeId == null
+                ? `linear-gradient(145deg, ${colors.primarySurface}, #e3f4ea)`
+                : colors.surfaceRaised,
               color: activeId == null ? colors.primary : colors.textSecondary,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              boxShadow: activeId == null ? shadow.sm : 'none',
             }}
           >
             <LayoutGrid {...navIconProps} />
@@ -324,6 +398,7 @@ export function CategoryBarMobile({ activeId, onSelect, onShowAll }) {
           <motion.button
             key={id}
             type="button"
+            data-category-nav-item={id}
             aria-pressed={isActive}
             onClick={() => onSelect(id)}
             whileTap={{ scale: 0.96 }}
@@ -338,8 +413,10 @@ export function CategoryBarMobile({ activeId, onSelect, onShowAll }) {
               borderRadius: '14px',
               border: `1px solid ${isActive ? colors.primaryBorder : colors.border}`,
               background: isActive ? colors.primarySurface : colors.surface,
+              boxShadow: isActive ? shadow.active : 'none',
               cursor: 'pointer',
               fontFamily: 'inherit',
+              transition: 'background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
             }}
           >
             <span
@@ -347,12 +424,15 @@ export function CategoryBarMobile({ activeId, onSelect, onShowAll }) {
                 width: '44px',
                 height: '44px',
                 borderRadius: '9999px',
-                border: `1.5px solid ${isActive ? colors.primary : colors.border}`,
-                background: isActive ? colors.primarySurface : colors.surfaceRaised,
+                border: `2px solid ${isActive ? colors.primary : colors.border}`,
+                background: isActive
+                  ? `linear-gradient(145deg, ${colors.primarySurface}, #e3f4ea)`
+                  : colors.surfaceRaised,
                 color: isActive ? colors.primary : colors.textSecondary,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                boxShadow: isActive ? shadow.sm : 'none',
               }}
             >
               <Icon />

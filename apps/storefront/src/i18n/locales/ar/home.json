@@ -17,6 +17,17 @@
     "unit": "وحدة",
     "box": "صندوق"
   },
+  "buyByQuantity": "حسب الكمية",
+  "buyByAmount": "حسب المبلغ (₪)",
+  "purchaseModeLockedInCartQuantity": "المنتج موجود بالسلة حسب الكمية — تابع بنفس الطريقة أو احذف السطر.",
+  "purchaseModeLockedInCartAmount": "المنتج موجود بالسلة حسب المبلغ — تابع بنفس الطريقة أو احذف السطر.",
+  "quantityLabel": "الكمية",
+  "amountPlaceholder": "المبلغ بالشيكل",
+  "estimatedQtyApprox": "حوالي {{qty}} {{unit}} (تقدير)",
+  "addByAmount": "أضف بالمبلغ",
+  "productDescription": "وصف المنتج",
+  "productDescriptionClose": "إغلاق",
+  "productDescriptionHint": "عرض وصف المتجر",
   "hero": {
     "badge": "فواكه وخضروات",
     "subtitle": "خضار أبو الأنس — ألذ طريقة تبدأ فيها يومك",
@@ -29,7 +40,9 @@
   },
   "products": {
     "badge": "طازج وصحي",
-    "heading": "منتجاتنا"
+    "heading": "منتجاتنا",
+    "searchPlaceholder": "ابحث عن منتج...",
+    "searchNoResults": "لا توجد منتجات تطابق بحثك."
   },
   "categories": {
     "navAria": "تصفح حسب الفئة",
@@ -39,12 +52,14 @@
     "herbs": "أعشاب",
     "spices": "بهارات",
     "platters": "صحون فواكه وشرائح",
+    "pickles": "مخللات",
+    "natural-juices": "عصائر طبيعية",
     "other": "منتجات أخرى",
     "filterEmpty": "لا توجد منتجات في هذه الفئة. جرّب فئة أخرى أو اضغط مرة أخرى على نفس الأيقونة لعرض كل المنتجات."
   },
   "footer": {
     "stayInTouch": "لنبقى على تواصل",
-    "phoneLabel": "اتصلوا بنا",
+    "phoneLabel": "اتصل بنا",
     "categoriesAria": "فئات المنتجات",
     "categoriesTitle": "تسوّق حسب الفئة",
     "rights": "جميع الحقوق محفوظة.",

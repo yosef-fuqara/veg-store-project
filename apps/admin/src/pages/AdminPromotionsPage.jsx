@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   listAnnouncements,
   createAnnouncement,
@@ -55,6 +56,7 @@ function emptyForm() {
 }
 
 const AdminPromotionsPage = () => {
+  const { t } = useTranslation(["promotions", "common"]);
   const { showToast } = useToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -105,11 +107,11 @@ const AdminPromotionsPage = () => {
       const rows = await listAnnouncements({ includeArchived: showArchived });
       setItems(rows);
     } catch (err) {
-      setError(err.userMessage || "Failed to load promotions");
+      setError(err.userMessage || t("promotions:loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [showArchived]);
+  }, [showArchived, t]);
 
   useEffect(() => {
     load();
@@ -210,7 +212,7 @@ const AdminPromotionsPage = () => {
     if (form.scheduleMode === "duration") {
       const hours = Number(form.durationHours);
       if (!Number.isFinite(hours) || hours <= 0) {
-        throw new Error("Duration must be a positive number of hours");
+        throw new Error(t("promotions:form.errors.schedule"));
       }
       return { startsAt, durationHours: hours };
     }
@@ -226,23 +228,23 @@ const AdminPromotionsPage = () => {
       try {
         schedule = buildSchedulePayload();
       } catch (err) {
-        showToast(err.message || "Check schedule fields", "error");
+        showToast(err.message || t("promotions:form.errors.schedule"), "error");
         setSaving(false);
         return;
       }
 
       if (form.ctaType === "product" && !form.ctaProductId) {
-        showToast("Choose a product for the CTA.", "error");
+        showToast(t("promotions:form.errors.ctaProduct"), "error");
         setSaving(false);
         return;
       }
       if (form.ctaType === "category" && !form.ctaCategoryId) {
-        showToast("Choose a category for the CTA.", "error");
+        showToast(t("promotions:form.errors.ctaCategory"), "error");
         setSaving(false);
         return;
       }
       if (form.ctaType === "custom" && !form.ctaUrl.trim()) {
-        showToast("Enter a URL or path for the CTA.", "error");
+        showToast(t("promotions:form.errors.ctaUrl"), "error");
         setSaving(false);
         return;
       }
@@ -278,16 +280,16 @@ const AdminPromotionsPage = () => {
 
       if (editingId) {
         await updateAnnouncement(editingId, fd);
-        showToast("Promotion updated.");
+        showToast(t("promotions:form.toasts.updated"));
       } else {
         await createAnnouncement(fd);
-        showToast("Promotion created.");
+        showToast(t("promotions:form.toasts.created"));
         resetForm();
       }
       await load();
       if (editingId) resetForm();
     } catch (err) {
-      showToast(err.userMessage || "Could not save promotion", "error");
+      showToast(err.userMessage || t("promotions:form.errors.saveFailed"), "error");
     } finally {
       setSaving(false);
     }
@@ -297,10 +299,10 @@ const AdminPromotionsPage = () => {
     if (row.archivedAt) return;
     try {
       await setAnnouncementActive(row.id, !row.isActive);
-      showToast(row.isActive ? "Promotion turned off." : "Promotion turned on.");
+      showToast(row.isActive ? t("promotions:form.toasts.turnedOff") : t("promotions:form.toasts.turnedOn"));
       await load();
     } catch (err) {
-      showToast(err.userMessage || "Could not update status", "error");
+      showToast(err.userMessage || t("promotions:form.toasts.statusFailed"), "error");
     }
   };
 
@@ -308,11 +310,11 @@ const AdminPromotionsPage = () => {
     if (!pendingArchive) return;
     try {
       await archiveAnnouncement(pendingArchive.id);
-      showToast("Promotion archived.");
+      showToast(t("promotions:form.toasts.archived"));
       setPendingArchive(null);
       await load();
     } catch (err) {
-      showToast(err.userMessage || "Could not archive", "error");
+      showToast(err.userMessage || t("promotions:form.toasts.archiveFailed"), "error");
     }
   };
 
@@ -320,11 +322,11 @@ const AdminPromotionsPage = () => {
     if (!pendingDelete) return;
     try {
       await deleteAnnouncement(pendingDelete.id);
-      showToast("Promotion deleted.");
+      showToast(t("promotions:form.toasts.deleted"));
       setPendingDelete(null);
       await load();
     } catch (err) {
-      showToast(err.userMessage || "Could not delete", "error");
+      showToast(err.userMessage || t("promotions:form.toasts.deleteFailed"), "error");
     }
   };
 
@@ -354,11 +356,10 @@ const AdminPromotionsPage = () => {
   return (
     <div style={{ width: "100%", maxWidth: "960px" }}>
       <h1 style={{ fontSize: "22px", fontWeight: 700, color: colors.textPrimary, margin: "0 0 8px" }}>
-        Popups / Promotions
+        {t("promotions:pageTitle")}
       </h1>
       <p style={{ fontSize: "14px", color: colors.textMuted, margin: "0 0 24px", lineHeight: 1.5 }}>
-        Create storefront popups with a start time and either an end time or a duration. Only one active,
-        in-window promotion is shown to customers at a time (the most recently updated match wins).
+        {t("promotions:pageSubtitle")}
       </p>
 
       <div
@@ -376,7 +377,7 @@ const AdminPromotionsPage = () => {
             checked={showArchived}
             onChange={(e) => setShowArchived(e.target.checked)}
           />
-          Show archived
+          {t("promotions:showArchived")}
         </label>
       </div>
 
@@ -391,12 +392,12 @@ const AdminPromotionsPage = () => {
         }}
       >
         <div style={{ fontSize: "15px", fontWeight: 700, marginBottom: "16px", color: colors.textPrimary }}>
-          {editingId ? "Edit promotion" : "New promotion"}
+          {editingId ? t("promotions:form.titleEdit") : t("promotions:form.titleNew")}
         </div>
 
         <div style={{ display: "grid", gap: "14px" }}>
           <div>
-            <label style={labelStyle}>Title</label>
+            <label style={labelStyle}>{t("promotions:form.fields.title")}</label>
             <input
               style={inputStyle}
               value={form.title}
@@ -406,7 +407,7 @@ const AdminPromotionsPage = () => {
             />
           </div>
           <div>
-            <label style={labelStyle}>Message</label>
+            <label style={labelStyle}>{t("promotions:form.fields.message")}</label>
             <textarea
               style={{ ...inputStyle, minHeight: "100px", resize: "vertical" }}
               value={form.message}
@@ -416,10 +417,9 @@ const AdminPromotionsPage = () => {
             />
           </div>
           <div>
-            <label style={labelStyle}>Promotion image (optional)</label>
+            <label style={labelStyle}>{t("promotions:form.fields.image")}</label>
             <p style={{ fontSize: "13px", color: colors.textMuted, margin: "0 0 8px", lineHeight: 1.45 }}>
-              JPEG, PNG, or WebP up to 3&nbsp;MB. You can choose a file from this device; on a phone the gallery or
-              camera may open depending on your browser.
+              {t("promotions:form.fields.imageHint")}
             </p>
             <input
               ref={imageInputRef}
@@ -465,7 +465,7 @@ const AdminPromotionsPage = () => {
                         alignSelf: "flex-start"
                       }}
                     >
-                      Clear new selection
+                      {t("promotions:form.fields.clearNewSelection")}
                     </button>
                   )}
                   {editingId && savedPromoImageUrl && !promoImageFile && (
@@ -475,7 +475,7 @@ const AdminPromotionsPage = () => {
                         checked={removeSavedPromoImage}
                         onChange={(e) => setRemoveSavedPromoImage(e.target.checked)}
                       />
-                      Remove saved image
+                      {t("promotions:form.fields.removeSavedImage")}
                     </label>
                   )}
                 </div>
@@ -483,14 +483,13 @@ const AdminPromotionsPage = () => {
             )}
           </div>
           <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: "14px", marginTop: "4px" }}>
-            <span style={labelStyle}>Call-to-action button</span>
+            <span style={labelStyle}>{t("promotions:form.fields.ctaSection")}</span>
             <p style={{ fontSize: "13px", color: colors.textMuted, margin: "4px 0 12px", lineHeight: 1.45 }}>
-              Optional. Send customers to a product, a category, or any path or external link. Button labels can be
-              set per language (Hebrew, English, Arabic).
+              {t("promotions:form.fields.ctaHint")}
             </p>
             <div style={{ display: "grid", gap: "12px" }}>
               <div>
-                <label style={labelStyle}>CTA target</label>
+                <label style={labelStyle}>{t("promotions:form.fields.ctaTarget")}</label>
                 <select
                   style={inputStyle}
                   value={form.ctaType}
@@ -504,37 +503,37 @@ const AdminPromotionsPage = () => {
                     }))
                   }
                 >
-                  <option value="none">No button</option>
-                  <option value="product">Product</option>
-                  <option value="category">Category</option>
-                  <option value="custom">Custom link or path</option>
+                  <option value="none">{t("promotions:form.fields.ctaTargetOptions.none")}</option>
+                  <option value="product">{t("promotions:form.fields.ctaTargetOptions.product")}</option>
+                  <option value="category">{t("promotions:form.fields.ctaTargetOptions.category")}</option>
+                  <option value="custom">{t("promotions:form.fields.ctaTargetOptions.custom")}</option>
                 </select>
               </div>
               {form.ctaType !== "none" && (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
                     <div>
-                      <label style={labelStyle}>Button text (HE)</label>
+                      <label style={labelStyle}>{t("promotions:form.fields.btnHe")}</label>
                       <input
                         style={inputStyle}
                         value={form.ctaTextHe}
                         onChange={(e) => setForm((f) => ({ ...f, ctaTextHe: e.target.value }))}
                         maxLength={80}
-                        placeholder="למשל קנו עכשיו"
+                        placeholder={t("promotions:form.fields.btnHePlaceholder")}
                       />
                     </div>
                     <div>
-                      <label style={labelStyle}>Button text (EN)</label>
+                      <label style={labelStyle}>{t("promotions:form.fields.btnEn")}</label>
                       <input
                         style={inputStyle}
                         value={form.ctaTextEn}
                         onChange={(e) => setForm((f) => ({ ...f, ctaTextEn: e.target.value }))}
                         maxLength={80}
-                        placeholder="e.g. Shop now"
+                        placeholder={t("promotions:form.fields.btnEnPlaceholder")}
                       />
                     </div>
                     <div>
-                      <label style={labelStyle}>Button text (AR)</label>
+                      <label style={labelStyle}>{t("promotions:form.fields.btnAr")}</label>
                       <input
                         style={inputStyle}
                         value={form.ctaTextAr}
@@ -545,7 +544,7 @@ const AdminPromotionsPage = () => {
                   </div>
                   {form.ctaType === "product" && (
                     <div>
-                      <label style={labelStyle}>Product</label>
+                      <label style={labelStyle}>{t("promotions:form.fields.product")}</label>
                       <select
                         style={inputStyle}
                         value={form.ctaProductId}
@@ -553,7 +552,7 @@ const AdminPromotionsPage = () => {
                         required={form.ctaType === "product"}
                         disabled={catalogLoading}
                       >
-                        <option value="">{catalogLoading ? "Loading products…" : "Select a product"}</option>
+                        <option value="">{catalogLoading ? t("promotions:form.fields.loadingProducts") : t("promotions:form.fields.selectProduct")}</option>
                         {[...products]
                           .sort((a, b) =>
                             pickLocalizedName(a.name).localeCompare(pickLocalizedName(b.name), undefined, {
@@ -570,7 +569,7 @@ const AdminPromotionsPage = () => {
                   )}
                   {form.ctaType === "category" && (
                     <div>
-                      <label style={labelStyle}>Category</label>
+                      <label style={labelStyle}>{t("promotions:form.fields.category")}</label>
                       <select
                         style={inputStyle}
                         value={form.ctaCategoryId}
@@ -578,7 +577,7 @@ const AdminPromotionsPage = () => {
                         required={form.ctaType === "category"}
                         disabled={catalogLoading}
                       >
-                        <option value="">{catalogLoading ? "Loading categories…" : "Select a category"}</option>
+                        <option value="">{catalogLoading ? t("promotions:form.fields.loadingCategories") : t("promotions:form.fields.selectCategory")}</option>
                         {[...categories]
                           .sort((a, b) =>
                             pickLocalizedName(a.name).localeCompare(pickLocalizedName(b.name), undefined, {
@@ -595,12 +594,12 @@ const AdminPromotionsPage = () => {
                   )}
                   {form.ctaType === "custom" && (
                     <div>
-                      <label style={labelStyle}>URL or path</label>
+                      <label style={labelStyle}>{t("promotions:form.fields.urlOrPath")}</label>
                       <input
                         style={inputStyle}
                         value={form.ctaUrl}
                         onChange={(e) => setForm((f) => ({ ...f, ctaUrl: e.target.value }))}
-                        placeholder="https://… or /cart"
+                        placeholder={t("promotions:form.fields.urlOrPathPlaceholder")}
                         maxLength={2000}
                       />
                     </div>
@@ -611,7 +610,7 @@ const AdminPromotionsPage = () => {
           </div>
 
           <div>
-            <label style={labelStyle}>Starts at</label>
+            <label style={labelStyle}>{t("promotions:form.fields.startsAt")}</label>
             <input
               type="datetime-local"
               style={inputStyle}
@@ -622,7 +621,7 @@ const AdminPromotionsPage = () => {
           </div>
 
           <div>
-            <span style={labelStyle}>How long it stays valid</span>
+            <span style={labelStyle}>{t("promotions:form.fields.scheduleSection")}</span>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", cursor: "pointer" }}>
                 <input
@@ -631,7 +630,7 @@ const AdminPromotionsPage = () => {
                   checked={form.scheduleMode === "duration"}
                   onChange={() => setForm((f) => ({ ...f, scheduleMode: "duration" }))}
                 />
-                Run for a number of hours from start
+                {t("promotions:form.fields.scheduleDuration")}
               </label>
               {form.scheduleMode === "duration" && (
                 <input
@@ -651,7 +650,7 @@ const AdminPromotionsPage = () => {
                   checked={form.scheduleMode === "end"}
                   onChange={() => setForm((f) => ({ ...f, scheduleMode: "end" }))}
                 />
-                End at specific date &amp; time
+                {t("promotions:form.fields.scheduleEnd")}
               </label>
               {form.scheduleMode === "end" && (
                 <input
@@ -671,7 +670,7 @@ const AdminPromotionsPage = () => {
               checked={form.isActive}
               onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
             />
-            Active (visible on storefront when inside the time window)
+            {t("promotions:form.fields.activeCheckbox")}
           </label>
         </div>
 
@@ -691,7 +690,7 @@ const AdminPromotionsPage = () => {
               opacity: saving ? 0.75 : 1
             }}
           >
-            {saving ? "Saving…" : editingId ? "Save changes" : "Create promotion"}
+            {saving ? t("promotions:form.buttons.saving") : editingId ? t("promotions:form.buttons.submitEdit") : t("promotions:form.buttons.submitNew")}
           </button>
           {editingId && (
             <button
@@ -707,13 +706,13 @@ const AdminPromotionsPage = () => {
                 cursor: "pointer"
               }}
             >
-              Cancel edit
+              {t("promotions:form.buttons.cancelEdit")}
             </button>
           )}
         </div>
       </form>
 
-      {loading && <p style={{ color: colors.textMuted }}>Loading…</p>}
+      {loading && <p style={{ color: colors.textMuted }}>{t("common:loading")}</p>}
       {error && (
         <p style={{ color: colors.error, background: colors.errorBg, border: `1px solid ${colors.errorBorder}`, padding: "12px", borderRadius: "10px" }}>
           {error}
@@ -725,17 +724,17 @@ const AdminPromotionsPage = () => {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", background: colors.surface, borderRadius: "12px", overflow: "hidden", border: `1px solid ${colors.border}` }}>
             <thead>
               <tr style={{ background: colors.bg, textAlign: "left" }}>
-                <th style={{ padding: "12px", fontWeight: 700 }}>Title</th>
-                <th style={{ padding: "12px", fontWeight: 700 }}>Window</th>
-                <th style={{ padding: "12px", fontWeight: 700 }}>Status</th>
-                <th style={{ padding: "12px", fontWeight: 700 }}>Actions</th>
+                <th style={{ padding: "12px", fontWeight: 700 }}>{t("promotions:table.title")}</th>
+                <th style={{ padding: "12px", fontWeight: 700 }}>{t("promotions:table.window")}</th>
+                <th style={{ padding: "12px", fontWeight: 700 }}>{t("promotions:table.status")}</th>
+                <th style={{ padding: "12px", fontWeight: 700 }}>{t("promotions:table.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {sorted.length === 0 && (
                 <tr>
                   <td colSpan={4} style={{ padding: "20px", color: colors.textMuted }}>
-                    No promotions yet.
+                    {t("promotions:table.empty")}
                   </td>
                 </tr>
               )}
@@ -753,11 +752,11 @@ const AdminPromotionsPage = () => {
                     </td>
                     <td style={{ padding: "12px", verticalAlign: "top" }}>
                       {archived ? (
-                        <span style={{ color: colors.textMuted }}>Archived</span>
+                        <span style={{ color: colors.textMuted }}>{t("promotions:row.archived")}</span>
                       ) : row.isActive ? (
-                        <span style={{ color: colors.primary, fontWeight: 600 }}>On</span>
+                        <span style={{ color: colors.primary, fontWeight: 600 }}>{t("promotions:row.on")}</span>
                       ) : (
-                        <span style={{ color: colors.textMuted }}>Off</span>
+                        <span style={{ color: colors.textMuted }}>{t("promotions:row.off")}</span>
                       )}
                     </td>
                     <td style={{ padding: "12px", verticalAlign: "top" }}>
@@ -776,7 +775,7 @@ const AdminPromotionsPage = () => {
                                 cursor: "pointer"
                               }}
                             >
-                              {row.isActive ? "Turn off" : "Turn on"}
+                              {row.isActive ? t("promotions:row.turnOff") : t("promotions:row.turnOn")}
                             </button>
                             <button
                               type="button"
@@ -790,7 +789,7 @@ const AdminPromotionsPage = () => {
                                 cursor: "pointer"
                               }}
                             >
-                              Edit
+                              {t("promotions:row.edit")}
                             </button>
                             <button
                               type="button"
@@ -804,7 +803,7 @@ const AdminPromotionsPage = () => {
                                 cursor: "pointer"
                               }}
                             >
-                              Archive
+                              {t("promotions:row.archive")}
                             </button>
                           </>
                         )}
@@ -821,7 +820,7 @@ const AdminPromotionsPage = () => {
                             cursor: "pointer"
                           }}
                         >
-                          Delete
+                          {t("promotions:row.delete")}
                         </button>
                       </div>
                     </td>
@@ -860,12 +859,12 @@ const AdminPromotionsPage = () => {
             }}
           >
             <p style={{ margin: "0 0 12px", fontSize: "15px", fontWeight: 600 }}>
-              {pendingDelete ? "Delete promotion?" : "Archive promotion?"}
+              {pendingDelete ? t("promotions:modal.deleteTitle") : t("promotions:modal.archiveTitle")}
             </p>
             <p style={{ margin: "0 0 18px", fontSize: "14px", color: colors.textSecondary, lineHeight: 1.5 }}>
               {pendingDelete
-                ? "This permanently removes the promotion. Customers will no longer see it."
-                : "Archived promotions stay in the list (if “Show archived” is on) but no longer appear on the storefront."}
+                ? t("promotions:modal.deleteBody")
+                : t("promotions:modal.archiveBody")}
             </p>
             <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
               <button
@@ -884,7 +883,7 @@ const AdminPromotionsPage = () => {
                   fontWeight: 600
                 }}
               >
-                Cancel
+                {t("promotions:modal.cancel")}
               </button>
               <button
                 type="button"
@@ -899,7 +898,7 @@ const AdminPromotionsPage = () => {
                   fontWeight: 600
                 }}
               >
-                {pendingDelete ? "Delete" : "Archive"}
+                {pendingDelete ? t("promotions:modal.confirmDelete") : t("promotions:modal.confirmArchive")}
               </button>
             </div>
           </div>

@@ -1,6 +1,18 @@
 {
+  "drawerTitle": "Your cart",
+  "drawerClose": "Close",
+  "drawerOpen": "Open cart",
+  "drawerSignInHint": "Sign in to view your cart and continue to checkout.",
+  "drawerViewFullCart": "Full cart page",
+  "drawerCheckout": "Checkout",
   "addedToCartToast": "Added to cart",
   "genericError": "Something went wrong. Please try again.",
+  "errors": {
+    "addByAmountBlockedQuantityLine": "This product is already in your cart by quantity. Remove the line or continue that way — you cannot add by amount until then.",
+    "addByQuantityBlockedAmountLine": "This product is already in your cart by amount. Remove the line or continue that way — you cannot add by quantity until then.",
+    "updateQuantityBlockedAmountLine": "This line was added by amount. Adjust the amount only, or remove the item.",
+    "updateAmountBlockedQuantityLine": "This line is by quantity. Update quantity or remove the item to switch to by amount."
+  },
   "signInToAdd": {
     "message": "Please sign in to add products to your cart",
     "signIn": "Sign in",
@@ -11,6 +23,7 @@
   "quantity": "Qty",
   "price": "Price",
   "subtotal": "Subtotal",
+  "payableTotalLabel": "Payable (items & services)",
   "remove": "Remove",
   "clearCart": "Clear cart",
   "proceedToCheckout": "Proceed to checkout",
@@ -24,5 +37,8 @@
     "lineFee": "Wrap: {{amount}}",
     "summaryLabel": "Wrap fees",
     "unavailable": "Wrapping is only available for products sold by the kilogram."
-  }
+  },
+  "purchaseByAmountBadge": "By {{amount}}",
+  "purchaseByAmountNote": "You chose a basket value of {{amount}}; quantity is set by the store.",
+  "purchaseByAmountLineDetail": "{{unitPrice}} per {{unitLabel}} · approx. {{weight}} {{unitLabel}}"
 }

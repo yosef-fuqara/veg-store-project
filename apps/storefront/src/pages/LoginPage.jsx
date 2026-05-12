@@ -146,6 +146,15 @@ const LoginPage = () => {
               />
             </label>
 
+            <div style={{ textAlign: 'end', marginTop: '-4px' }}>
+              <Link
+                to={`/forgot-password?redirect=${encodeURIComponent(redirectTo)}`}
+                style={{ fontSize: '13px', fontWeight: 600, color: colors.primary, textDecoration: 'none' }}
+              >
+                {t('forgotPassword')}
+              </Link>
+            </div>
+
             <AnimatePresence>
               {error && (
                 <motion.div

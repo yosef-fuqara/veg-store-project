@@ -61,6 +61,9 @@ const normalizeProductBody = (req, res, next) => {
   if (Object.prototype.hasOwnProperty.call(req.body, "isPreorderOnly")) {
     req.body.isPreorderOnly = asOptionalBoolean(req.body.isPreorderOnly);
   }
+  if (Object.prototype.hasOwnProperty.call(req.body, "allowPurchaseByAmount")) {
+    req.body.allowPurchaseByAmount = asOptionalBoolean(req.body.allowPurchaseByAmount);
+  }
   if (Object.prototype.hasOwnProperty.call(req.body, "minAdvanceHours")) {
     req.body.minAdvanceHours = asOptionalNumber(req.body.minAdvanceHours);
   }

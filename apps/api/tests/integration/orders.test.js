@@ -15,6 +15,7 @@ const {
   LOCAL_FREE_DELIVERY_MIN,
   OUTSIDE_FREE_DELIVERY_MIN
 } = require("../../src/constants/delivery");
+const { tinyPngBuffer } = require("../helpers/product-multipart");
 
 const OUTSIDE_AREA = "eilabun";
 
@@ -59,6 +60,21 @@ describe("Orders", () => {
     expect(cart.body.data.cart.items.length).toBe(0);
   });
 
+  it("normalizes +972 customerPhone on create", async () => {
+    const user = await createCustomerUser();
+    const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+    const product = await createProduct({ price: 20 });
+    await seedCart(token, String(product._id));
+
+    const res = await request(getApp())
+      .post(apiUrl("/orders"))
+      .set("Authorization", `Bearer ${token}`)
+      .send({ ...baseOrderPayload, customerPhone: "+972 52-234-5678" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.order.customerPhone).toBe("0522345678");
+  });
+
   it("returns 400 when cart empty", async () => {
     const user = await createCustomerUser();
     const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
@@ -100,6 +116,51 @@ describe("Orders", () => {
       });
 
     expect(res.status).toBe(400);
+  });
+
+  describe("bank transfer proof image", () => {
+    it("rejects proof image when payment is not bank_transfer", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 20 });
+      await seedCart(token, String(product._id));
+
+      const deliveryAddress = JSON.stringify({ street: "Main", building: "1" });
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .field("deliveryAddress", deliveryAddress)
+        .field("deliveryArea", OUTSIDE_AREA)
+        .field("customerPhone", "0501234567")
+        .field("paymentMethod", "credit_card")
+        .field("notes", "")
+        .attach("bankTransferProof", tinyPngBuffer, "proof.png");
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/bank transfer/i);
+    });
+
+    it("stores proof URL for bank_transfer multipart create", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 20 });
+      await seedCart(token, String(product._id));
+
+      const deliveryAddress = JSON.stringify({ street: "Main", building: "1" });
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .field("deliveryAddress", deliveryAddress)
+        .field("deliveryArea", OUTSIDE_AREA)
+        .field("customerPhone", "0501234567")
+        .field("paymentMethod", "bank_transfer")
+        .field("notes", "")
+        .attach("bankTransferProof", tinyPngBuffer, "proof.png");
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.bankTransferProofUrl).toBe("https://test.invalid/img.jpg");
+      expect(res.body.data.order.bankTransferProofPublicId).toBe("test_public_id");
+    });
   });
 
   describe("delivery fee rules", () => {
@@ -170,6 +231,25 @@ describe("Orders", () => {
       expect(res.body.data.order.subtotal).toBeGreaterThanOrEqual(OUTSIDE_FREE_DELIVERY_MIN);
       expect(res.body.data.order.deliveryFee).toBe(0);
       expect(res.body.data.order.total).toBe(200);
+    });
+
+    it("floors order total to whole ₪ while keeping precise subtotal for lines", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 19.99 });
+      await seedCart(token, String(product._id), 3);
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({ ...baseOrderPayload, deliveryArea: OUTSIDE_AREA });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.subtotal).toBe(59.97);
+      expect(res.body.data.order.deliveryFee).toBe(OUTSIDE_DELIVERY_FEE);
+      expect(res.body.data.order.total).toBe(
+        Math.floor(59.97 + OUTSIDE_DELIVERY_FEE + Number.EPSILON)
+      );
     });
 
     it("backend ignores any delivery fee sent by client", async () => {
@@ -346,6 +426,13 @@ describe("Orders", () => {
       .get(apiUrl(`/orders/admin/${orderId}`))
       .set("Authorization", `Bearer ${aToken}`);
     expect(detail.status).toBe(200);
+    expect(detail.body.data.order.orderStatus).toBe(ORDER_STATUS.SEEN);
+
+    const detailAgain = await request(getApp())
+      .get(apiUrl(`/orders/admin/${orderId}`))
+      .set("Authorization", `Bearer ${aToken}`);
+    expect(detailAgain.status).toBe(200);
+    expect(detailAgain.body.data.order.orderStatus).toBe(ORDER_STATUS.SEEN);
   });
 
   it("admin updates order status with valid transition", async () => {

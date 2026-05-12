@@ -1,0 +1,124 @@
+{
+  "list": {
+    "pageTitle": "מוצרים",
+    "pageSubtitle": "ניהול מלאי פירות וירקות",
+    "addProduct": "הוסף מוצר",
+    "manageCategories": "ניהול קטגוריות",
+    "addCategory": "הוסף קטגוריה",
+    "searchPlaceholder": "חיפוש מוצרים…",
+    "searchAria": "חיפוש מוצרים",
+    "loadFailed": "טעינת המוצרים נכשלה",
+    "empty": {
+      "title": "לא נמצאו מוצרים",
+      "withSearch": "נסה לשנות את החיפוש או הסינון.",
+      "withoutSearch": "הוסף את המוצר הראשון כדי להתחיל."
+    },
+    "tableHeaders": {
+      "actions": "פעולות",
+      "status": "סטטוס",
+      "stock": "מלאי",
+      "price": "מחיר",
+      "category": "קטגוריה",
+      "productName": "שם מוצר",
+      "image": "תמונה"
+    },
+    "perUnit": "ל-{{unit}}",
+    "actionsMenuAria": "פעולות עבור {{name}}",
+    "workingAria": "מבצע…",
+    "menu": {
+      "edit": "עריכה",
+      "freeze": "הקפא",
+      "unfreeze": "בטל הקפאה",
+      "removeFromCatalog": "הסר מהקטלוג",
+      "deletedNote": "המוצר כבר הוסר מהקטלוג. אפשרויות הקפאה ומחיקה מוסתרות כיוון שההסרה כבר בוצעה (מחיקה רכה)."
+    },
+    "confirmDelete": "למחוק את \"{{name}}\"?",
+    "toasts": {
+      "frozen": "המוצר הוקפא.",
+      "unfrozen": "ההקפאה בוטלה.",
+      "actionFailed": "הפעולה נכשלה",
+      "deleted": "המוצר נמחק.",
+      "deleteFailed": "המחיקה נכשלה"
+    },
+    "status": {
+      "active": "פעיל",
+      "inactive": "לא פעיל",
+      "frozen": "מוקפא",
+      "deleted": "נמחק"
+    },
+    "stock": {
+      "in": "במלאי",
+      "out": "אזל מהמלאי"
+    }
+  },
+  "form": {
+    "titleNew": "הוספת מוצר",
+    "titleEdit": "עריכת מוצר",
+    "subtitleNew": "מלא את הפרטים כדי להוסיף מוצר חדש",
+    "subtitleEdit": "עדכן את פרטי המוצר למטה",
+    "sections": {
+      "info": "פרטי מוצר",
+      "classification": "סיווג",
+      "preorder": "הזמנה מראש / מגש מותאם",
+      "imageRequired": "תמונת מוצר (חובה)",
+      "imageOptional": "תמונת מוצר (אופציונלי)"
+    },
+    "fields": {
+      "nameAllLangs": "שם המוצר (בכל השפות) *",
+      "nameAr": "ערבית (ar)",
+      "nameHe": "עברית (he)",
+      "nameEn": "אנגלית (en)",
+      "description": "תיאור",
+      "descriptionHint": "אופציונלי",
+      "price": "מחיר (₪) *",
+      "salePrice": "מחיר מבצע (₪)",
+      "salePriceHint": "אופציונלי — השאר ריק לביטול המבצע",
+      "allowByAmount": "אפשר ללקוחות לקנות לפי סכום (₪)",
+      "allowByAmountHint": "עבור פריטים בק\"ג/גרם השרת מחשב משקל לפי הסכום שנבחר. עבור יחידה/קופסה הכמות חייבת להיות מספר שלם.",
+      "category": "קטגוריה *",
+      "unit": "יחידת מידה *",
+      "stockStatus": "סטטוס מלאי *",
+      "featured": "מוצר מומלץ",
+      "featuredHint": "מוצג בצורה בולטת בחנות",
+      "preorderOnly": "להזמנה מראש בלבד (דורש התראה מוקדמת)",
+      "minAdvance": "התראה מינימלית (שעות) *",
+      "preparationNotes": "הערות הכנה (פנימי)",
+      "preparationNotesHint": "לא יוצג ללקוחות"
+    },
+    "image": {
+      "newSelected": "נבחרה תמונה חדשה",
+      "current": "תמונה נוכחית",
+      "pendingUpload": "ממתין להעלאה",
+      "currentReplaceHint": "החלף על ידי בחירת קובץ למטה.",
+      "newAppearsOnStorefront": "התמונה הזו תוצג בחנות.",
+      "discardNewImage": "בטל תמונה חדשה",
+      "uploadReplace": "העלה תמונה חדשה כדי להחליף את הנוכחית",
+      "selectImage": "בחר תמונה",
+      "clickOrDrop": "לחץ או גרור תמונה לכאן",
+      "fileTypes": "PNG, JPG, WebP — בכפוף למגבלות השרת",
+      "previewAlt": "תצוגה מקדימה של המוצר",
+      "uploadReplacementAria": "העלה תמונה מחליפה למוצר",
+      "selectImageAria": "בחר תמונה למוצר"
+    },
+    "buttons": {
+      "submitNew": "צור מוצר",
+      "submitEdit": "שמור שינויים",
+      "saving": "שומר…",
+      "cancel": "ביטול"
+    },
+    "errors": {
+      "loadFailed": "טעינת נתוני הטופס נכשלה",
+      "productNotFound": "המוצר לא נמצא",
+      "imageRequired": "תמונת מוצר חובה",
+      "saveFailed": "שמירת המוצר נכשלה"
+    },
+    "toasts": {
+      "created": "המוצר נוצר בהצלחה.",
+      "updated": "המוצר עודכן בהצלחה."
+    },
+    "stockOptions": {
+      "in_stock": "במלאי",
+      "out_of_stock": "אזל מהמלאי"
+    }
+  }
+}

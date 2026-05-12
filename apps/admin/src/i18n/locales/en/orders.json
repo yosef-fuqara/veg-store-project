@@ -1,0 +1,113 @@
+{
+  "list": {
+    "pageTitle": "Orders",
+    "pageSubtitle": "Monitor and process customer orders",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "refreshAria": "Refresh orders",
+    "refreshingAria": "Refreshing orders",
+    "searchPlaceholder": "Search order number or customer…",
+    "searchAria": "Search orders",
+    "loadFailed": "Failed to load orders",
+    "empty": {
+      "title": "No orders found",
+      "withSearch": "Try adjusting your search or filter.",
+      "withoutSearch": "New orders will appear here as they come in."
+    },
+    "tableHeaders": {
+      "actions": "Actions",
+      "status": "Status",
+      "payment": "Payment",
+      "total": "Total",
+      "date": "Date",
+      "customer": "Customer",
+      "orderNumber": "# Order"
+    },
+    "view": "View",
+    "preorder": "Preorder",
+    "footer_one": "1 order",
+    "footer_other": "{{count}} orders"
+  },
+  "details": {
+    "pageTitle": "Order Details",
+    "allOrders": "All Orders",
+    "preorderBadge": "Preorder",
+    "preorderBanner": "Contains items requiring advance preparation.",
+    "preferredLabel": "Preferred: {{value}}",
+    "notFound": "Order not found.",
+    "loadFailed": "Failed to load order",
+    "cards": {
+      "customer": "Customer",
+      "items": "Items",
+      "delivery": "Delivery",
+      "paymentStatus": "Payment & Status"
+    },
+    "customer": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "orderPlaced": "Order placed",
+      "lastUpdated": "Last updated",
+      "customerNotes": "Customer notes",
+      "customRequest": "Custom request"
+    },
+    "itemsTable": {
+      "product": "Product",
+      "qty": "Qty",
+      "unitPrice": "Unit Price",
+      "lineTotal": "Line Total"
+    },
+    "itemBadges": {
+      "preorder": "Preorder",
+      "wrap": "Wrap",
+      "wrapWithFee": "Wrap (+{{fee}})"
+    },
+    "requestedAmount": "Requested: {{value}} · Mode: amount",
+    "totals": {
+      "subtotal": "Subtotal",
+      "wrapFees": "Wrap fees",
+      "deliveryFee": "Delivery fee",
+      "total": "Total"
+    },
+    "delivery": {
+      "area": "Area",
+      "address": "Address",
+      "addressLabel": "Address label",
+      "preferredDelivery": "Preferred delivery",
+      "buildingPrefix": "No.",
+      "apartmentPrefix": "Apt"
+    },
+    "payment": {
+      "orderStatus": "Order Status",
+      "paymentStatus": "Payment Status",
+      "methodPrefix": "Method:",
+      "update": "Update",
+      "bankProofTitle": "Bank transfer proof (customer upload)",
+      "bankProofAlt": "Bank transfer proof"
+    },
+    "toasts": {
+      "orderStatusUpdated": "Order status updated.",
+      "orderStatusFailed": "Failed to update order status",
+      "paymentStatusUpdated": "Payment status updated.",
+      "paymentStatusFailed": "Failed to update payment status"
+    }
+  },
+  "orderStatuses": {
+    "new": "New",
+    "seen": "Seen",
+    "confirmed": "Confirmed",
+    "preparing": "Preparing",
+    "ready_for_delivery": "Ready for delivery",
+    "sent_with_delivery_company": "Sent with courier",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled"
+  },
+  "paymentStatuses": {
+    "pending_payment": "pending payment",
+    "paid": "paid",
+    "failed": "failed",
+    "cancelled": "cancelled",
+    "bank_transfer_pending": "bank transfer pending",
+    "bank_transfer_approved": "bank transfer approved"
+  }
+}

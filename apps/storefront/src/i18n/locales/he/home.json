@@ -17,6 +17,17 @@
     "unit": "יחידה",
     "box": "ארגז"
   },
+  "buyByQuantity": "לפי כמות",
+  "buyByAmount": "לפי סכום (₪)",
+  "purchaseModeLockedInCartQuantity": "כבר בעגלה לפי כמות — אפשר רק להמשיך באותו אופן, או להסיר מהעגלה.",
+  "purchaseModeLockedInCartAmount": "כבר בעגלה לפי סכום — אפשר רק להמשיך באותו אופן, או להסיר מהעגלה.",
+  "quantityLabel": "כמות",
+  "amountPlaceholder": "סכום בשקלים",
+  "estimatedQtyApprox": "בערך {{qty}} {{unit}} (הערכה)",
+  "addByAmount": "הוסף לפי סכום",
+  "productDescription": "תיאור המוצר",
+  "productDescriptionClose": "סגור",
+  "productDescriptionHint": "הצג תיאור מהמנהל",
   "hero": {
     "badge": "פירות וירקות",
     "subtitle": "הירקות של אבו אל־אנס — הדרך הכי טעימה לפתוח את היום",
@@ -29,7 +40,9 @@
   },
   "products": {
     "badge": "טרי ובריא",
-    "heading": "המוצרים שלנו"
+    "heading": "המוצרים שלנו",
+    "searchPlaceholder": "חיפוש מוצר...",
+    "searchNoResults": "אין מוצרים התואמים לחיפוש."
   },
   "categories": {
     "navAria": "ניווט לפי קטגוריה",
@@ -39,6 +52,8 @@
     "herbs": "עשבי תיבול",
     "spices": "תבלינים",
     "platters": "מגשי פירות ופירות חתוכים",
+    "pickles": "חמוצים",
+    "natural-juices": "מיצים טבעיים",
     "other": "מוצרים נוספים",
     "filterEmpty": "אין מוצרים בקטגוריה הזו. נסו קטגוריה אחרת או לחצו שוב על אותו סמל כדי להציג את כל המוצרים."
   },

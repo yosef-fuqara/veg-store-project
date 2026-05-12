@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { getAdminCategories } from "../services/categoryService";
 import { getLocalizedText, pickLocalizedName } from "../utils/localizedDisplayName";
 import { createProduct, getAdminProducts, updateProduct } from "../services/productService";
@@ -43,6 +44,7 @@ const EMPTY_FORM = {
   isPreorderOnly: false,
   minAdvanceHours: 24,
   preparationNotes: "",
+  allowPurchaseByAmount: false,
 };
 
 const VEGSTORE_ADMIN_PRODUCT_DRAFT_KEY = "vegstore_admin_product_draft";
@@ -115,6 +117,7 @@ const ProductFormPage = () => {
   const params = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { t } = useTranslation(["products", "common"]);
   const productId = params.id;
   const isEditMode = Boolean(productId);
 
@@ -132,7 +135,10 @@ const ProductFormPage = () => {
   const [, setStoredAdminDraft] = useLocalStorage(VEGSTORE_ADMIN_PRODUCT_DRAFT_KEY, null);
   const draftScopeAppliedRef = useRef("");
 
-  const title = useMemo(() => (isEditMode ? "Edit Product" : "Add Product"), [isEditMode]);
+  const title = useMemo(
+    () => (isEditMode ? t("products:form.titleEdit") : t("products:form.titleNew")),
+    [isEditMode, t]
+  );
 
   const loadInitialData = useCallback(async () => {
     setInitializing(true);
@@ -143,7 +149,7 @@ const ProductFormPage = () => {
 
       if (isEditMode) {
         const current = products.find((item) => item._id === productId);
-        if (!current) throw new Error("Product not found");
+        if (!current) throw new Error(t("products:form.errors.productNotFound"));
         setForm({
           name: parseNameFromProduct(current.name),
           description: parseDescriptionForForm(current.description),
@@ -156,17 +162,18 @@ const ProductFormPage = () => {
           isPreorderOnly: Boolean(current.isPreorderOnly),
           minAdvanceHours: Number.isFinite(current.minAdvanceHours) ? current.minAdvanceHours : 24,
           preparationNotes: current.preparationNotes || "",
+          allowPurchaseByAmount: Boolean(current.allowPurchaseByAmount),
         });
         setExistingImageUrl(current.imageUrl || "");
       } else if (categoryList.length) {
         setForm((prev) => ({ ...prev, category: prev.category || categoryList.find((c) => !c.isDeleted)?._id || "" }));
       }
     } catch (err) {
-      setError(err.userMessage || err.message || "Failed to load form data");
+      setError(err.userMessage || err.message || t("products:form.errors.loadFailed"));
     } finally {
       setInitializing(false);
     }
-  }, [isEditMode, productId]);
+  }, [isEditMode, productId, t]);
 
   useEffect(() => { loadInitialData(); }, [loadInitialData]);
 
@@ -216,7 +223,7 @@ const ProductFormPage = () => {
     return () => window.clearTimeout(id);
   }, [form, initializing, isEditMode, productId, setStoredAdminDraft]);
 
-  const BOOLEAN_FIELDS = new Set(["isFeatured", "isPreorderOnly"]);
+  const BOOLEAN_FIELDS = new Set(["isFeatured", "isPreorderOnly", "allowPurchaseByAmount"]);
   const onChange = (field) => (event) => {
     const value = BOOLEAN_FIELDS.has(field) ? event.target.checked : event.target.value;
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -244,7 +251,7 @@ const ProductFormPage = () => {
     setSubmitting(true);
     setError("");
     try {
-      if (!isEditMode && !imageFile) throw new Error("Product image is required");
+      if (!isEditMode && !imageFile) throw new Error(t("products:form.errors.imageRequired"));
 
       const payload = new FormData();
       payload.append(
@@ -262,6 +269,7 @@ const ProductFormPage = () => {
       payload.append("stockStatus", form.stockStatus);
       payload.append("isFeatured", String(form.isFeatured));
       payload.append("isPreorderOnly", String(form.isPreorderOnly));
+      payload.append("allowPurchaseByAmount", String(form.allowPurchaseByAmount));
       if (form.isPreorderOnly) {
         payload.append("minAdvanceHours", String(form.minAdvanceHours || 24));
         if (String(form.preparationNotes).trim()) payload.append("preparationNotes", String(form.preparationNotes));
@@ -271,15 +279,15 @@ const ProductFormPage = () => {
 
       if (isEditMode) {
         await updateProduct(productId, payload);
-        showToast("Product updated successfully.");
+        showToast(t("products:form.toasts.updated"));
       } else {
         await createProduct(payload);
-        showToast("Product created successfully.");
+        showToast(t("products:form.toasts.created"));
       }
       setStoredAdminDraft(null);
       navigate("/products", { replace: true });
     } catch (err) {
-      const message = err.userMessage || err.message || "Failed to save product";
+      const message = err.userMessage || err.message || t("products:form.errors.saveFailed");
       setError(message);
       showToast(message, "error");
     } finally {
@@ -356,7 +364,7 @@ const ProductFormPage = () => {
             {title}
           </h1>
           <p style={{ margin: '8px 0 0', fontSize: '14px', color: colors.textMuted, lineHeight: 1.5 }}>
-            {isEditMode ? 'Update the product information below' : 'Fill in the details to add a new product'}
+            {isEditMode ? t('products:form.subtitleEdit') : t('products:form.subtitleNew')}
           </p>
         </div>
         <Link
@@ -383,7 +391,7 @@ const ProductFormPage = () => {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
-          Back
+          {t('common:back')}
         </Link>
       </div>
 
@@ -399,23 +407,23 @@ const ProductFormPage = () => {
         {/* Basic info card */}
         <div style={cardStyle}>
           <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: colors.textPrimary, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Product Info
+            {t('products:form.sections.info')}
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: colors.textSecondary }}>Product name (all languages) *</span>
-            <Field label="Arabic (ar)">
+            <span style={{ fontSize: '13px', fontWeight: 600, color: colors.textSecondary }}>{t('products:form.fields.nameAllLangs')}</span>
+            <Field label={t('products:form.fields.nameAr')}>
               <input value={form.name.ar} onChange={onNameChange("ar")} required minLength={2} maxLength={120} onFocus={focus("nameAr")} onBlur={blur} style={inputStyle("nameAr")} dir="rtl" />
             </Field>
-            <Field label="Hebrew (he)">
+            <Field label={t('products:form.fields.nameHe')}>
               <input value={form.name.he} onChange={onNameChange("he")} required minLength={2} maxLength={120} onFocus={focus("nameHe")} onBlur={blur} style={inputStyle("nameHe")} dir="rtl" />
             </Field>
-            <Field label="English (en)">
+            <Field label={t('products:form.fields.nameEn')}>
               <input value={form.name.en} onChange={onNameChange("en")} required minLength={2} maxLength={120} onFocus={focus("nameEn")} onBlur={blur} style={inputStyle("nameEn")} dir="ltr" />
             </Field>
           </div>
 
-          <Field label="Description" hint="Optional">
+          <Field label={t('products:form.fields.description')} hint={t('products:form.fields.descriptionHint')}>
             <textarea value={form.description} onChange={onChange("description")} maxLength={2000} rows={4} onFocus={focus("description")} onBlur={blur} style={{ ...inputStyle("description"), resize: 'vertical', minHeight: '96px' }} />
           </Field>
 
@@ -424,19 +432,29 @@ const ProductFormPage = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
             gap: '16px',
           }}>
-            <Field label="Price (₪) *">
+            <Field label={t('products:form.fields.price')}>
               <input type="number" min="0" step="0.01" value={form.price} onChange={onChange("price")} required onFocus={focus("price")} onBlur={blur} style={inputStyle("price")} />
             </Field>
-            <Field label="Sale Price (₪)" hint="Optional — leave empty for no sale">
+            <Field label={t('products:form.fields.salePrice')} hint={t('products:form.fields.salePriceHint')}>
               <input type="number" min="0" step="0.01" value={form.salePrice} onChange={onChange("salePrice")} onFocus={focus("salePrice")} onBlur={blur} style={inputStyle("salePrice")} />
             </Field>
           </div>
+
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '14px', color: colors.textPrimary, fontWeight: 500, userSelect: 'none' }}>
+            <input type="checkbox" checked={form.allowPurchaseByAmount} onChange={onChange("allowPurchaseByAmount")} style={{ width: '18px', height: '18px', marginTop: '2px', accentColor: colors.primary, cursor: 'pointer', flexShrink: 0 }} />
+            <span>
+              {t('products:form.fields.allowByAmount')}
+              <span style={{ display: 'block', fontSize: '12px', color: colors.textMuted, fontWeight: 400, marginTop: '4px' }}>
+                {t('products:form.fields.allowByAmountHint')}
+              </span>
+            </span>
+          </label>
         </div>
 
         {/* Category, unit, stock card */}
         <div style={cardStyle}>
           <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: colors.textPrimary, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Classification
+            {t('products:form.sections.classification')}
           </h3>
 
           <div style={{
@@ -444,24 +462,24 @@ const ProductFormPage = () => {
             gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
             gap: '16px',
           }}>
-            <Field label="Category *">
+            <Field label={t('products:form.fields.category')}>
               <select value={form.category} onChange={onChange("category")} required onFocus={focus("category")} onBlur={blur} style={{ ...inputStyle("category"), cursor: 'pointer' }}>
-                <option value="" disabled>Select</option>
+                <option value="" disabled>{t('common:selectPlaceholder')}</option>
                 {categories.map((cat) => (
                   <option key={cat._id} value={cat._id}>{pickLocalizedName(cat.name)}</option>
                 ))}
               </select>
             </Field>
 
-            <Field label="Unit *">
+            <Field label={t('products:form.fields.unit')}>
               <select value={form.unit} onChange={onChange("unit")} required onFocus={focus("unit")} onBlur={blur} style={{ ...inputStyle("unit"), cursor: 'pointer' }}>
                 {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
               </select>
             </Field>
 
-            <Field label="Stock Status *">
+            <Field label={t('products:form.fields.stockStatus')}>
               <select value={form.stockStatus} onChange={onChange("stockStatus")} required onFocus={focus("stockStatus")} onBlur={blur} style={{ ...inputStyle("stockStatus"), cursor: 'pointer' }}>
-                {STOCK_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                {STOCK_OPTIONS.map((s) => <option key={s} value={s}>{t(`products:form.stockOptions.${s}`)}</option>)}
               </select>
             </Field>
           </div>
@@ -469,8 +487,8 @@ const ProductFormPage = () => {
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '14px', color: colors.textPrimary, fontWeight: 500, userSelect: 'none' }}>
             <input type="checkbox" checked={form.isFeatured} onChange={onChange("isFeatured")} style={{ width: '18px', height: '18px', marginTop: '2px', accentColor: colors.primary, cursor: 'pointer', flexShrink: 0 }} />
             <span>
-              Featured product
-              <span style={{ display: 'block', fontSize: '12px', color: colors.textMuted, fontWeight: 400, marginTop: '4px' }}>Shown prominently on storefront</span>
+              {t('products:form.fields.featured')}
+              <span style={{ display: 'block', fontSize: '12px', color: colors.textMuted, fontWeight: 400, marginTop: '4px' }}>{t('products:form.fields.featuredHint')}</span>
             </span>
           </label>
         </div>
@@ -482,21 +500,21 @@ const ProductFormPage = () => {
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
             <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: colors.warning, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Preorder / Custom Platter
+              {t('products:form.sections.preorder')}
             </h3>
           </div>
 
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '14px', color: colors.warning, fontWeight: 500, userSelect: 'none' }}>
             <input type="checkbox" checked={form.isPreorderOnly} onChange={onChange("isPreorderOnly")} style={{ width: '18px', height: '18px', marginTop: '2px', accentColor: colors.warning, cursor: 'pointer', flexShrink: 0 }} />
-            <span>Preorder only (requires advance notice)</span>
+            <span>{t('products:form.fields.preorderOnly')}</span>
           </label>
 
           {form.isPreorderOnly && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <Field label="Minimum advance notice (hours) *">
+              <Field label={t('products:form.fields.minAdvance')}>
                 <input type="number" min="1" max="720" step="1" value={form.minAdvanceHours} onChange={onChange("minAdvanceHours")} required onFocus={focus("minAdvHours")} onBlur={blur} style={{ ...inputStyle("minAdvHours"), background: '#fffdf5', borderColor: focused === 'minAdvHours' ? colors.primary : colors.warningBorder }} />
               </Field>
-              <Field label="Preparation notes (internal)" hint="Not shown to customers">
+              <Field label={t('products:form.fields.preparationNotes')} hint={t('products:form.fields.preparationNotesHint')}>
                 <textarea value={form.preparationNotes} onChange={onChange("preparationNotes")} maxLength={1000} rows={3} onFocus={focus("prepNotes")} onBlur={blur} style={{ ...inputStyle("prepNotes"), background: '#fffdf5', borderColor: focused === 'prepNotes' ? colors.primary : colors.warningBorder, resize: 'vertical', minHeight: '80px' }} />
               </Field>
             </div>
@@ -506,7 +524,7 @@ const ProductFormPage = () => {
         {/* Image card */}
         <div style={cardStyle}>
           <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: colors.textPrimary, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Product Image {isEditMode ? '(optional)' : '(required)'}
+            {isEditMode ? t('products:form.sections.imageOptional') : t('products:form.sections.imageRequired')}
           </h3>
 
           {previewSrc && (
@@ -532,14 +550,14 @@ const ProductFormPage = () => {
               }}>
                 <img
                   src={previewSrc}
-                  alt="Product preview"
+                  alt={t('products:form.image.previewAlt')}
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
               </div>
               <div style={{ flex: '1 1 180px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary }}>
-                    {imagePreview ? 'New image selected' : 'Current image'}
+                    {imagePreview ? t('products:form.image.newSelected') : t('products:form.image.current')}
                   </span>
                   {imagePreview && (
                     <span style={{
@@ -552,12 +570,12 @@ const ProductFormPage = () => {
                       fontSize: '11px',
                       fontWeight: 600,
                     }}>
-                      Pending upload
+                      {t('products:form.image.pendingUpload')}
                     </span>
                   )}
                 </div>
                 <div style={{ fontSize: '13px', color: colors.textMuted, lineHeight: 1.5, wordBreak: 'break-word' }}>
-                  {imageFile ? imageFile.name : (isEditMode ? 'Replace by choosing a file below.' : 'This image will appear on the storefront.')}
+                  {imageFile ? imageFile.name : (isEditMode ? t('products:form.image.currentReplaceHint') : t('products:form.image.newAppearsOnStorefront'))}
                 </div>
                 {imagePreview && (
                   <div>
@@ -588,7 +606,7 @@ const ProductFormPage = () => {
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                       </svg>
-                      {isEditMode ? 'Discard new image' : 'Remove'}
+                      {isEditMode ? t('products:form.image.discardNewImage') : t('common:remove')}
                     </button>
                   </div>
                 )}
@@ -597,7 +615,7 @@ const ProductFormPage = () => {
           )}
 
           <div style={labelStyle}>
-            <span>{isEditMode ? 'Upload a new image to replace the current one' : 'Select image'}</span>
+            <span>{isEditMode ? t('products:form.image.uploadReplace') : t('products:form.image.selectImage')}</span>
             <div
               style={{
                 position: 'relative',
@@ -631,10 +649,10 @@ const ProductFormPage = () => {
                 <polyline points="21 15 16 10 5 21"/>
               </svg>
               <div style={{ fontSize: '14px', color: colors.textSecondary, fontWeight: 500 }}>
-                {imageFile ? imageFile.name : 'Click or drop an image here'}
+                {imageFile ? imageFile.name : t('products:form.image.clickOrDrop')}
               </div>
               <div style={{ fontSize: '12px', color: colors.textMuted, marginTop: '6px' }}>
-                PNG, JPG, WebP — max size per server limits
+                {t('products:form.image.fileTypes')}
               </div>
               <input
                 type="file"
@@ -651,7 +669,7 @@ const ProductFormPage = () => {
                   opacity: 0,
                   cursor: 'pointer',
                 }}
-                aria-label={isEditMode ? 'Upload replacement product image' : 'Select product image'}
+                aria-label={isEditMode ? t('products:form.image.uploadReplacementAria') : t('products:form.image.selectImageAria')}
               />
             </div>
           </div>
@@ -690,7 +708,11 @@ const ProductFormPage = () => {
                 <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
               </svg>
             )}
-            {submitting ? 'Saving…' : isEditMode ? 'Save Changes' : 'Create Product'}
+            {submitting
+              ? t('products:form.buttons.saving')
+              : isEditMode
+                ? t('products:form.buttons.submitEdit')
+                : t('products:form.buttons.submitNew')}
           </button>
           <button
             type="button"
@@ -713,7 +735,7 @@ const ProductFormPage = () => {
             onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.background = colors.bg; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
           >
-            Cancel
+            {t('products:form.buttons.cancel')}
           </button>
         </div>
       </form>

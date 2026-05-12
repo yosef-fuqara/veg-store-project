@@ -8,9 +8,11 @@
  * |--------------------|------------------------|-----------------------------------|
  * | fruits             | פירות                  | fruits, fruit                     |
  * | vegetables         | ירקות                  | vegetables, vegetable           |
- * | herbs              | עשבי תיבול             | herbs, herb                       |
+ * | herbs              | עשבי תיבול             | herbs, herb, fresh-herbs          |
  * | spices             | תבלינים                | spices, spice                     |
  * | platters           | מגשי פירות…            | platters, platter               |
+ * | pickles            | חמוצים                 | pickles, pickle                 |
+ * | natural-juices     | מיצים טבעיים           | natural-juices                  |
  * | other              | מוצרים נוספים          | (not slug-mapped — complement)   |
  *
  * Adding a category in admin:
@@ -18,7 +20,7 @@
  * - To attach to a nav slot, use a slug listed below OR add the new slug to the right array.
  * - Categories whose slug is not listed are still mapped when their name/slug matches the keyword
  *   rules in `categoryFilter.js` (same as legacy matching), so e.g. "עשבי תיבול" is not stuck in "other".
- * - New storefront nav icons/labels require a UI change; only extend slug lists here for the same six slots.
+ * - New storefront nav icons/labels require a UI change; extend slug lists here for the same nav slots.
  */
 
 import {
@@ -38,6 +40,8 @@ export const PRIMARY_NAV_IDS = /** @type {const} */ ([
   "herbs",
   "spices",
   "platters",
+  "pickles",
+  "natural-juices",
 ]);
 
 /**
@@ -59,9 +63,31 @@ export const BACKEND_SLUGS_BY_NAV = {
     "seed-vegetables",
     "ירקות",
   ],
-  herbs: ["herb", "herbs", "עשבי-תיבול"],
+  herbs: ["herb", "herbs", "fresh-herbs", "עשבי-תיבול"],
   spices: ["spice", "spices", "baharat", "תבלינים"],
   platters: ["platter", "platters", "sliced", "fruit-platter", "מגש", "מגשים"],
+  pickles: [
+    "pickle",
+    "pickles",
+    "חמוצים",
+    "מלפפונים-חמוצים",
+    "مخللات",
+    "مخلل",
+  ],
+  "natural-juices": [
+    "natural-juice",
+    "natural-juices",
+    "fresh-juice",
+    "fresh-juices",
+    "squeezed-juice",
+    "squeezed-juices",
+    "juice",
+    "juices",
+    "מיצים-טבעיים",
+    "מיצים",
+    "عصائر-طبيعية",
+    "عصائر",
+  ],
 };
 
 const OBJECT_ID_LIKE = /^[0-9a-fA-F]{24}$/;
@@ -192,4 +218,17 @@ export function productMatchesStorefrontCategoryNav(product, navId, resolution) 
   }
 
   return false;
+}
+
+/**
+ * Single storefront nav slot for a product (first match in nav order).
+ * @param {unknown} product
+ * @param {ReturnType<typeof buildNavCategoryResolution>} resolution
+ * @returns {CategoryNavId}
+ */
+export function resolveProductStorefrontNavSlot(product, resolution) {
+  for (const navId of CATEGORY_NAV_IDS) {
+    if (productMatchesStorefrontCategoryNav(product, navId, resolution)) return navId;
+  }
+  return "other";
 }

@@ -7,6 +7,11 @@ const {
 } = require("../constants/delivery");
 const AppError = require("../utils/app-error");
 
+const roundHalfUp = (value, decimalPlaces) => {
+  const f = 10 ** decimalPlaces;
+  return Math.round((Number(value) + Number.EPSILON) * f) / f;
+};
+
 const buildOrderItemsFromPreview = (previewItems) =>
   previewItems.map((line) => ({
     product: line.product,
@@ -14,6 +19,12 @@ const buildOrderItemsFromPreview = (previewItems) =>
     price: line.unitPrice,
     quantity: line.quantity,
     unit: line.unit,
+    purchaseMode: line.purchaseMode || "quantity",
+    requestedAmountIls: line.requestedAmountIls,
+    lineTotal:
+      typeof line.lineTotal === "number"
+        ? line.lineTotal
+        : roundHalfUp(Number(line.quantity) * Number(line.unitPrice), 2),
     isPreorderOnly: Boolean(line.isPreorderOnly),
     minAdvanceHours: Number(line.minAdvanceHours) || 0,
     wrap: Boolean(line.wrap),
@@ -29,9 +40,11 @@ const getInitialPaymentStatus = (method) => {
 
 const ORDER_STATUS_TRANSITIONS = {
   [ORDER_STATUS.NEW]: [
+    ORDER_STATUS.SEEN,
     ORDER_STATUS.CONFIRMED,
     ORDER_STATUS.CANCELLED
   ],
+  [ORDER_STATUS.SEEN]: [ORDER_STATUS.CONFIRMED, ORDER_STATUS.CANCELLED],
   [ORDER_STATUS.CONFIRMED]: [
     ORDER_STATUS.PREPARING,
     ORDER_STATUS.CANCELLED

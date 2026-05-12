@@ -6,7 +6,12 @@ export const fetchCart = async () => {
 };
 
 export const addCartItem = async (productId, quantity = 1, options = {}) => {
-  const payload = { productId, quantity };
+  const payload = { productId };
+  if (typeof options.purchaseAmountIls === "number") {
+    payload.purchaseAmountIls = options.purchaseAmountIls;
+  } else {
+    payload.quantity = quantity;
+  }
   if (typeof options.wrap === "boolean") payload.wrap = options.wrap;
   const { data } = await apiClient.post("/cart/items", payload);
   return data.data.cart;

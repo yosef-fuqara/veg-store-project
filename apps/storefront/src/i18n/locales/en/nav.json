@@ -2,6 +2,7 @@
   "home": "Home",
   "products": "Products",
   "cart": "Cart",
+  "orders": "My orders",
   "checkout": "Checkout",
   "login": "Login",
   "register": "Register",
@@ -9,5 +10,6 @@
   "greeting": "Hi, {{name}}",
   "language": "Language",
   "brandName": "Abu Al-Anas",
-  "brandTagline": "Fruits & Vegetables"
+  "brandTagline": "Fruits & Vegetables",
+  "storeHoursLabel": "Hours of operation"
 }

@@ -1,6 +1,18 @@
 {
+  "drawerTitle": "سلتك",
+  "drawerClose": "إغلاق",
+  "drawerOpen": "فتح السلة",
+  "drawerSignInHint": "سجّل الدخول لعرض سلتك ومتابعة الدفع.",
+  "drawerViewFullCart": "صفحة السلة الكاملة",
+  "drawerCheckout": "الدفع",
   "addedToCartToast": "تمت إضافة المنتج للسلة",
   "genericError": "حدث خطأ ما. يُرجى المحاولة مرة أخرى.",
+  "errors": {
+    "addByAmountBlockedQuantityLine": "المنتج موجود بالسلة حسب الكمية. احذف السطر أو تابع بنفس الطريقة — لا يمكن الإضافة بالمبلغ قبل ذلك.",
+    "addByQuantityBlockedAmountLine": "المنتج موجود بالسلة حسب المبلغ. احذف السطر أو تابع بنفس الطريقة — لا يمكن الإضافة بالكمية قبل ذلك.",
+    "updateQuantityBlockedAmountLine": "هذا السطر أُضيف بالمبلغ. عدّل المبلغ فقط أو احذف المنتج.",
+    "updateAmountBlockedQuantityLine": "هذا السطر حسب الكمية. عدّل الكمية أو احذف المنتج للانتقال إلى الشراء بالمبلغ."
+  },
   "signInToAdd": {
     "message": "يجب تسجيل الدخول لإضافة المنتجات إلى السلة",
     "signIn": "تسجيل الدخول",
@@ -11,6 +23,7 @@
   "quantity": "الكمية",
   "price": "السعر",
   "subtotal": "المجموع الفرعي",
+  "payableTotalLabel": "المبلغ المستحق (المنتجات والخدمات)",
   "remove": "حذف",
   "clearCart": "تفريغ السلة",
   "proceedToCheckout": "المتابعة إلى الدفع",
@@ -24,5 +37,8 @@
     "lineFee": "تغليف: {{amount}}",
     "summaryLabel": "تكلفة التغليف",
     "unavailable": "التغليف متاح فقط للمنتجات التي تُباع بالكيلوغرام."
-  }
+  },
+  "purchaseByAmountBadge": "بمبلغ {{amount}}",
+  "purchaseByAmountNote": "اخترت قيمة {{amount}}؛ تُحدَّد الكمية حسب سعر المتجر.",
+  "purchaseByAmountLineDetail": "{{unitPrice}} لل{{unitLabel}} · وزن تقديري {{weight}} {{unitLabel}}"
 }

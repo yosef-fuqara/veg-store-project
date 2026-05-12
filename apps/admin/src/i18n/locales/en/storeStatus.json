@@ -1,0 +1,32 @@
+{
+  "pageTitle": "Store Status",
+  "pageSubtitle": "Manual open/close of the store for customers is handled by the button in the sidebar. Here you configure the closed-store message text and the operating hours for informational purposes only: these hours do not close the store automatically.",
+  "storeOpenLabel": "The store is currently open to customers (per the sidebar button) ✅",
+  "storeClosedLabel": "The store is currently closed to customers (per the sidebar button) 🔒",
+  "operatingSection": {
+    "title": "Operating hours (info to customer)",
+    "subtitle": "Hours are saved on the server and used by the site to show a notice before placing an order outside the window — without blocking orders. If the notice is off, no confirmation modal is shown even outside hours.",
+    "toggleLabel": "Notice before ordering outside hours",
+    "timezone": "Time zone (IANA)",
+    "openTime": "Opening time (local)",
+    "closeTime": "Closing time (local)",
+    "hoursExplain": "The operating window is from the opening time until just before the closing time (exclusive). If the closing time is earlier than the opening time, the system treats it as an overnight window (e.g. 22:00–06:00)."
+  },
+  "closedMessageSection": {
+    "title": "Message when the store is manually closed",
+    "fieldHe": "Title — Hebrew",
+    "fieldEn": "Title — English",
+    "fieldAr": "Title — Arabic"
+  },
+  "buttons": {
+    "save": "Save Changes",
+    "saving": "Saving…",
+    "openStore": "Open Store",
+    "closeStore": "Close Store",
+    "loadingStore": "Loading…"
+  },
+  "toasts": {
+    "saved": "Settings saved successfully",
+    "saveFailed": "Something went wrong"
+  }
+}

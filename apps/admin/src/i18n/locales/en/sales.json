@@ -1,0 +1,31 @@
+{
+  "pageTitle": "Sales",
+  "pageSubtitle": "Totals exclude cancelled orders · Week starts Monday (local time)",
+  "refresh": "Refresh",
+  "refreshing": "Refreshing…",
+  "refreshAria": "Refresh sales data",
+  "refreshingAria": "Refreshing sales data",
+  "loadFailed": "Failed to load orders",
+  "cards": {
+    "todaySales": "Today · sales",
+    "todayOrders": "Today · orders",
+    "weekSales": "This week · sales",
+    "weekOrders": "This week · orders",
+    "monthSales": "This month · sales",
+    "monthOrders": "This month · orders"
+  },
+  "buyers": {
+    "title": "Who bought today",
+    "subtitle": "Non-cancelled orders placed since midnight (your local time)",
+    "empty": "No qualifying orders yet today.",
+    "tableHeaders": {
+      "customer": "Customer",
+      "phone": "Phone",
+      "total": "Total",
+      "orderTime": "Order time",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "view": "View"
+  }
+}

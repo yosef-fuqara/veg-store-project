@@ -6,6 +6,10 @@ const AppError = require("../utils/app-error");
 const env = require("../config/env");
 const { PAYMENT_STATUS, PAYMENT_METHOD } = require("../constants/order");
 const { getPaymentProvider } = require("./payment/get-payment-provider");
+const {
+  scheduleOnlinePaymentPaid,
+  scheduleBankTransferAdminDecision
+} = require("./order-email.service");
 
 const RAW_PAYLOAD_MAX_CHARS = 16000;
 
@@ -131,6 +135,10 @@ async function handleWebhook(req) {
   order.paymentStatus = nextStatus;
   await order.save();
 
+  if (nextStatus === PAYMENT_STATUS.PAID) {
+    scheduleOnlinePaymentPaid(order._id);
+  }
+
   return { duplicate: false, order };
 }
 
@@ -157,20 +165,26 @@ async function adminUpdateBankTransferPayment(orderId, body) {
   const nextStatus = body.paymentStatus;
   assertBankTransferAdminTransition(order.paymentStatus, nextStatus);
 
+  const processedAt = new Date();
+  const providerEventId = `admin:${String(order._id)}:${processedAt.getTime()}`;
+
   await Payment.create({
     order: order._id,
     user: order.user,
     provider: env.paymentProvider,
+    providerEventId,
     source: PAYMENT_SOURCE.ADMIN,
     outcome: nextStatus,
     amountSnapshot: order.total,
     rawPayload: capRawPayload({ previousStatus: order.paymentStatus, nextStatus }),
-    processedAt: new Date(),
+    processedAt,
     notes: body.notes || undefined
   });
 
   order.paymentStatus = nextStatus;
   await order.save();
+
+  scheduleBankTransferAdminDecision(order._id, nextStatus);
 
   return order;
 }

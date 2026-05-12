@@ -19,7 +19,8 @@
   "feeEstimateNote": "אומדן בלבד — דמי המשלוח הסופיים נקבעים על ידי החנות.",
   "fee": "דמי משלוח",
   "phoneRequired": "טלפון *",
-  "phoneInvalid": "הזינו מספר טלפון תקין (לפחות 7 ספרות).",
+  "phoneEmpty": "נא להזין מספר טלפון.",
+  "phoneInvalid": "נא להזין מספר טלפון ישראלי תקין",
   "orderNotes": "הערות להזמנה",
   "paymentMethodRequired": "אמצעי תשלום *",
   "placeOrder": "בצע הזמנה",
@@ -58,5 +59,15 @@
     "credit_card": "כרטיס אשראי",
     "bit": "ביט",
     "bank_transfer": "העברה בנקאית"
+  },
+  "bankTransferProofLabel": "צילום מסך / אסמכתא להעברה (אופציונלי)",
+  "bankTransferProofHint": "JPEG, PNG או WebP — עד 3MB. עוזר למנהל לאשר את התשלום.",
+  "bankTransferProofTooLarge": "הקובץ גדול מדי (מקסימום 3MB).",
+  "bankTransferProofInvalidType": "נא לבחור תמונה (JPEG, PNG או WebP).",
+  "businessHoursNotice": {
+    "title": "שימו לב לשעות הפעילות",
+    "message": "ההזמנה תתקבל במערכת, אבל המשלוח יבוצע רק בשעות הפעילות של החנות. תודה על ההבנה 🌿",
+    "declineButton": "לא, לא להמשיך בהזמנה",
+    "confirmButton": "כן, להמשיך ולבצע הזמנה"
   }
 }

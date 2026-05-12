@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useToast } from "../features/toast/ToastContext";
 import {
   getAdminOrderById,
@@ -9,9 +10,11 @@ import {
 } from "../services/orderService";
 import { getLocalizedText } from "../utils/localizedDisplayName";
 import { resolveAdminDeliveryAreaLabel } from "../utils/deliveryAreaLabel";
+import { formatAdminOrderStatusLabel, formatAdminPaymentStatusLabel } from "../utils/adminOrderStatusLabel";
+import { useAdminLanguage } from "../i18n/useAdminLanguage";
 
 const ORDER_STATUS_OPTIONS = [
-  "new", "confirmed", "preparing", "ready_for_delivery",
+  "new", "seen", "confirmed", "preparing", "ready_for_delivery",
   "sent_with_delivery_company", "delivered", "cancelled"
 ];
 
@@ -40,6 +43,7 @@ const colors = {
 
 const ORDER_STATUS_STYLES = {
   new:                       { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+  seen:                      { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
   confirmed:                 { bg: '#ecfeff', color: '#0e7490', border: '#a5f3fc' },
   preparing:                 { bg: '#f5f3ff', color: '#6d28d9', border: '#ddd6fe' },
   ready_for_delivery:        { bg: '#ecfccb', color: '#3f6212', border: '#bef264' },
@@ -62,21 +66,34 @@ const formatCurrency = (value) => {
   return new Intl.NumberFormat('he-IL', { style: 'currency', currency: 'ILS', maximumFractionDigits: 2 }).format(value);
 };
 
+const formatChargedCurrency = (value) => {
+  if (typeof value !== 'number') return '—';
+  const whole = Math.floor(value);
+  return new Intl.NumberFormat('he-IL', {
+    style: 'currency',
+    currency: 'ILS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(whole);
+};
+
 const formatDate = (value) => {
   if (!value) return '—';
   return new Date(value).toLocaleString('en-IL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
-const Pill = ({ value, palette }) => {
+const Pill = ({ value, palette, kind = "order" }) => {
   const s = palette[value] || { bg: '#f8fafc', color: '#475569', border: '#e2e8f0' };
+  const label = kind === "payment" ? formatAdminPaymentStatusLabel(value) : formatAdminOrderStatusLabel(value);
+  const textTransform = /[\u0590-\u05FF]/.test(label) ? 'none' : 'capitalize';
   return (
     <span style={{
       display: 'inline-block', padding: '3px 12px', borderRadius: '9999px',
       background: s.bg, color: s.color, border: `1px solid ${s.border}`,
       fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap',
-      textTransform: 'capitalize',
+      textTransform,
     }}>
-      {String(value || '—').replaceAll('_', ' ')}
+      {label}
     </span>
   );
 };
@@ -115,6 +132,8 @@ const selectStyle = {
 const AdminOrderDetailsPage = () => {
   const { id } = useParams();
   const { showToast } = useToast();
+  const { t } = useTranslation(["orders", "common"]);
+  const { lang } = useAdminLanguage();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -144,11 +163,11 @@ const AdminOrderDetailsPage = () => {
       setNextOrderStatus(data?.orderStatus || "");
       setNextPaymentStatus(data?.paymentStatus || "");
     } catch (err) {
-      setError(err.userMessage || "Failed to load order");
+      setError(err.userMessage || t("orders:details.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -158,7 +177,7 @@ const AdminOrderDetailsPage = () => {
       subtotal: formatCurrency(order.subtotal),
       wrapTotal: formatCurrency(order.wrapTotal || 0),
       deliveryFee: formatCurrency(order.deliveryFee),
-      total: formatCurrency(order.total),
+      total: formatChargedCurrency(order.total),
     };
   }, [order]);
 
@@ -169,9 +188,9 @@ const AdminOrderDetailsPage = () => {
       const updated = await updateAdminOrderStatus(order._id, nextOrderStatus);
       setOrder(updated);
       setNextOrderStatus(updated.orderStatus || "");
-      showToast("Order status updated.");
+      showToast(t("orders:details.toasts.orderStatusUpdated"));
     } catch (err) {
-      const msg = err.userMessage || "Failed to update order status";
+      const msg = err.userMessage || t("orders:details.toasts.orderStatusFailed");
       showToast(msg, "error");
     } finally {
       setUpdating(false);
@@ -185,9 +204,9 @@ const AdminOrderDetailsPage = () => {
       const updated = await updateAdminOrderPaymentStatus(order._id, nextPaymentStatus);
       setOrder(updated);
       setNextPaymentStatus(updated.paymentStatus || "");
-      showToast("Payment status updated.");
+      showToast(t("orders:details.toasts.paymentStatusUpdated"));
     } catch (err) {
-      const msg = err.userMessage || "Failed to update payment status";
+      const msg = err.userMessage || t("orders:details.toasts.paymentStatusFailed");
       showToast(msg, "error");
     } finally {
       setUpdating(false);
@@ -212,7 +231,7 @@ const AdminOrderDetailsPage = () => {
           {error}
         </div>
         <button type="button" onClick={load} style={{ padding: '8px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: colors.surface, cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit' }}>
-          Retry
+          {t("common:retry")}
         </button>
       </div>
     );
@@ -220,15 +239,15 @@ const AdminOrderDetailsPage = () => {
 
   if (!order) {
     return (
-      <div style={{ color: colors.textMuted, fontSize: '14px' }}>Order not found.</div>
+      <div style={{ color: colors.textMuted, fontSize: '14px' }}>{t("orders:details.notFound")}</div>
     );
   }
 
   const deliveryAddress = [
     order.deliveryAddress?.city,
     order.deliveryAddress?.street,
-    order.deliveryAddress?.building && `No. ${order.deliveryAddress.building}`,
-    order.deliveryAddress?.apartment && `Apt ${order.deliveryAddress.apartment}`,
+    order.deliveryAddress?.building && `${t("orders:details.delivery.buildingPrefix")} ${order.deliveryAddress.building}`,
+    order.deliveryAddress?.apartment && `${t("orders:details.delivery.apartmentPrefix")} ${order.deliveryAddress.apartment}`,
     order.deliveryAddress?.notes,
   ].filter(Boolean).join(', ');
 
@@ -238,7 +257,7 @@ const AdminOrderDetailsPage = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.3px' }}>
-            Order Details
+            {t("orders:details.pageTitle")}
           </h1>
           <p style={{ margin: '4px 0 0', fontSize: '13px', color: colors.textMuted, fontFamily: 'monospace' }}>
             #{String(order._id).slice(-8).toUpperCase()}
@@ -255,7 +274,7 @@ const AdminOrderDetailsPage = () => {
               <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
             </svg>
-            Refresh
+            {t("common:refresh")}
           </button>
           <Link
             to="/orders"
@@ -264,7 +283,7 @@ const AdminOrderDetailsPage = () => {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6"/>
             </svg>
-            All Orders
+            {t("orders:details.allOrders")}
           </Link>
         </div>
       </div>
@@ -279,14 +298,14 @@ const AdminOrderDetailsPage = () => {
       {order.hasPreorderItems && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', padding: '12px 16px', borderRadius: '10px', background: colors.warningBg, border: `1px solid ${colors.warningBorder}`, marginBottom: '16px' }}>
           <span style={{ padding: '2px 10px', borderRadius: '9999px', background: '#fef3c7', color: colors.warning, fontSize: '12px', fontWeight: 700, border: `1px solid ${colors.warningBorder}` }}>
-            Preorder
+            {t("orders:details.preorderBadge")}
           </span>
           <span style={{ fontSize: '14px', color: colors.warning }}>
-            Contains items requiring advance preparation.
+            {t("orders:details.preorderBanner")}
           </span>
           {order.preferredDeliveryAt && (
             <span style={{ fontSize: '13px', color: colors.warning, fontWeight: 500 }}>
-              Preferred: {formatDate(order.preferredDeliveryAt)}
+              {t("orders:details.preferredLabel", { value: formatDate(order.preferredDeliveryAt) })}
             </span>
           )}
         </div>
@@ -296,23 +315,28 @@ const AdminOrderDetailsPage = () => {
 
         {/* Customer info */}
         <Card>
-          <CardTitle>Customer</CardTitle>
-          <InfoRow label="Name">{order.user?.name || '—'}</InfoRow>
-          <InfoRow label="Email">{order.user?.email || '—'}</InfoRow>
-          <InfoRow label="Phone">{order.user?.phone || order.customerPhone || '—'}</InfoRow>
-          <InfoRow label="Order placed">{formatDate(order.createdAt)}</InfoRow>
-          <InfoRow label="Last updated">{formatDate(order.updatedAt)}</InfoRow>
-          {order.notes && <InfoRow label="Customer notes">{order.notes}</InfoRow>}
-          {order.customRequest && <InfoRow label="Custom request">{order.customRequest}</InfoRow>}
+          <CardTitle>{t("orders:details.cards.customer")}</CardTitle>
+          <InfoRow label={t("orders:details.customer.name")}>{order.user?.name || '—'}</InfoRow>
+          <InfoRow label={t("orders:details.customer.email")}>{order.user?.email || '—'}</InfoRow>
+          <InfoRow label={t("orders:details.customer.phone")}>{order.user?.phone || order.customerPhone || '—'}</InfoRow>
+          <InfoRow label={t("orders:details.customer.orderPlaced")}>{formatDate(order.createdAt)}</InfoRow>
+          <InfoRow label={t("orders:details.customer.lastUpdated")}>{formatDate(order.updatedAt)}</InfoRow>
+          {order.notes && <InfoRow label={t("orders:details.customer.customerNotes")}>{order.notes}</InfoRow>}
+          {order.customRequest && <InfoRow label={t("orders:details.customer.customRequest")}>{order.customRequest}</InfoRow>}
         </Card>
 
         {/* Items */}
         <Card>
-          <CardTitle>Items</CardTitle>
+          <CardTitle>{t("orders:details.cards.items")}</CardTitle>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Product', 'Qty', 'Unit Price', 'Line Total'].map((h) => (
+                {[
+                  t("orders:details.itemsTable.product"),
+                  t("orders:details.itemsTable.qty"),
+                  t("orders:details.itemsTable.unitPrice"),
+                  t("orders:details.itemsTable.lineTotal")
+                ].map((h) => (
                   <th key={h} style={{ padding: '8px 10px', textAlign: 'start', fontSize: '12px', fontWeight: 600, color: colors.textSecondary, background: colors.bg, borderBottom: `1px solid ${colors.border}` }}>
                     {h}
                   </th>
@@ -321,28 +345,39 @@ const AdminOrderDetailsPage = () => {
             </thead>
             <tbody>
               {(order.items || []).map((item, idx) => (
-                <tr key={`${item.product || getLocalizedText(item.name, "en")}-${idx}`} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
+                <tr key={`${item.product || getLocalizedText(item.name, lang)}-${idx}`} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
                   <td style={{ padding: '10px 10px', fontSize: '14px', color: colors.textPrimary }}>
-                    <span>{getLocalizedText(item.name, "en")}</span>
+                    <span>{getLocalizedText(item.name, lang)}</span>
                     {item.isPreorderOnly && (
                       <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', fontWeight: 600, background: colors.warningBg, color: colors.warning, border: `1px solid ${colors.warningBorder}` }}>
-                        Preorder
+                        {t("orders:details.itemBadges.preorder")}
                       </span>
                     )}
                     {item.wrap && (
                       <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', fontWeight: 600, background: colors.successBg, color: colors.success, border: `1px solid ${colors.successBorder}` }}>
-                        Wrap{Number(item.wrapFee) > 0 ? ` (+${formatCurrency(item.wrapFee)})` : ''}
+                        {Number(item.wrapFee) > 0
+                          ? t("orders:details.itemBadges.wrapWithFee", { fee: formatCurrency(item.wrapFee) })
+                          : t("orders:details.itemBadges.wrap")}
                       </span>
                     )}
                   </td>
                   <td style={{ padding: '10px 10px', fontSize: '13px', color: colors.textSecondary }}>
-                    {item.quantity} {item.unit}
+                    <div>{item.quantity} {item.unit}</div>
+                    {item.purchaseMode === 'amount' && item.requestedAmountIls != null && (
+                      <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '4px' }}>
+                        {t("orders:details.requestedAmount", { value: formatCurrency(item.requestedAmountIls) })}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '10px 10px', fontSize: '13px', color: colors.textSecondary }}>
                     {formatCurrency(item.price)}
                   </td>
                   <td style={{ padding: '10px 10px', fontSize: '14px', fontWeight: 600, color: colors.textPrimary }}>
-                    {formatCurrency(item.price * item.quantity)}
+                    {formatCurrency(
+                      typeof item.lineTotal === 'number'
+                        ? item.lineTotal
+                        : Number(item.price) * Number(item.quantity)
+                    )}
                   </td>
                 </tr>
               ))}
@@ -352,42 +387,42 @@ const AdminOrderDetailsPage = () => {
           {/* Totals */}
           <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '280px', marginInlineStart: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: colors.textSecondary }}>
-              <span>Subtotal</span><span>{totals?.subtotal}</span>
+              <span>{t("orders:details.totals.subtotal")}</span><span>{totals?.subtotal}</span>
             </div>
             {Number(order.wrapTotal) > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: colors.success }}>
-                <span>Wrap fees</span><span>{totals?.wrapTotal}</span>
+                <span>{t("orders:details.totals.wrapFees")}</span><span>{totals?.wrapTotal}</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: colors.textSecondary }}>
-              <span>Delivery fee</span><span>{totals?.deliveryFee}</span>
+              <span>{t("orders:details.totals.deliveryFee")}</span><span>{totals?.deliveryFee}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700, color: colors.textPrimary, paddingTop: '10px', borderTop: `1px solid ${colors.border}`, marginTop: '4px' }}>
-              <span>Total</span><span>{totals?.total}</span>
+              <span>{t("orders:details.totals.total")}</span><span>{totals?.total}</span>
             </div>
           </div>
         </Card>
 
         {/* Delivery */}
         <Card>
-          <CardTitle>Delivery</CardTitle>
-          <InfoRow label="Area">{resolveAdminDeliveryAreaLabel(order, deliveryAreaCatalog?.areas)}</InfoRow>
-          {deliveryAddress && <InfoRow label="Address">{deliveryAddress}</InfoRow>}
-          {order.deliveryAddress?.label && <InfoRow label="Address label">{order.deliveryAddress.label}</InfoRow>}
+          <CardTitle>{t("orders:details.cards.delivery")}</CardTitle>
+          <InfoRow label={t("orders:details.delivery.area")}>{resolveAdminDeliveryAreaLabel(order, deliveryAreaCatalog?.areas)}</InfoRow>
+          {deliveryAddress && <InfoRow label={t("orders:details.delivery.address")}>{deliveryAddress}</InfoRow>}
+          {order.deliveryAddress?.label && <InfoRow label={t("orders:details.delivery.addressLabel")}>{order.deliveryAddress.label}</InfoRow>}
           {order.preferredDeliveryAt && (
-            <InfoRow label="Preferred delivery">{formatDate(order.preferredDeliveryAt)}</InfoRow>
+            <InfoRow label={t("orders:details.delivery.preferredDelivery")}>{formatDate(order.preferredDeliveryAt)}</InfoRow>
           )}
         </Card>
 
         {/* Payment & status management */}
         <Card>
-          <CardTitle>Payment & Status</CardTitle>
+          <CardTitle>{t("orders:details.cards.paymentStatus")}</CardTitle>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
 
             {/* Order status */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 500, color: colors.textSecondary }}>Order Status</div>
+              <div style={{ fontSize: '13px', fontWeight: 500, color: colors.textSecondary }}>{t("orders:details.payment.orderStatus")}</div>
               <Pill value={order.orderStatus} palette={ORDER_STATUS_STYLES} />
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
                 <select
@@ -396,7 +431,7 @@ const AdminOrderDetailsPage = () => {
                   style={{ ...selectStyle, flex: 1 }}
                 >
                   {ORDER_STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>
+                    <option key={s} value={s}>{formatAdminOrderStatusLabel(s)}</option>
                   ))}
                 </select>
                 <button
@@ -411,17 +446,17 @@ const AdminOrderDetailsPage = () => {
                     whiteSpace: 'nowrap', fontFamily: 'inherit',
                   }}
                 >
-                  Update
+                  {t("orders:details.payment.update")}
                 </button>
               </div>
             </div>
 
             {/* Payment status */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 500, color: colors.textSecondary }}>Payment Status</div>
-              <Pill value={order.paymentStatus} palette={PAYMENT_STATUS_STYLES} />
+              <div style={{ fontSize: '13px', fontWeight: 500, color: colors.textSecondary }}>{t("orders:details.payment.paymentStatus")}</div>
+              <Pill value={order.paymentStatus} palette={PAYMENT_STATUS_STYLES} kind="payment" />
               <div style={{ fontSize: '12px', color: colors.textMuted }}>
-                Method: {order.paymentMethod || '—'}
+                {t("orders:details.payment.methodPrefix")} {order.paymentMethod || '—'}
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
                 <select
@@ -432,7 +467,7 @@ const AdminOrderDetailsPage = () => {
                   {[order.paymentStatus, ...PAYMENT_STATUS_OPTIONS]
                     .filter((v, i, arr) => v && arr.indexOf(v) === i)
                     .map((s) => (
-                      <option key={s} value={s}>{s.replaceAll('_', ' ')}</option>
+                      <option key={s} value={s}>{formatAdminPaymentStatusLabel(s)}</option>
                     ))}
                 </select>
                 <button
@@ -447,11 +482,33 @@ const AdminOrderDetailsPage = () => {
                     whiteSpace: 'nowrap', fontFamily: 'inherit',
                   }}
                 >
-                  Update
+                  {t("orders:details.payment.update")}
                 </button>
               </div>
             </div>
           </div>
+
+          {order.paymentMethod === "bank_transfer" && order.bankTransferProofUrl && (
+            <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: `1px solid ${colors.borderLight}` }}>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: colors.textSecondary, marginBottom: "10px" }}>
+                {t("orders:details.payment.bankProofTitle")}
+              </div>
+              <a href={order.bankTransferProofUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", maxWidth: "100%" }}>
+                <img
+                  src={order.bankTransferProofUrl}
+                  alt={t("orders:details.payment.bankProofAlt")}
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "360px",
+                    borderRadius: "10px",
+                    border: `1px solid ${colors.border}`,
+                    objectFit: "contain",
+                    background: colors.bg
+                  }}
+                />
+              </a>
+            </div>
+          )}
         </Card>
       </div>
     </div>

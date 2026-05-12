@@ -2,6 +2,7 @@
   "home": "בית",
   "products": "מוצרים",
   "cart": "עגלה",
+  "orders": "ההזמנות שלי",
   "checkout": "תשלום",
   "login": "התחברות",
   "register": "הרשמה",
@@ -9,5 +10,6 @@
   "greeting": "שלום, {{name}}",
   "language": "שפה",
   "brandName": "אבו אלאנאס",
-  "brandTagline": "פירות וירקות"
+  "brandTagline": "פירות וירקות",
+  "storeHoursLabel": "שעות פעילות"
 }

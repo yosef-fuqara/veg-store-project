@@ -5,11 +5,7 @@ import { Link } from "react-router-dom";
 import AbuAlAnasLogo from "./common/Logo";
 import DeveloperBrandMark from "./DeveloperBrandMark";
 import { CATEGORY_NAV_IDS } from "../utils/categoryFilter";
-
-const PHONES = [
-  { display: "054-348-6348", tel: "+972543486348" },
-  { display: "055-289-2790", tel: "+972552892790" },
-];
+import { STORE_CONTACT_PHONES } from "../config/storeContactPhones";
 
 const colors = {
   primary: "#1e6b3c",
@@ -155,7 +151,7 @@ const Footer = () => {
               {t("home:footer.phoneLabel")}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {PHONES.map(({ display, tel }) => (
+              {STORE_CONTACT_PHONES.map(({ display, tel }) => (
                 <a
                   key={tel}
                   href={`tel:${tel}`}

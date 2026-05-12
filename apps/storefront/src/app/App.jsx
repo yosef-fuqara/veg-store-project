@@ -1,29 +1,38 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
+import { Phone } from "lucide-react";
 import PageTransition from "../components/common/PageTransition";
 import AbuAlAnasLogo from "../components/common/Logo";
+import { STORE_CONTACT_PHONES } from "../config/storeContactPhones";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import Footer from "../components/Footer";
-import WhatsAppFloat from "../components/WhatsAppFloat";
 import PromotionPopup from "../components/PromotionPopup";
+import StoreClosedSection from "../components/StoreClosedSection";
+import StoreClosedEntryModal from "../components/StoreClosedEntryModal";
 import RequireAuth from "../components/RequireAuth";
 import { useDir } from "../i18n/useDir";
 import { useAuth } from "../features/auth/AuthContext";
-import { useCart } from "../features/cart/CartContext";
+import { useStoreSettings } from "../features/store/StoreSettingsContext";
 import { useCartVisualFeedback } from "../features/cart/CartVisualFeedbackContext";
+import { useCartDrawer } from "../features/cart/CartDrawerContext";
+import { CartDrawerHost } from "../components/CartDrawer";
 import CartPage from "../pages/CartPage";
 import CheckoutPage from "../pages/CheckoutPage";
 import HomePage from "../pages/HomePage";
 import LoginPage from "../pages/LoginPage";
+import ForgotPasswordPage from "../pages/ForgotPasswordPage";
+import ResetPasswordPage from "../pages/ResetPasswordPage";
 import OrderConfirmationPage from "../pages/OrderConfirmationPage";
+import OrderHistoryPage from "../pages/OrderHistoryPage";
 import RegisterPage from "../pages/RegisterPage";
 
 const colors = {
   primary:        '#1e6b3c',
   primaryHover:   '#165430',
   primarySurface: '#eef7f1',
+  primaryBorder:  '#a3cfb4',
   border:         '#e8e3dc',
   bg:             '#faf8f5',
   surface:        '#ffffff',
@@ -150,66 +159,43 @@ const CartAnchorPulse = ({ bumpKey, anchorRef, inlineFlexStyle, children }) => {
   );
 };
 
-// ─── Cart badge link ──────────────────────────────────────────────────────────
-const CartBadge = ({ qty }) =>
-  qty > 0 ? (
-    <span style={{
-      position: 'absolute',
-      top: '-6px',
-      insetInlineEnd: '-8px',
-      minWidth: '16px',
-      height: '16px',
-      borderRadius: '9999px',
-      background: colors.primary,
-      color: '#fff',
-      fontSize: '10px',
-      fontWeight: 700,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '0 3px',
-      lineHeight: 1,
-    }}>
-      {qty > 99 ? '99+' : qty}
-    </span>
-  ) : null;
-
-const CartNavLink = ({ t }) => {
-  const { cart } = useCart();
+const CartNavButton = ({ t }) => {
+  const { openCartDrawer } = useCartDrawer();
   const { desktopCartAnchorRef, cartBumpKey } = useCartVisualFeedback();
-  const qty = cart.items.reduce((s, i) => s + (i.quantity || 0), 0);
   return (
-    <NavLink to="/cart" style={getLinkStyle}>
-      {({ isActive }) => (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          <CartAnchorPulse
-            bumpKey={cartBumpKey}
-            anchorRef={desktopCartAnchorRef}
-            inlineFlexStyle={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
-          >
-            <CartIcon size={17} />
-            <CartBadge qty={qty} />
-          </CartAnchorPulse>
-          {t('cart')}
-        </span>
-      )}
-    </NavLink>
+    <button
+      type="button"
+      onClick={() => openCartDrawer()}
+      style={{ ...navLinkBase, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}
+    >
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+        <CartAnchorPulse
+          bumpKey={cartBumpKey}
+          anchorRef={desktopCartAnchorRef}
+          inlineFlexStyle={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}
+        >
+          <CartIcon size={17} />
+        </CartAnchorPulse>
+        {t('cart')}
+      </span>
+    </button>
   );
 };
 
 // Mobile cart icon (top bar — icon only)
 const MobileCartIcon = ({ t }) => {
-  const { cart } = useCart();
+  const { openCartDrawer } = useCartDrawer();
   const { mobileCartAnchorRef, cartBumpKey } = useCartVisualFeedback();
-  const qty = cart.items.reduce((s, i) => s + (i.quantity || 0), 0);
   return (
-    <NavLink
-      to="/cart"
+    <button
+      type="button"
       aria-label={t('cart')}
+      onClick={() => openCartDrawer()}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: '40px', height: '40px', borderRadius: '10px', color: colors.textPrimary, textDecoration: 'none',
-        transition: 'background 0.15s'
+        width: '40px', height: '40px', borderRadius: '10px', color: colors.textPrimary,
+        border: 'none', background: 'transparent',
+        transition: 'background 0.15s', cursor: 'pointer'
       }}
     >
       <CartAnchorPulse
@@ -223,9 +209,157 @@ const MobileCartIcon = ({ t }) => {
         }}
       >
         <CartIcon size={20} />
-        <CartBadge qty={qty} />
       </CartAnchorPulse>
-    </NavLink>
+    </button>
+  );
+};
+
+const NAV_PHONE_POPOVER_ID = 'nav-phone-contact-popover';
+
+/** Phone icon + popover with STORE_CONTACT_PHONES tel: links; closes on outside click, Escape, route change, or mobile menu open. */
+const NavPhonePopover = ({ t, dir, menuOpen }) => {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const location = useLocation();
+
+  useEffect(() => setOpen(false), [location.pathname]);
+  useEffect(() => {
+    if (menuOpen) setOpen(false);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e) => {
+      const el = wrapRef.current;
+      const target = /** @type {Node | null} */ (e.target);
+      if (el && target && !el.contains(target)) setOpen(false);
+    };
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('touchstart', onPointerDown, { passive: true });
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('touchstart', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  const label = t('home:footer.phoneLabel');
+  const iconBtnStyle = (expanded) => ({
+    width: '40px',
+    height: '40px',
+    borderRadius: '10px',
+    border: 'none',
+    background: expanded ? colors.primarySurface : 'transparent',
+    color: expanded ? colors.primary : colors.textPrimary,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'background 0.15s, color 0.15s',
+    flexShrink: 0,
+  });
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-controls={NAV_PHONE_POPOVER_ID}
+        aria-label={label}
+        onClick={() => setOpen((o) => !o)}
+        style={iconBtnStyle(open)}
+      >
+        <Phone size={20} strokeWidth={2} aria-hidden />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="nav-phone-pop"
+            id={NAV_PHONE_POPOVER_ID}
+            role="dialog"
+            aria-label={label}
+            dir={dir}
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 8px)',
+              insetInlineEnd: 0,
+              minWidth: 220,
+              maxWidth: 'min(92vw, 280px)',
+              padding: '14px 16px',
+              background: colors.surface,
+              border: `1px solid ${colors.border}`,
+              borderRadius: 12,
+              boxShadow: shadow.lg,
+              zIndex: 150,
+              boxSizing: 'border-box',
+            }}
+          >
+            <p
+              style={{
+                margin: '0 0 12px',
+                fontSize: 12,
+                fontWeight: 600,
+                color: colors.textSecondary,
+                letterSpacing: '0.02em',
+                lineHeight: 1.35,
+              }}
+            >
+              {label}
+            </p>
+            <ul
+              style={{
+                listStyle: 'none',
+                margin: 0,
+                padding: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+              }}
+            >
+              {STORE_CONTACT_PHONES.map(({ display, tel }) => (
+                <li key={tel}>
+                  <a
+                    href={`tel:${tel}`}
+                    onClick={() => setOpen(false)}
+                    style={{
+                      display: 'block',
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: colors.primary,
+                      textDecoration: 'none',
+                      padding: '8px 10px',
+                      marginInline: '-10px',
+                      borderRadius: 8,
+                      unicodeBidi: 'plaintext',
+                      transition: 'background 0.12s, color 0.12s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = colors.primarySurface;
+                      e.currentTarget.style.color = colors.primaryHover;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = colors.primary;
+                    }}
+                  >
+                    {display}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 
@@ -234,9 +368,26 @@ const AppNav = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation('nav');
+  const { openCartDrawer } = useCartDrawer();
+  const { t, i18n } = useTranslation(['nav', 'home']);
+  const lang = String(i18n.language || 'he').split('-')[0].toLowerCase();
+  const dir = lang === 'he' || lang === 'ar' ? 'rtl' : 'ltr';
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { settings: storeSettings, loading: storeSettingsLoading } = useStoreSettings();
+
+  const navStoreHoursCompact = useMemo(() => {
+    if (storeSettingsLoading || !storeSettings) return null;
+    const DEFAULT_OPEN = "09:00";
+    const DEFAULT_CLOSE = "21:00";
+    const open = String(storeSettings.operatingOpenLocal || "").trim();
+    const close = String(storeSettings.operatingCloseLocal || "").trim();
+    if (!open || !close || open === close) return null;
+    const isDefaultPair = open === DEFAULT_OPEN && close === DEFAULT_CLOSE;
+    const shouldShow = storeSettings.operatingHoursEnabled === true || !isDefaultPair;
+    if (!shouldShow) return null;
+    return `${open}\u2013${close}`;
+  }, [storeSettings, storeSettingsLoading]);
 
   useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
@@ -286,12 +437,19 @@ const AppNav = () => {
         <Link
           to="/"
           onClick={handleHomeNavClick}
-          style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', flexShrink: 0 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            textDecoration: 'none',
+            flexShrink: 0,
+            minWidth: 0,
+          }}
           aria-label="Home"
         >
           <AbuAlAnasLogo size={52} />
           {!isMobile && (
-            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25, minWidth: 0 }}>
               <span style={{ fontSize: '14px', fontWeight: 700, color: colors.textPrimary, letterSpacing: '-0.2px' }}>
                 {t('brandName')}
               </span>
@@ -301,6 +459,39 @@ const AppNav = () => {
             </div>
           )}
         </Link>
+
+        <div
+          dir={dir}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            flexShrink: 1,
+            minWidth: 0,
+          }}
+        >
+          <NavPhonePopover t={t} dir={dir} menuOpen={menuOpen} />
+          {navStoreHoursCompact ? (
+            <span
+              title={`${t('nav:storeHoursLabel')} ${navStoreHoursCompact}`}
+              style={{
+                fontSize: isMobile ? 11 : 12,
+                fontWeight: 600,
+                color: colors.textSecondary,
+                whiteSpace: 'nowrap',
+                letterSpacing: '0.02em',
+                lineHeight: 1.2,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                minWidth: 0,
+                maxWidth: isMobile ? 200 : 320,
+              }}
+              aria-label={`${t('nav:storeHoursLabel')} ${navStoreHoursCompact}`}
+            >
+              {t('nav:storeHoursLabel')} {navStoreHoursCompact}
+            </span>
+          ) : null}
+        </div>
 
         <div style={{ flex: 1 }} />
 
@@ -337,7 +528,8 @@ const AppNav = () => {
               >
                 {t('products')}
               </button>
-              <CartNavLink t={t} />
+              {user && <NavLink to="/orders" style={getLinkStyle}>{t('orders')}</NavLink>}
+              <CartNavButton t={t} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
@@ -434,7 +626,14 @@ const AppNav = () => {
             >
               <NavLink to="/" end style={({ isActive }) => mobileItemStyle(isActive)} onClick={handleHomeNavClick}>{t('home')}</NavLink>
               <button onClick={handleProductsClick} style={mobileItemStyle()}>{t('products')}</button>
-              <NavLink to="/cart" style={({ isActive }) => mobileItemStyle(isActive)}>{t('cart')}</NavLink>
+              {user && <NavLink to="/orders" style={({ isActive }) => mobileItemStyle(isActive)}>{t('orders')}</NavLink>}
+              <button
+                type="button"
+                onClick={() => { openCartDrawer(); setMenuOpen(false); }}
+                style={mobileItemStyle()}
+              >
+                {t('cart')}
+              </button>
 
               <div style={{ height: '1px', background: colors.border, margin: '8px 0' }} />
 
@@ -480,8 +679,33 @@ const AppNav = () => {
   );
 };
 
+const STORE_CLOSED_POPUP_SESSION = "vegstore.storeClosedEntryDismissed";
+
 const App = () => {
   useDir();
+  const { isStoreClosed, settings, loading: storeSettingsLoading } = useStoreSettings();
+
+  const [storeClosedPopupDismissed, setStoreClosedPopupDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem(STORE_CLOSED_POPUP_SESSION) === "1";
+  });
+
+  useEffect(() => {
+    if (settings?.isStoreOpen !== false && typeof window !== "undefined") {
+      sessionStorage.removeItem(STORE_CLOSED_POPUP_SESSION);
+      setStoreClosedPopupDismissed(false);
+    }
+  }, [settings?.isStoreOpen]);
+
+  const dismissStoreClosedPopup = useCallback(() => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem(STORE_CLOSED_POPUP_SESSION, "1");
+    }
+    setStoreClosedPopupDismissed(true);
+  }, []);
+
+  const storeClosedReady = !storeSettingsLoading && isStoreClosed && settings;
+  const showStoreClosedBanner = Boolean(storeClosedReady && storeClosedPopupDismissed);
 
   const [initialLoad, setInitialLoad] = useState(true);
   useEffect(() => {
@@ -493,17 +717,30 @@ const App = () => {
     <div style={appRootStyle}>
       <PageTransition isLoading={initialLoad} />
       <AppNav />
+      {storeClosedReady ? (
+        <StoreClosedEntryModal
+          open={!storeClosedPopupDismissed}
+          settings={settings}
+          onDismiss={dismissStoreClosedPopup}
+        />
+      ) : null}
+      {showStoreClosedBanner ? (
+        <StoreClosedSection settings={settings} variant="banner" />
+      ) : null}
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/cart" element={<RequireAuth><CartPage /></RequireAuth>} />
         <Route path="/checkout" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
+        <Route path="/orders" element={<RequireAuth><OrderHistoryPage /></RequireAuth>} />
         <Route path="/orders/:id" element={<RequireAuth><OrderConfirmationPage /></RequireAuth>} />
       </Routes>
       <Footer />
-      <WhatsAppFloat />
-      <PromotionPopup />
+      {!isStoreClosed ? <PromotionPopup /> : null}
+      <CartDrawerHost />
     </div>
   );
 };

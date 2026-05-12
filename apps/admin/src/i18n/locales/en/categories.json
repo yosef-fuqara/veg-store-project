@@ -1,0 +1,66 @@
+{
+  "list": {
+    "pageTitle": "Categories",
+    "pageSubtitle": "Organize catalog groups; removing a category hides its products on the storefront",
+    "addCategory": "Add category",
+    "productsLink": "Products",
+    "loadFailed": "Failed to load categories",
+    "empty": {
+      "title": "No categories yet",
+      "subtitle": "Create a category to group products."
+    },
+    "tableHeaders": {
+      "actions": "Actions",
+      "products": "Products",
+      "status": "Status",
+      "slug": "Slug",
+      "name": "Name"
+    },
+    "deleteButton": "Delete category",
+    "modal": {
+      "title": "Delete category?",
+      "body": "<bold>{{name}}</bold> may contain products. This action <bold>removes the category from the public storefront</bold> (soft delete). Products stay in admin but are hidden from shoppers until you move them to another category.",
+      "noProducts": "This category currently has no products assigned.",
+      "withProducts_one": "This category currently has {{count}} product assigned.",
+      "withProducts_other": "This category currently has {{count}} products assigned.",
+      "confirm": "Delete category",
+      "removing": "Removing…"
+    },
+    "toasts": {
+      "removed": "Category removed. Linked products are hidden from the storefront.",
+      "removeFailed": "Could not remove category"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "frozen": "Frozen",
+      "removed": "Removed"
+    }
+  },
+  "form": {
+    "title": "New category",
+    "subtitle": "Add a category for organizing products in the catalog",
+    "sectionTitle": "Category details",
+    "fields": {
+      "nameAllLangs": "Category name (all languages) *",
+      "nameAr": "Arabic (ar)",
+      "nameHe": "Hebrew (he)",
+      "nameEn": "English (en)",
+      "nameEnHint": "Used as the base for the URL slug when possible",
+      "description": "Description",
+      "descriptionHint": "Optional — shown where category text is used",
+      "status": "Status",
+      "active": "Active (visible in storefront when not frozen)",
+      "frozen": "Frozen (admin-only; blocks new products using this category)"
+    },
+    "buttons": {
+      "submit": "Create category",
+      "saving": "Saving…",
+      "cancel": "Cancel"
+    },
+    "toasts": {
+      "created": "Category created successfully.",
+      "createFailed": "Failed to create category"
+    }
+  }
+}

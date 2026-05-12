@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import RequireAuth from "../components/RequireAuth";
 import RequireAdmin from "../components/RequireAdmin";
 import { useAuth } from "../features/auth/AuthContext";
@@ -13,7 +14,12 @@ import AdminOrdersPage from "../pages/AdminOrdersPage";
 import AdminOrderDetailsPage from "../pages/AdminOrderDetailsPage";
 import AdminSalesDashboardPage from "../pages/AdminSalesDashboardPage";
 import AdminPromotionsPage from "../pages/AdminPromotionsPage";
+import AdminStoreStatusPage from "../pages/AdminStoreStatusPage";
 import AbuAlAnasLogo from "../components/common/Logo";
+import * as storeSettingsService from "../services/storeSettingsService";
+import { formatApiError } from "../utils/formatApiError";
+import { useAdminLanguage } from "../i18n/useAdminLanguage";
+import LanguageSwitcher from "../i18n/LanguageSwitcher";
 
 const MOBILE_MAX_WIDTH = 767;
 const MOBILE_MEDIA = `(max-width: ${MOBILE_MAX_WIDTH}px)`;
@@ -32,7 +38,7 @@ const colors = {
 const NAV_ITEMS = [
   {
     to: '/products',
-    label: 'Products',
+    labelKey: 'items.products',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -43,7 +49,7 @@ const NAV_ITEMS = [
   },
   {
     to: '/categories',
-    label: 'Categories',
+    labelKey: 'items.categories',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 7h16M4 12h16M4 17h10"/>
@@ -54,7 +60,7 @@ const NAV_ITEMS = [
   },
   {
     to: '/orders',
-    label: 'Orders',
+    labelKey: 'items.orders',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
@@ -64,7 +70,7 @@ const NAV_ITEMS = [
   },
   {
     to: '/sales',
-    label: 'Sales',
+    labelKey: 'items.sales',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="12" y1="20" x2="12" y2="10" />
@@ -75,11 +81,21 @@ const NAV_ITEMS = [
   },
   {
     to: '/promotions',
-    label: 'Popups',
+    labelKey: 'items.popups',
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="5" width="18" height="14" rx="2" />
         <path d="M7 9h10M7 13h6" />
+      </svg>
+    ),
+  },
+  {
+    to: '/store-status',
+    labelKey: 'items.storeStatus',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
       </svg>
     ),
   },
@@ -101,23 +117,29 @@ function useIsMobileNav() {
   return isMobile;
 }
 
-function useIsRtl() {
-  const [isRtl, setIsRtl] = useState(false);
-
-  useLayoutEffect(() => {
-    const read = () => setIsRtl(document.documentElement.getAttribute('dir') === 'rtl');
-    read();
-    const observer = new MutationObserver(read);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['dir'] });
-    return () => observer.disconnect();
-  }, []);
-
-  return isRtl;
-}
-
 const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
   const { user, logout } = useAuth();
+  const { t } = useTranslation(["nav", "storeStatus"]);
   const [hovered, setHovered] = useState('');
+  const [storeOpen, setStoreOpen] = useState(null);
+  const [storeToggleBusy, setStoreToggleBusy] = useState(false);
+  const [storeToggleError, setStoreToggleError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setStoreToggleError('');
+      try {
+        const s = await storeSettingsService.getStoreSettings();
+        if (!cancelled) setStoreOpen(s?.isStoreOpen !== false);
+      } catch (e) {
+        if (!cancelled) setStoreToggleError(formatApiError(e));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const slideMotion = 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)';
   const offCanvasX = isRtl ? '-100%' : '100%';
@@ -168,13 +190,13 @@ const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
       {/* Brand */}
       <div style={{ padding: '24px 20px 20px', borderBottom: `1px solid ${colors.border}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <AbuAlAnasLogo size={42} title="Abu Al-Anas" />
+          <AbuAlAnasLogo size={42} title={t('nav:brand')} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: colors.textPrimary, lineHeight: 1.2 }}>
-              Abu Al-Anas
+              {t('nav:brand')}
             </div>
             <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '1px', color: colors.textMuted, textTransform: 'uppercase', marginTop: '2px' }}>
-              Admin Panel
+              {t('nav:adminPanel')}
             </div>
           </div>
         </div>
@@ -183,11 +205,78 @@ const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
             {user.name || user.email}
           </div>
         )}
+        {/* Language switcher: desktop sidebar */}
+        {!isMobile && (
+          <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-start' }}>
+            <LanguageSwitcher size="sm" />
+          </div>
+        )}
+      </div>
+
+      {/* Quick store toggle */}
+      <div style={{ padding: '0 12px 14px', borderBottom: `1px solid ${colors.border}`, paddingTop: '14px' }}>
+        <button
+          type="button"
+          disabled={storeOpen === null || storeToggleBusy}
+          onClick={async () => {
+            if (storeOpen === null) return;
+            const next = !storeOpen;
+            setStoreToggleBusy(true);
+            setStoreToggleError('');
+            try {
+              await storeSettingsService.patchStoreSettings({ isStoreOpen: next, reopenAt: null });
+              setStoreOpen(next);
+              if (isMobile) onMobileClose();
+            } catch (e) {
+              setStoreToggleError(formatApiError(e));
+            } finally {
+              setStoreToggleBusy(false);
+            }
+          }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '11px 14px',
+            borderRadius: '10px',
+            fontSize: '13px',
+            fontWeight: 700,
+            color: '#fff',
+            background:
+              storeOpen === null ? '#78716c' : storeOpen === false ? colors.primary : '#b45309',
+            boxShadow:
+              storeOpen === null
+                ? 'none'
+                : storeOpen === false
+                  ? '0 2px 8px rgba(30,107,60,0.22)'
+                  : '0 2px 8px rgba(180,83,9,0.25)',
+            border: '2px solid transparent',
+            boxSizing: 'border-box',
+            width: '100%',
+            textAlign: 'center',
+            lineHeight: 1.35,
+            cursor: storeOpen === null || storeToggleBusy ? 'wait' : 'pointer',
+            opacity: storeOpen === null || storeToggleBusy ? 0.75 : 1,
+            fontFamily: 'inherit',
+          }}
+        >
+          {storeOpen === null
+            ? t('storeStatus:buttons.loadingStore')
+            : storeOpen
+              ? t('storeStatus:buttons.closeStore')
+              : t('storeStatus:buttons.openStore')}
+        </button>
+        {storeToggleError ? (
+          <div style={{ marginTop: 8, fontSize: 11, color: colors.error, lineHeight: 1.35 }} role="alert">
+            {storeToggleError}
+          </div>
+        ) : null}
       </div>
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        {NAV_ITEMS.map(({ to, label, icon }) => (
+        {NAV_ITEMS.map(({ to, labelKey, icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -211,7 +300,7 @@ const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
                 <span style={{ color: isActive ? colors.primary : colors.textMuted, display: 'flex', alignItems: 'center' }}>
                   {icon}
                 </span>
-                {label}
+                {t(`nav:${labelKey}`)}
                 {isActive && (
                   <span style={{ marginInlineStart: 'auto', fontSize: '12px', color: colors.primary }}>›</span>
                 )}
@@ -243,7 +332,7 @@ const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
               transition: 'background 0.12s',
             }}
           >
-            Sign Out
+            {t('nav:signOut')}
           </button>
         </div>
       )}
@@ -251,89 +340,97 @@ const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
   );
 };
 
-const MobileNavBackdrop = ({ open, onClose }) => (
-  <button
-    type="button"
-    aria-label="Close menu"
-    onClick={onClose}
-    style={{
-      position: 'fixed',
-      inset: 0,
-      zIndex: 999,
-      border: 'none',
-      padding: 0,
-      margin: 0,
-      cursor: 'pointer',
-      WebkitTapHighlightColor: 'transparent',
-      background: 'rgba(28, 25, 23, 0.45)',
-      opacity: open ? 1 : 0,
-      visibility: open ? 'visible' : 'hidden',
-      pointerEvents: open ? 'auto' : 'none',
-      transition: 'opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.28s',
-    }}
-  />
-);
-
-const MobileTopBar = ({ onOpenMenu, menuOpen }) => (
-  <header
-    style={{
-      display: 'none',
-      alignItems: 'center',
-      gap: '12px',
-      padding: '12px 16px',
-      background: colors.surface,
-      borderBottom: `1px solid ${colors.border}`,
-      position: 'sticky',
-      top: 0,
-      zIndex: 40,
-      flexShrink: 0,
-    }}
-    className="admin-mobile-topbar"
-  >
+const MobileNavBackdrop = ({ open, onClose }) => {
+  const { t } = useTranslation("common");
+  return (
     <button
       type="button"
-      onClick={onOpenMenu}
-      aria-label="Open menu"
-      aria-expanded={menuOpen}
-      aria-controls="admin-app-sidebar"
+      aria-label={t("closeMenu")}
+      onClick={onClose}
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '40px',
-        height: '40px',
-        borderRadius: '10px',
-        border: `1px solid ${colors.border}`,
-        background: colors.bg,
-        color: colors.textPrimary,
-        cursor: 'pointer',
+        position: 'fixed',
+        inset: 0,
+        zIndex: 999,
+        border: 'none',
         padding: 0,
-        flexShrink: 0,
+        margin: 0,
+        cursor: 'pointer',
         WebkitTapHighlightColor: 'transparent',
+        background: 'rgba(28, 25, 23, 0.45)',
+        opacity: open ? 1 : 0,
+        visibility: open ? 'visible' : 'hidden',
+        pointerEvents: open ? 'auto' : 'none',
+        transition: 'opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.28s',
       }}
+    />
+  );
+};
+
+const MobileTopBar = ({ onOpenMenu, menuOpen }) => {
+  const { t } = useTranslation(["nav", "common"]);
+  return (
+    <header
+      style={{
+        display: 'none',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '12px 16px',
+        background: colors.surface,
+        borderBottom: `1px solid ${colors.border}`,
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+        flexShrink: 0,
+      }}
+      className="admin-mobile-topbar"
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-        <line x1="4" y1="7" x2="20" y2="7" />
-        <line x1="4" y1="12" x2="20" y2="12" />
-        <line x1="4" y1="17" x2="20" y2="17" />
-      </svg>
-    </button>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-      <AbuAlAnasLogo size={32} aria-hidden />
-      <span style={{ fontSize: '14px', fontWeight: 700, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-        Admin
-      </span>
-    </div>
-  </header>
-);
+      <button
+        type="button"
+        onClick={onOpenMenu}
+        aria-label={t("common:openMenu")}
+        aria-expanded={menuOpen}
+        aria-controls="admin-app-sidebar"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '40px',
+          height: '40px',
+          borderRadius: '10px',
+          border: `1px solid ${colors.border}`,
+          background: colors.bg,
+          color: colors.textPrimary,
+          cursor: 'pointer',
+          padding: 0,
+          flexShrink: 0,
+          WebkitTapHighlightColor: 'transparent',
+        }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+          <line x1="4" y1="7" x2="20" y2="7" />
+          <line x1="4" y1="12" x2="20" y2="12" />
+          <line x1="4" y1="17" x2="20" y2="17" />
+        </svg>
+      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+        <AbuAlAnasLogo size={32} aria-hidden />
+        <span style={{ fontSize: '14px', fontWeight: 700, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {t('nav:admin')}
+        </span>
+      </div>
+      <LanguageSwitcher size="sm" />
+    </header>
+  );
+};
 
 const App = () => {
   const { user } = useAuth();
   const location = useLocation();
+  // Sync <html lang/dir> with the current admin language (and persist to localStorage via i18n detector).
+  const { isRtl } = useAdminLanguage();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/unauthorized';
   const showSidebar = user?.role === 'admin' && !isAuthPage;
   const isMobile = useIsMobileNav();
-  const isRtl = useIsRtl();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const closeMobileNav = useCallback(() => setMobileNavOpen(false), []);
@@ -371,6 +468,11 @@ const App = () => {
       ? '20px 16px 28px'
       : '36px 40px';
 
+  // In LTR the sidebar should sit on the left (default row), in RTL on the right (row-reverse so it
+  // appears on the inline-end side visually). This keeps "natural" RTL layout for Hebrew without
+  // breaking the LTR English layout.
+  const shellDirection = isRtl ? 'row-reverse' : 'row';
+
   return (
     <>
       <style>{`
@@ -381,7 +483,7 @@ const App = () => {
       <div
         style={{
           display: 'flex',
-          flexDirection: 'row-reverse',
+          flexDirection: shellDirection,
           minHeight: '100vh',
           background: colors.bg,
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -425,6 +527,7 @@ const App = () => {
               <Route path="/orders/:id" element={<RequireAuth><RequireAdmin><AdminOrderDetailsPage /></RequireAdmin></RequireAuth>} />
               <Route path="/sales" element={<RequireAuth><RequireAdmin><AdminSalesDashboardPage /></RequireAdmin></RequireAuth>} />
               <Route path="/promotions" element={<RequireAuth><RequireAdmin><AdminPromotionsPage /></RequireAdmin></RequireAuth>} />
+              <Route path="/store-status" element={<RequireAuth><RequireAdmin><AdminStoreStatusPage /></RequireAdmin></RequireAuth>} />
               <Route path="/" element={<Navigate to="/products" replace />} />
             </Routes>
           </div>

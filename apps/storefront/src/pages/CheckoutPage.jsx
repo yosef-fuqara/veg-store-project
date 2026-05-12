@@ -13,10 +13,14 @@ import {
   estimateDeliveryFee
 } from "../config/delivery";
 import { useCart } from "../features/cart/CartContext";
+import { useStoreSettings } from "../features/store/StoreSettingsContext";
+import BusinessHoursNoticeModal from "../components/BusinessHoursNoticeModal";
+import StoreClosedSection from "../components/StoreClosedSection";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import * as cartService from "../services/cartService";
 import * as orderService from "../services/orderService";
-import { formatPrice } from "../utils/formatPrice";
+import { formatPrice, formatChargedTotal } from "../utils/formatPrice";
+import { formatQtyDisplay, formatApproxWeightQuantity } from "../utils/cartLineQuantity";
 import { deliveryAreaOptionLabel } from "../utils/deliveryAreaDisplay";
 import { getLocalizedProductName } from "../utils/localizedProduct";
 import {
@@ -24,6 +28,8 @@ import {
   loadCheckoutDraft,
   VEGSTORE_CHECKOUT_DRAFT_KEY
 } from "../utils/vegstorePersistence";
+import { isOutsideConfiguredBusinessHoursNow } from "../utils/businessHoursNotice";
+import { normalizeIsraeliMobile } from "../utils/israeliMobilePhone";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -164,6 +170,7 @@ const CHECKOUT_FIELD_SCROLL_ORDER = [
   "customerPhone",
   "notes",
   "paymentMethod",
+  "bankTransferProof",
 ];
 
 const getFirstFieldErrorKey = (errors) => {
@@ -193,8 +200,9 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshCart } = useCart();
+  const { settings, loading: storeSettingsLoading, canOrderNow } = useStoreSettings();
   const [, setCheckoutDraft] = useLocalStorage(VEGSTORE_CHECKOUT_DRAFT_KEY, null);
-  const { t, i18n } = useTranslation("checkout");
+  const { t, i18n } = useTranslation(["checkout", "cart", "home", "storeClosed"]);
   const lang = (i18n.language || "he").split("-")[0];
   const isNarrow = useIsNarrowCheckout();
 
@@ -218,6 +226,10 @@ const CheckoutPage = () => {
   const [submitError, setSubmitError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [focused, setFocused] = useState(null);
+  const [bankTransferProofFile, setBankTransferProofFile] = useState(null);
+  const [businessHoursNoticeOpen, setBusinessHoursNoticeOpen] = useState(false);
+  const businessHoursNoticeAcknowledgedRef = useRef(false);
+  const checkoutSubmitInFlightRef = useRef(false);
 
   const fieldElRefs = useRef({});
   const assignFieldRef = (key) => (el) => {
@@ -258,6 +270,12 @@ const CheckoutPage = () => {
       return { ...prev, deliveryArea: "" };
     });
   }, [areas]);
+
+  useEffect(() => {
+    if (form.paymentMethod !== "bank_transfer") {
+      setBankTransferProofFile(null);
+    }
+  }, [form.paymentMethod]);
 
   const checkoutDraftSlice = useMemo(
     () => ({
@@ -339,7 +357,8 @@ const CheckoutPage = () => {
     () => estimateDeliveryFee(form.deliveryArea, subtotal, rules),
     [form.deliveryArea, subtotal, rules]
   );
-  const total = subtotal + wrapTotal + deliveryFeeEstimate;
+  const rawTotal = subtotal + wrapTotal + deliveryFeeEstimate;
+  const payableTotal = Math.floor(rawTotal + Number.EPSILON);
 
   const updateAddress = (key) => (event) => {
     const value = event.target.value;
@@ -380,14 +399,26 @@ const CheckoutPage = () => {
         }
       }
     }
-    const phone = (form.customerPhone ?? "").trim();
-    if (!phone) {
-      fields.customerPhone = t("phoneRequired");
-    } else if (phone.length < 7) {
+    const phoneRaw = (form.customerPhone ?? "").trim();
+    if (!phoneRaw) {
+      fields.customerPhone = t("phoneEmpty");
+    } else if (!normalizeIsraeliMobile(phoneRaw)) {
       fields.customerPhone = t("phoneInvalid");
     }
     if (!form.paymentMethod || !PAYMENT_METHODS.some((m) => m.value === form.paymentMethod)) {
       fields.paymentMethod = t("paymentMethodRequired");
+    }
+    if (form.paymentMethod === "bank_transfer" && bankTransferProofFile) {
+      const maxBytes = 3 * 1024 * 1024;
+      if (bankTransferProofFile.size > maxBytes) {
+        fields.bankTransferProof = t("bankTransferProofTooLarge");
+      }
+      const okType = ["image/jpeg", "image/png", "image/webp", "image/jpg"].includes(
+        bankTransferProofFile.type
+      );
+      if (!okType) {
+        fields.bankTransferProof = t("bankTransferProofInvalidType");
+      }
     }
     if (Object.keys(fields).length > 0) {
       return { ok: false, fields };
@@ -395,9 +426,7 @@ const CheckoutPage = () => {
     return { ok: true };
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setSubmitting(true);
+  const executeCheckoutSubmit = async () => {
     setSubmitError("");
     setFieldErrors({});
 
@@ -405,14 +434,19 @@ const CheckoutPage = () => {
     if (!clientCheck.ok) {
       pendingScrollToFirstErrorRef.current = true;
       setFieldErrors(clientCheck.fields);
-      setSubmitting(false);
+      businessHoursNoticeAcknowledgedRef.current = false;
       return;
     }
+
+    if (checkoutSubmitInFlightRef.current) return;
+    checkoutSubmitInFlightRef.current = true;
+
+    setSubmitting(true);
 
     const payload = {
       deliveryAddress: { ...form.deliveryAddress },
       deliveryArea: form.deliveryArea,
-      customerPhone: form.customerPhone,
+      customerPhone: normalizeIsraeliMobile((form.customerPhone ?? "").trim()),
       notes: form.notes,
       paymentMethod: form.paymentMethod
     };
@@ -422,7 +456,12 @@ const CheckoutPage = () => {
     if (form.customRequest) payload.customRequest = form.customRequest;
 
     try {
-      const order = await orderService.createOrder(payload);
+      const order = await orderService.createOrder(payload, {
+        bankTransferProofFile:
+          form.paymentMethod === "bank_transfer" && bankTransferProofFile
+            ? bankTransferProofFile
+            : null
+      });
       clearOrderSuccessStorage();
       try {
         await refreshCart();
@@ -440,8 +479,68 @@ const CheckoutPage = () => {
       }
     } finally {
       setSubmitting(false);
+      checkoutSubmitInFlightRef.current = false;
+      businessHoursNoticeAcknowledgedRef.current = false;
     }
   };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (submitting || checkoutSubmitInFlightRef.current) return;
+    if (!canOrderNow) return;
+
+    setSubmitError("");
+    setFieldErrors({});
+
+    const clientCheck = validateClientSide();
+    if (!clientCheck.ok) {
+      pendingScrollToFirstErrorRef.current = true;
+      setFieldErrors(clientCheck.fields);
+      return;
+    }
+
+    if (
+      settings &&
+      isOutsideConfiguredBusinessHoursNow(settings) &&
+      !businessHoursNoticeAcknowledgedRef.current
+    ) {
+      setBusinessHoursNoticeOpen(true);
+      return;
+    }
+
+    void executeCheckoutSubmit();
+  };
+
+  const handleBusinessHoursNoticeConfirm = () => {
+    businessHoursNoticeAcknowledgedRef.current = true;
+    setBusinessHoursNoticeOpen(false);
+    void executeCheckoutSubmit();
+  };
+
+  const handleBusinessHoursNoticeDismiss = () => {
+    if (submitting) return;
+    setBusinessHoursNoticeOpen(false);
+  };
+
+  if (!storeSettingsLoading && !canOrderNow && settings) {
+    return (
+      <div style={{ ...pageStyle, paddingTop: 24 }}>
+        <StoreClosedSection settings={settings} variant="page" />
+        <p
+          style={{
+            textAlign: "center",
+            maxWidth: 480,
+            margin: "20px auto 0",
+            color: colors.textSecondary,
+            fontSize: 15,
+            lineHeight: 1.55,
+          }}
+        >
+          {t("checkoutBlockedHint", { ns: "storeClosed" })}
+        </p>
+      </div>
+    );
+  }
 
   if (previewLoading) {
     return (
@@ -486,6 +585,12 @@ const CheckoutPage = () => {
 
   return (
     <section style={pageStyle}>
+      <BusinessHoursNoticeModal
+        open={businessHoursNoticeOpen}
+        onConfirm={handleBusinessHoursNoticeConfirm}
+        onDismiss={handleBusinessHoursNoticeDismiss}
+        confirmDisabled={submitting}
+      />
       <h1 style={{ margin: '0 0 32px', fontSize: '30px', fontWeight: 700, color: colors.textPrimary }}>
         {t("title")}
       </h1>
@@ -572,7 +677,7 @@ const CheckoutPage = () => {
           {/* Phone */}
           <label style={labelStyle}>
             {t("phoneRequired")}
-            <input ref={assignFieldRef("customerPhone")} value={form.customerPhone} onChange={updateField("customerPhone")} minLength={7} maxLength={20} required onFocus={focus("phone")} onBlur={blur} style={inputStyle("customerPhone")} />
+            <input ref={assignFieldRef("customerPhone")} type="tel" inputMode="tel" autoComplete="tel-national" value={form.customerPhone} onChange={updateField("customerPhone")} maxLength={22} onFocus={focus("phone")} onBlur={blur} style={inputStyle("customerPhone")} />
             {fieldErr("customerPhone")}
           </label>
 
@@ -610,6 +715,32 @@ const CheckoutPage = () => {
             {fieldErr("paymentMethod")}
           </fieldset>
           </div>
+
+          {form.paymentMethod === "bank_transfer" && (
+            <div ref={assignFieldRef("bankTransferProof")}>
+              <label style={labelStyle}>
+                {t("bankTransferProofLabel")}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    setBankTransferProofFile(f || null);
+                  }}
+                  style={{
+                    ...inputBase,
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                    ...(fieldErrors.bankTransferProof ? { borderColor: colors.error } : {})
+                  }}
+                />
+                <span style={{ fontSize: "12px", color: colors.textMuted, display: "block", marginTop: "6px" }}>
+                  {t("bankTransferProofHint")}
+                </span>
+                {fieldErr("bankTransferProof")}
+              </label>
+            </div>
+          )}
 
           {/* Submit error */}
           <AnimatePresence>
@@ -664,7 +795,25 @@ const CheckoutPage = () => {
               <div key={item.product} style={{ padding: '10px 0', borderBottom: `1px solid ${colors.border}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '14px' }}>
                   <span style={{ color: colors.textPrimary }}>
-                    {getLocalizedProductName({ name: item.nameLocales ?? item.name }, lang)} × {item.quantity}
+                    {getLocalizedProductName({ name: item.nameLocales ?? item.name }, lang)}
+                    {item.purchaseMode === "amount" && item.requestedAmountIls != null ? (
+                      <>
+                        {" · "}
+                        {item.unit === "kg" || item.unit === "gram" ? (
+                          t("cart:purchaseByAmountLineDetail", {
+                            unitPrice: formatPrice(item.unitPrice, lang),
+                            unitLabel: t(`home:units.${item.unit}`),
+                            weight: formatApproxWeightQuantity(item.quantity, item.unit)
+                          })
+                        ) : (
+                          t("cart:purchaseByAmountNote", {
+                            amount: formatPrice(item.requestedAmountIls, lang)
+                          })
+                        )}
+                      </>
+                    ) : (
+                      <> × {formatQtyDisplay(item.quantity)}</>
+                    )}
                     {item.isPreorderOnly ? " ⏱" : ""}
                     {item.wrap && (
                       <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', background: colors.successSurface, color: colors.success, border: `1px solid ${colors.successBorder}` }}>
@@ -704,7 +853,7 @@ const CheckoutPage = () => {
             <span style={{ fontSize: '11px', color: colors.textMuted }}>{t("feeEstimateNote")}</span>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700, color: colors.textPrimary, paddingTop: '10px', borderTop: `1px solid ${colors.border}`, marginTop: '4px' }}>
               <span>{t("total")}</span>
-              <span>{formatPrice(total, lang)}</span>
+              <span>{formatChargedTotal(payableTotal, lang)}</span>
             </div>
           </div>
         </aside>

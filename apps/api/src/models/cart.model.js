@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+const PURCHASE_MODE = ["quantity", "amount"];
+
 const cartItemSchema = new mongoose.Schema(
   {
     product: {
@@ -10,11 +12,21 @@ const cartItemSchema = new mongoose.Schema(
     quantity: {
       type: Number,
       required: true,
-      min: 1
+      min: 0.01
     },
     unitPriceSnapshot: {
       type: Number,
       required: true,
+      min: 0
+    },
+    purchaseMode: {
+      type: String,
+      enum: PURCHASE_MODE,
+      default: "quantity"
+    },
+    // Customer's requested basket value in ₪ when purchaseMode is "amount".
+    requestedAmountIls: {
+      type: Number,
       min: 0
     },
     // Optional cling-film wrapping service. Only meaningful for kg-based

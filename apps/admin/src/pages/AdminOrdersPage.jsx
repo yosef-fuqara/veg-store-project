@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { getAdminOrders } from "../services/orderService";
+import { formatAdminOrderStatusLabel, formatAdminPaymentStatusLabel } from "../utils/adminOrderStatusLabel";
 
 const colors = {
   primary:      '#1e6b3c',
@@ -17,10 +19,11 @@ const colors = {
   errorBorder:  '#fecaca',
 };
 
-const ORDER_STATUS_OPTIONS = ['all', 'new', 'confirmed', 'preparing', 'ready_for_delivery', 'sent_with_delivery_company', 'delivered', 'cancelled'];
+const ORDER_STATUS_OPTIONS = ['all', 'new', 'seen', 'confirmed', 'preparing', 'ready_for_delivery', 'sent_with_delivery_company', 'delivered', 'cancelled'];
 
 const ORDER_STATUS_STYLES = {
   new:                       { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+  seen:                      { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
   confirmed:                 { bg: '#ecfeff', color: '#0e7490', border: '#a5f3fc' },
   preparing:                 { bg: '#f5f3ff', color: '#6d28d9', border: '#ddd6fe' },
   ready_for_delivery:        { bg: '#ecfccb', color: '#3f6212', border: '#bef264' },
@@ -38,14 +41,15 @@ const PAYMENT_STATUS_STYLES = {
   bank_transfer_approved:{ bg: '#dcfce7', color: '#166534', border: '#bbf7d0' },
 };
 
-const Pill = ({ value, palette }) => {
+const Pill = ({ value, palette, kind = "order" }) => {
   const s = palette[value] || { bg: '#f8fafc', color: '#475569', border: '#e2e8f0' };
-  const label = String(value || '—').replaceAll('_', ' ');
+  const label = kind === "payment" ? formatAdminPaymentStatusLabel(value) : formatAdminOrderStatusLabel(value);
+  const textTransform = /[\u0590-\u05FF]/.test(label) ? 'none' : 'capitalize';
   return (
     <span style={{
       display: 'inline-block', padding: '3px 10px', borderRadius: '9999px',
       background: s.bg, color: s.color, border: `1px solid ${s.border}`,
-      fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap', textTransform: 'capitalize',
+      fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap', textTransform,
     }}>
       {label}
     </span>
@@ -75,6 +79,7 @@ const interactiveBtn = {
 };
 
 const AdminOrdersPage = () => {
+  const { t } = useTranslation(["orders", "common"]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -92,11 +97,11 @@ const AdminOrdersPage = () => {
       const query = statusFilter === 'all' ? {} : { orderStatus: statusFilter };
       setOrders(await getAdminOrders(query));
     } catch (err) {
-      setError(err.userMessage || 'Failed to load orders');
+      setError(err.userMessage || t('orders:list.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -171,7 +176,7 @@ const AdminOrdersPage = () => {
           className="admin-orders-refresh"
           onClick={load}
           disabled={loading}
-          aria-label={loading ? 'Refreshing orders' : 'Refresh orders'}
+          aria-label={loading ? t('orders:list.refreshingAria') : t('orders:list.refreshAria')}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -194,14 +199,14 @@ const AdminOrdersPage = () => {
             <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
           </svg>
-          {loading ? 'Refreshing…' : 'Refresh'}
+          {loading ? t('orders:list.refreshing') : t('orders:list.refresh')}
         </button>
         <div style={{ textAlign: 'end', flex: '1 1 200px', minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: '36px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.5px' }}>
-            Orders
+            {t('orders:list.pageTitle')}
           </h1>
           <p style={{ margin: '8px 0 0', fontSize: '14px', color: colors.textMuted, lineHeight: 1.5 }}>
-            Monitor and process customer orders
+            {t('orders:list.pageSubtitle')}
           </p>
         </div>
       </div>
@@ -211,7 +216,7 @@ const AdminOrdersPage = () => {
         <div style={{ padding: '12px 16px', borderRadius: '10px', background: colors.errorBg, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
           <span style={{ minWidth: 0 }}>{error}</span>
           <button type="button" onClick={load} className="admin-orders-retry" style={{ flexShrink: 0, padding: '6px 12px', borderRadius: '8px', border: `1px solid ${colors.errorBorder}`, background: 'transparent', color: colors.error, cursor: 'pointer', fontSize: '12px', fontWeight: 600, ...interactiveBtn }}>
-            Retry
+            {t('common:retry')}
           </button>
         </div>
       )}
@@ -256,7 +261,7 @@ const AdminOrdersPage = () => {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
               </svg>
-              Filter
+              {t('common:filter')}
               {statusFilter !== 'all' && (
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: colors.primary, display: 'inline-block' }} />
               )}
@@ -297,7 +302,7 @@ const AdminOrdersPage = () => {
                       transition: 'background 0.12s',
                     }}
                   >
-                    {opt === 'all' ? 'All statuses' : opt.replaceAll('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                    {opt === 'all' ? t('common:allStatuses') : formatAdminOrderStatusLabel(opt)}
                   </button>
                 ))}
               </div>
@@ -314,8 +319,8 @@ const AdminOrdersPage = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search order number or customer…"
-              aria-label="Search orders"
+              placeholder={t('orders:list.searchPlaceholder')}
+              aria-label={t('orders:list.searchAria')}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               style={searchInputStyle}
@@ -327,7 +332,7 @@ const AdminOrdersPage = () => {
         {loading ? (
           <div style={{ padding: '8px 0 16px' }} aria-busy="true" aria-live="polite">
             <div style={{ padding: '12px 20px 8px', fontSize: '12px', fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Loading
+              {t('common:loadingDots')}
             </div>
             <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
               <table style={{ width: '100%', minWidth: '720px', borderCollapse: 'collapse' }}>
@@ -374,12 +379,12 @@ const AdminOrdersPage = () => {
               </svg>
             </div>
             <div style={{ fontSize: '15px', fontWeight: 600, color: colors.textPrimary, marginBottom: '6px' }}>
-              No orders found
+              {t('orders:list.empty.title')}
             </div>
             <div style={{ fontSize: '13px', color: colors.textMuted, lineHeight: 1.5 }}>
               {search || statusFilter !== 'all'
-                ? 'Try adjusting your search or filter.'
-                : 'New orders will appear here as they come in.'}
+                ? t('orders:list.empty.withSearch')
+                : t('orders:list.empty.withoutSearch')}
             </div>
           </div>
         ) : (
@@ -394,7 +399,15 @@ const AdminOrdersPage = () => {
             <table style={{ width: '100%', minWidth: '920px', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  {['Actions', 'Status', 'Payment', 'Total', 'Date', 'Customer', '# Order'].map((h) => (
+                  {[
+                    t('orders:list.tableHeaders.actions'),
+                    t('orders:list.tableHeaders.status'),
+                    t('orders:list.tableHeaders.payment'),
+                    t('orders:list.tableHeaders.total'),
+                    t('orders:list.tableHeaders.date'),
+                    t('orders:list.tableHeaders.customer'),
+                    t('orders:list.tableHeaders.orderNumber')
+                  ].map((h) => (
                     <th key={h} style={{
                       padding: '12px 16px',
                       textAlign: 'start',
@@ -446,7 +459,7 @@ const AdminOrdersPage = () => {
                         onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; e.currentTarget.style.borderColor = colors.primary; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; e.currentTarget.style.borderColor = colors.border; }}
                       >
-                        View
+                        {t('orders:list.view')}
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="9 18 15 12 9 6"/>
                         </svg>
@@ -460,7 +473,7 @@ const AdminOrdersPage = () => {
 
                     {/* Payment */}
                     <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
-                      <Pill value={order.paymentStatus} palette={PAYMENT_STATUS_STYLES} />
+                      <Pill value={order.paymentStatus} palette={PAYMENT_STATUS_STYLES} kind="payment" />
                     </td>
 
                     {/* Total */}
@@ -506,7 +519,7 @@ const AdminOrdersPage = () => {
                         </Link>
                         {order.hasPreorderItems && (
                           <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '9999px', background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', fontSize: '10px', fontWeight: 600 }}>
-                            Preorder
+                            {t('orders:list.preorder')}
                           </span>
                         )}
                       </div>
@@ -528,8 +541,8 @@ const AdminOrdersPage = () => {
             fontVariantNumeric: 'tabular-nums',
             textAlign: 'center',
           }}>
-            {filtered.length === 1 ? '1 order' : `${filtered.length} orders`}
-            {statusFilter !== 'all' && ` · ${statusFilter.replaceAll('_', ' ')}`}
+            {t('orders:list.footer', { count: filtered.length })}
+            {statusFilter !== 'all' && ` · ${formatAdminOrderStatusLabel(statusFilter)}`}
           </div>
         )}
       </div>

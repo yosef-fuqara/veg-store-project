@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../i18n/LanguageSwitcher";
 
 /** Full URL to the public storefront home (separate app from admin). */
 function getStorefrontHomeUrl() {
@@ -24,6 +26,7 @@ const colors = {
 
 const UnauthorizedPage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation("auth");
   const [btnHovered, setBtnHovered] = useState(false);
   const [linkHovered, setLinkHovered] = useState(false);
 
@@ -36,7 +39,11 @@ const UnauthorizedPage = () => {
       justifyContent: 'center',
       padding: '24px',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      position: 'relative',
     }}>
+      <div style={{ position: 'absolute', top: '16px', insetInlineEnd: '16px' }}>
+        <LanguageSwitcher size="sm" />
+      </div>
       <div style={{ maxWidth: '420px', width: '100%', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
 
         {/* Icon */}
@@ -66,10 +73,10 @@ const UnauthorizedPage = () => {
         {/* Heading */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.3px' }}>
-            Access Denied
+            {t('unauthorized.title')}
           </h1>
           <p style={{ margin: 0, fontSize: '15px', color: colors.textSecondary, lineHeight: 1.6 }}>
-            This area is for admins only. If you believe this is an error, please contact the site administrator.
+            {t('unauthorized.description')}
           </p>
         </div>
 
@@ -94,7 +101,7 @@ const UnauthorizedPage = () => {
               transition: 'background 0.15s',
             }}
           >
-            Try Admin Login
+            {t('unauthorized.tryAdminLogin')}
           </button>
 
           <a
@@ -114,7 +121,7 @@ const UnauthorizedPage = () => {
               transition: 'color 0.15s',
             }}
           >
-            Back to Storefront
+            {t('unauthorized.backToStorefront')}
             <span style={{ fontSize: '16px' }}>←</span>
           </a>
         </div>

@@ -19,7 +19,8 @@
   "feeEstimateNote": "Estimate — the final fee is calculated by the store.",
   "fee": "fee",
   "phoneRequired": "Phone *",
-  "phoneInvalid": "Enter a valid phone number (at least 7 digits).",
+  "phoneEmpty": "Please enter your phone number.",
+  "phoneInvalid": "Please enter a valid Israeli phone number",
   "orderNotes": "Order notes",
   "paymentMethodRequired": "Payment method *",
   "placeOrder": "Place order",
@@ -58,5 +59,15 @@
     "credit_card": "Credit card",
     "bit": "Bit",
     "bank_transfer": "Bank transfer"
+  },
+  "bankTransferProofLabel": "Transfer screenshot / receipt (optional)",
+  "bankTransferProofHint": "JPEG, PNG, or WebP — up to 3MB. Helps the store verify your payment.",
+  "bankTransferProofTooLarge": "File is too large (maximum 3MB).",
+  "bankTransferProofInvalidType": "Please choose an image (JPEG, PNG, or WebP).",
+  "businessHoursNotice": {
+    "title": "Business hours notice",
+    "message": "Your order will be received, but delivery will be handled only during the store's business hours. Thank you for understanding 🌿",
+    "declineButton": "No, don't continue with the order",
+    "confirmButton": "Yes, place my order"
   }
 }

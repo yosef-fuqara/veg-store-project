@@ -20,6 +20,14 @@ const env = {
   jwtRefreshTtl: process.env.JWT_REFRESH_TTL || "7d",
   corsOriginStore: process.env.CORS_ORIGIN_STORE || "http://localhost:5173",
   corsOriginAdmin: process.env.CORS_ORIGIN_ADMIN || "http://localhost:5174",
+  /** Base URL for storefront links in emails (password reset). Falls back to CORS_ORIGIN_STORE. */
+  storefrontUrl: String(
+    process.env.STOREFRONT_URL ||
+      process.env.FRONTEND_URL ||
+      process.env.CORS_ORIGIN_STORE ||
+      "http://localhost:5173"
+  ).replace(/\/+$/, ""),
+  passwordResetTtlMs: Number(process.env.PASSWORD_RESET_TTL_MS || 30 * 60 * 1000),
   rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
   rateLimitMax: Number(process.env.RATE_LIMIT_MAX || 200),
   paymentProvider: process.env.PAYMENT_PROVIDER || "placeholder",
@@ -36,7 +44,14 @@ const env = {
   whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
   whatsappTwilioAccountSid: process.env.WHATSAPP_TWILIO_ACCOUNT_SID || "",
   whatsappTwilioFrom: process.env.WHATSAPP_TWILIO_FROM || "",
-  adminWhatsappPhone: process.env.ADMIN_WHATSAPP_PHONE || ""
+  adminWhatsappPhone: process.env.ADMIN_WHATSAPP_PHONE || "",
+  // SMTP (optional — order flows work without mail)
+  mailHost: process.env.MAIL_HOST || "",
+  mailPort: Number(process.env.MAIL_PORT || 587),
+  mailUser: process.env.MAIL_USER || "",
+  mailPass: process.env.MAIL_PASS || "",
+  mailFrom: process.env.MAIL_FROM || "",
+  adminEmail: (process.env.ADMIN_EMAIL || "").trim()
 };
 
 module.exports = env;

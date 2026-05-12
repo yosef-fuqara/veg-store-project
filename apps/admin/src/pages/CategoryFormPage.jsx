@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { createCategory } from "../services/categoryService";
 import { useToast } from "../features/toast/ToastContext";
 
@@ -72,6 +73,7 @@ const Field = ({ label, hint, children }) => (
 const CategoryFormPage = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { t } = useTranslation(["categories", "common"]);
   const [name, setName] = useState(emptyName);
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -110,10 +112,10 @@ const CategoryFormPage = () => {
         isActive,
         isFrozen,
       });
-      showToast("Category created successfully.");
+      showToast(t("categories:form.toasts.created"));
       navigate("/categories", { replace: true });
     } catch (err) {
-      const message = err.userMessage || err.message || "Failed to create category";
+      const message = err.userMessage || err.message || t("categories:form.toasts.createFailed");
       setError(message);
       showToast(message, "error");
     } finally {
@@ -162,10 +164,10 @@ const CategoryFormPage = () => {
               letterSpacing: "-0.3px",
             }}
           >
-            New category
+            {t("categories:form.title")}
           </h1>
           <p style={{ margin: "8px 0 0", fontSize: "14px", color: colors.textMuted, lineHeight: 1.5 }}>
-            Add a category for organizing products in the catalog
+            {t("categories:form.subtitle")}
           </p>
         </div>
         <Link
@@ -205,7 +207,7 @@ const CategoryFormPage = () => {
           >
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          Back
+          {t("common:back")}
         </Link>
       </div>
 
@@ -239,14 +241,14 @@ const CategoryFormPage = () => {
               letterSpacing: "0.5px",
             }}
           >
-            Category details
+            {t("categories:form.sectionTitle")}
           </h3>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <span style={{ fontSize: "13px", fontWeight: 600, color: colors.textSecondary }}>
-              Category name (all languages) *
+              {t("categories:form.fields.nameAllLangs")}
             </span>
-            <Field label="Arabic (ar)">
+            <Field label={t("categories:form.fields.nameAr")}>
               <input
                 value={name.ar}
                 onChange={onNameChange("ar")}
@@ -260,7 +262,7 @@ const CategoryFormPage = () => {
                 autoComplete="off"
               />
             </Field>
-            <Field label="Hebrew (he)">
+            <Field label={t("categories:form.fields.nameHe")}>
               <input
                 value={name.he}
                 onChange={onNameChange("he")}
@@ -274,7 +276,7 @@ const CategoryFormPage = () => {
                 autoComplete="off"
               />
             </Field>
-            <Field label="English (en)" hint="Used as the base for the URL slug when possible">
+            <Field label={t("categories:form.fields.nameEn")} hint={t("categories:form.fields.nameEnHint")}>
               <input
                 value={name.en}
                 onChange={onNameChange("en")}
@@ -290,7 +292,7 @@ const CategoryFormPage = () => {
             </Field>
           </div>
 
-          <Field label="Description" hint="Optional — shown where category text is used">
+          <Field label={t("categories:form.fields.description")} hint={t("categories:form.fields.descriptionHint")}>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -310,7 +312,7 @@ const CategoryFormPage = () => {
               paddingTop: "4px",
             }}
           >
-            <span style={{ fontSize: "13px", fontWeight: 600, color: colors.textSecondary }}>Status</span>
+            <span style={{ fontSize: "13px", fontWeight: 600, color: colors.textSecondary }}>{t("categories:form.fields.status")}</span>
             <label
               style={{
                 display: "flex",
@@ -327,7 +329,7 @@ const CategoryFormPage = () => {
                 onChange={(e) => setIsActive(e.target.checked)}
                 style={{ width: "18px", height: "18px", accentColor: colors.primary, cursor: "pointer" }}
               />
-              Active (visible in storefront when not frozen)
+              {t("categories:form.fields.active")}
             </label>
             <label
               style={{
@@ -345,7 +347,7 @@ const CategoryFormPage = () => {
                 onChange={(e) => setIsFrozen(e.target.checked)}
                 style={{ width: "18px", height: "18px", accentColor: colors.primary, cursor: "pointer" }}
               />
-              Frozen (admin-only; blocks new products using this category)
+              {t("categories:form.fields.frozen")}
             </label>
           </div>
         </div>
@@ -394,7 +396,7 @@ const CategoryFormPage = () => {
                 <path d="M21 12a9 9 0 1 1-6.22-8.56" />
               </svg>
             )}
-            {submitting ? "Saving…" : "Create category"}
+            {submitting ? t("categories:form.buttons.saving") : t("categories:form.buttons.submit")}
           </button>
           <button
             type="button"
@@ -421,7 +423,7 @@ const CategoryFormPage = () => {
               e.currentTarget.style.background = colors.surface;
             }}
           >
-            Cancel
+            {t("categories:form.buttons.cancel")}
           </button>
         </div>
       </form>

@@ -25,7 +25,9 @@ const userSchema = new mongoose.Schema(
       default: USER_ROLES.CUSTOMER
     },
     addresses: { type: [addressSchema], default: [] },
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    passwordResetTokenHash: { type: String, default: null },
+    passwordResetExpires: { type: Date, default: null }
   },
   { timestamps: true }
 );

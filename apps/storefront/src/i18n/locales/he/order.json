@@ -1,6 +1,8 @@
 {
   "title": "הזמנה",
   "confirmationTitle": "אישור הזמנה",
+  "confirmationTitleAwaitingPayment": "ההזמנה התקבלה — ממתינים לאישור תשלום",
+  "confirmationTitleOrderRecord": "פרטי ההזמנה",
   "loading": "טוען הזמנה...",
   "loadError": "לא ניתן לטעון הזמנה.",
   "notFound": "הזמנה לא נמצאה.",
@@ -9,6 +11,8 @@
   "status": "סטטוס",
   "payment": "תשלום",
   "paymentMethod": "אמצעי תשלום",
+  "bankTransferProofTitle": "אסמכתא להעברה בנקאית",
+  "bankTransferProofAlt": "צילום מסך של התשלום שהועלה",
   "phone": "טלפון",
   "delivery": "משלוח",
   "area": "אזור משלוח",
@@ -24,6 +28,39 @@
   "total": "סך הכל",
   "refreshStatus": "רענן סטטוס",
   "continueShopping": "המשך קניה",
+  "history": {
+    "title": "ההזמנות שלי",
+    "subtitle": "כאן אפשר לראות מה הזמנת בעבר, באיזה תאריך ומה מצב ההזמנה והתשלום.",
+    "loadError": "לא ניתן לטעון את ההזמנות שלך.",
+    "emptyTitle": "עדיין אין לך הזמנות",
+    "emptyText": "אחרי שתבצע הזמנה, היא תופיע כאן עם כל הפרטים.",
+    "orderNumber": "הזמנה #{{id}}",
+    "createdAt": "תאריך הזמנה",
+    "viewDetails": "צפה בפרטי ההזמנה"
+  },
+  "orderStatus": {
+    "new": "חדשה",
+    "seen": "נראה",
+    "confirmed": "אושרה",
+    "preparing": "בהכנה",
+    "ready_for_delivery": "מוכנה למשלוח",
+    "sent_with_delivery_company": "נשלחה עם חברת משלוחים",
+    "delivered": "נמסרה",
+    "cancelled": "בוטלה"
+  },
+  "paymentStatus": {
+    "pending_payment": "ממתין לתשלום",
+    "paid": "שולם",
+    "failed": "התשלום נכשל",
+    "cancelled": "התשלום בוטל",
+    "bank_transfer_pending": "העברה בנקאית ממתינה לאישור",
+    "bank_transfer_approved": "העברה בנקאית אושרה"
+  },
+  "paymentMethods": {
+    "credit_card": "כרטיס אשראי",
+    "bit": "ביט",
+    "bank_transfer": "העברה בנקאית"
+  },
   "paymentStatusMessage": {
     "pending_payment": "ממתין לאישור תשלום.",
     "bank_transfer_pending": "יש להשלים העברה בנקאית; מנהל יאשר בהמשך.",

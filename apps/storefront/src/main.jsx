@@ -8,6 +8,8 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider } from "./features/auth/AuthContext";
 import { CartProvider } from "./features/cart/CartContext";
 import { CartVisualFeedbackProvider } from "./features/cart/CartVisualFeedbackContext";
+import { CartDrawerProvider } from "./features/cart/CartDrawerContext";
+import { StoreSettingsProvider } from "./features/store/StoreSettingsContext";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -15,11 +17,15 @@ createRoot(document.getElementById("root")).render(
       <BrowserRouter>
         <ScrollToTop />
         <AuthProvider>
-          <CartProvider>
-            <CartVisualFeedbackProvider>
-              <App />
-            </CartVisualFeedbackProvider>
-          </CartProvider>
+          <StoreSettingsProvider>
+            <CartProvider>
+              <CartVisualFeedbackProvider>
+                <CartDrawerProvider>
+                  <App />
+                </CartDrawerProvider>
+              </CartVisualFeedbackProvider>
+            </CartProvider>
+          </StoreSettingsProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>

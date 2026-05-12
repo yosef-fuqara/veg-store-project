@@ -3,10 +3,10 @@
  * Matches API category slug and multilingual names against known shop groupings.
  */
 
-/** @typedef {'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | 'other'} CategoryNavId */
+/** @typedef {'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices' | 'other'} CategoryNavId */
 
 /** @type {CategoryNavId[]} */
-export const CATEGORY_NAV_IDS = ['fruits', 'vegetables', 'herbs', 'spices', 'platters', 'other'];
+export const CATEGORY_NAV_IDS = ['fruits', 'vegetables', 'herbs', 'spices', 'platters', 'pickles', 'natural-juices', 'other'];
 
 /** @param {unknown} category */
 export function categoryHaystack(category) {
@@ -30,7 +30,7 @@ export function categoryHaystack(category) {
   return parts.join(' ').toLowerCase();
 }
 
-/** @type {Record<'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters', { slugs: string[], needles: string[] }>} */
+/** @type {Record<'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices', { slugs: string[], needles: string[] }>} */
 const RULES = {
   fruits: {
     slugs: ['fruit', 'fruits', 'פירות', 'פרי'],
@@ -109,6 +109,48 @@ const RULES = {
     slugs: ['platter', 'platters', 'sliced', 'plate', 'מגש', 'מגשים'],
     needles: ['platter', 'platters', 'sliced', 'plate', 'מגש', 'لوحة', 'شرائح'],
   },
+  pickles: {
+    slugs: ['pickle', 'pickles', 'חמוצים', 'מלפפונים-חמוצים'],
+    needles: [
+      'pickle',
+      'pickles',
+      'pickled',
+      'fermented',
+      'חמוצים',
+      'מלפפון חמוץ',
+      'כרוב כבוש',
+      'מלפפון כבוש',
+      'مخللات',
+      'مخلل',
+    ],
+  },
+  'natural-juices': {
+    slugs: ['natural-juice', 'natural-juices', 'fresh-juice', 'fresh-juices', 'מיצים-טבעיים', 'عصائر-طبيعية'],
+    needles: [
+      'natural juice',
+      'natural juices',
+      'fresh juice',
+      'fresh juices',
+      'squeezed juice',
+      'squeezed juices',
+      'orange juice',
+      'lemon juice',
+      'pomegranate juice',
+      'concentrated fresh juice',
+      'מיץ',
+      'מיצים',
+      'מיצים טבעיים',
+      'מיץ לימון',
+      'מיץ רימונים',
+      'מיץ תפוזים',
+      'عصير',
+      'عصائر',
+      'عصائر طبيعية',
+      'عصير ليمون',
+      'عصير رمان',
+      'عصير برتقال',
+    ],
+  },
 };
 
 /**
@@ -129,7 +171,7 @@ function haystackMatchesRule(hay, rule) {
  * When a DB category slug is not in the storefront slug allowlist, map the category document
  * to one primary nav using the same keyword rules as legacy filtering (single nav; tie-break by order).
  * @param {unknown} category
- * @returns {'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | null}
+ * @returns {'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices' | null}
  */
 export function inferPrimaryNavIdFromCategoryRecord(category) {
   const hay = categoryHaystack(category);
@@ -142,7 +184,7 @@ export function inferPrimaryNavIdFromCategoryRecord(category) {
       : "";
   if (slug && isLegacyCombinedHaystack(slug)) return "herbs";
 
-  /** @type {Array<'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters'>} */
+  /** @type {Array<'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices'>} */
   const hits = [];
   for (const navId of /** @type {const} */ ([
     "fruits",
@@ -150,6 +192,8 @@ export function inferPrimaryNavIdFromCategoryRecord(category) {
     "herbs",
     "spices",
     "platters",
+    "pickles",
+    "natural-juices",
   ])) {
     const rule = RULES[navId];
     if (navId === "spices" && isLegacyCombinedHaystack(hay)) continue;
@@ -160,6 +204,8 @@ export function inferPrimaryNavIdFromCategoryRecord(category) {
     const order = /** @type {const} */ ([
       "herbs",
       "spices",
+      "pickles",
+      "natural-juices",
       "vegetables",
       "fruits",
       "platters",
@@ -204,10 +250,12 @@ export function productMatchesCategoryNav(product, navId) {
       && !haystackMatchesRule(hay, RULES.herbs)
       && !haystackMatchesRule(hay, RULES.spices)
       && !haystackMatchesRule(hay, RULES.platters)
+      && !haystackMatchesRule(hay, RULES.pickles)
+      && !haystackMatchesRule(hay, RULES['natural-juices'])
     );
   }
 
-  const rule = RULES[/** @type {'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters'} */ (navId)];
+  const rule = RULES[/** @type {'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices'} */ (navId)];
   if (!rule) return false;
   if (!hay) return false;
   if (navId === 'spices' && isLegacyCombinedHaystack(hay)) return false;

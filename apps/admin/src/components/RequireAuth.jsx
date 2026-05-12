@@ -1,12 +1,14 @@
 import { Navigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../features/auth/AuthContext";
 
 const RequireAuth = ({ children }) => {
   const { user, initializing } = useAuth();
   const location = useLocation();
+  const { t } = useTranslation("nav");
 
   if (initializing) {
-    return <p>Loading session...</p>;
+    return <p>{t("loadingSession")}</p>;
   }
 
   if (!user) {

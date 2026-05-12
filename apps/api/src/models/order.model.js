@@ -22,8 +22,15 @@ const orderItemSchema = new mongoose.Schema(
     },
     name: { type: String, required: true, trim: true },
     price: { type: Number, required: true, min: 0 },
-    quantity: { type: Number, required: true, min: 1 },
+    quantity: { type: Number, required: true, min: 0.01 },
     unit: { type: String, required: true, trim: true },
+    purchaseMode: {
+      type: String,
+      enum: ["quantity", "amount"],
+      default: "quantity"
+    },
+    requestedAmountIls: { type: Number, min: 0 },
+    lineTotal: { type: Number, min: 0 },
     isPreorderOnly: { type: Boolean, default: false },
     minAdvanceHours: { type: Number, default: 0, min: 0 },
     // Snapshot of the wrap selection at order time so re-pricing is stable
@@ -77,7 +84,12 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: Object.values(ORDER_STATUS),
       default: ORDER_STATUS.NEW
-    }
+    },
+    // Optional screenshot / receipt for bank transfer (Cloudinary)
+    bankTransferProofUrl: { type: String, trim: true, default: "" },
+    bankTransferProofPublicId: { type: String, trim: true, default: "" },
+    // Idempotency keys for transactional email (ISO dates stored as values)
+    emailNotifications: { type: mongoose.Schema.Types.Mixed, default: () => ({}) }
   },
   { timestamps: true }
 );

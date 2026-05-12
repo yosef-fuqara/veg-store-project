@@ -5,7 +5,8 @@ import * as cartService from "../../services/cartService";
 import { getAccessToken } from "../../services/authStorage";
 import {
   isCartAuthError,
-  isTechnicalCustomerCartMessage
+  isTechnicalCustomerCartMessage,
+  translateCartBusinessError
 } from "../../utils/cartErrorHandling";
 import {
   loadPersistedCartLines,
@@ -16,7 +17,7 @@ import {
 const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState({ items: [], subtotal: 0, wrapTotal: 0 });
+  const [cart, setCart] = useState({ items: [], subtotal: 0, wrapTotal: 0, payableTotal: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [signInForCartOpen, setSignInForCartOpen] = useState(false);
@@ -30,6 +31,11 @@ export const CartProvider = ({ children }) => {
       if (isCartAuthError(err)) {
         setSignInForCartOpen(true);
         setError("");
+        return;
+      }
+      const biz = translateCartBusinessError(err);
+      if (biz) {
+        setError(biz);
         return;
       }
       const raw = String(err.userMessage || err.response?.data?.message || "").trim();
@@ -61,14 +67,14 @@ export const CartProvider = ({ children }) => {
   }, [withLoading]);
 
   /** Home / product grid: no global `loading` so other cards stay interactive. Returns true on success. */
-  const addItem = useCallback(async (productId, quantity = 1) => {
+  const addItem = useCallback(async (productId, quantity = 1, options = {}) => {
     if (!getAccessToken()) {
       setSignInForCartOpen(true);
       return false;
     }
     setError("");
     try {
-      const next = await cartService.addCartItem(productId, quantity);
+      const next = await cartService.addCartItem(productId, quantity, options);
       setCart(next);
       persistCartFromServerCart(next);
       return true;
@@ -76,6 +82,11 @@ export const CartProvider = ({ children }) => {
       if (isCartAuthError(err)) {
         setSignInForCartOpen(true);
         setError("");
+        return false;
+      }
+      const biz = translateCartBusinessError(err);
+      if (biz) {
+        setError(biz);
         return false;
       }
       const raw = String(err.userMessage || err.response?.data?.message || "").trim();

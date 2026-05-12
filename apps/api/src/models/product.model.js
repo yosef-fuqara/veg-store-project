@@ -81,6 +81,11 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    // When true, customers may add to cart by ILS amount; server derives quantity.
+    allowPurchaseByAmount: {
+      type: Boolean,
+      default: false
+    },
     isActive: {
       type: Boolean,
       default: true

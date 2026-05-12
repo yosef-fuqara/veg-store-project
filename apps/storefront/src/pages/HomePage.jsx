@@ -1,18 +1,27 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ProductCard from "../components/ProductCard";
 import { CategoryBarMobile, CategorySidebar } from "../components/CategoryNav";
 import { useCart } from "../features/cart/CartContext";
+import { useStoreSettings } from "../features/store/StoreSettingsContext";
 import * as productService from "../services/productService";
 import { getCategories } from "../services/categoryService";
 import { formatApiError } from "../utils/formatApiError";
 import { CATEGORY_NAV_IDS } from "../utils/categoryFilter";
+import { useActiveSection } from "../hooks/useActiveSection";
 import {
   buildNavCategoryResolution,
-  productMatchesStorefrontCategoryNav,
+  resolveProductStorefrontNavSlot,
 } from "../utils/storefrontCategoryMapping";
+import {
+  STOREFRONT_STICKY_HEADER_SCROLL_MARGIN,
+  scrollToCategorySection,
+  scrollToElementById,
+} from "../utils/storefrontNavScroll";
+import { getProductNameSearchHaystack } from "../utils/localizedProduct";
 
 const OBJECT_ID_RE = /^[0-9a-fA-F]{24}$/;
 
@@ -304,13 +313,14 @@ const HeroSection = ({ t, isMobile }) => {
             <h1
               style={{
                 margin: 0,
+                fontFamily: "'Rubik', 'Segoe UI', system-ui, sans-serif",
                 fontSize: isMobile
                   ? 'clamp(28px, 7.5vw, 42px)'
                   : 'clamp(36px, 3.6vw, 56px)',
-                fontWeight: 800,
-                lineHeight: 1.18,
+                fontWeight: 700,
+                lineHeight: 1.22,
                 color: colors.textInverse,
-                letterSpacing: isMobile ? '-0.02em' : '-0.025em',
+                letterSpacing: isMobile ? '-0.01em' : '-0.015em',
                 textShadow: '0 2px 28px rgba(0,0,0,0.32)',
                 textAlign: 'center',
                 width: '100%',
@@ -577,6 +587,7 @@ const itemVariants = {
 const HomePage = () => {
   const { t, i18n } = useTranslation(['home', 'common']);
   const { error: cartError } = useCart();
+  const { canOrderNow } = useStoreSettings();
   const lang = (i18n.language || 'he').split('-')[0];
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -600,8 +611,9 @@ const HomePage = () => {
   const [categoriesRequestOk, setCategoriesRequestOk] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const prevActiveCategoryRef = useRef(/** @type {string | null} */ (null));
+  const [productSearchQuery, setProductSearchQuery] = useState('');
   const prevCategoryIdParamRef = useRef(/** @type {string | null} */ (null));
+  const prevUrlCategoryRef = useRef(/** @type {string | null} */ (null));
 
   const categoryResolution = useMemo(
     () => buildNavCategoryResolution(categories, categoriesRequestOk),
@@ -666,15 +678,6 @@ const HomePage = () => {
   }, [productIdParamRaw, productIdParam, setSearchParams]);
 
   useEffect(() => {
-    if (activeCategoryId && prevActiveCategoryRef.current !== activeCategoryId) {
-      requestAnimationFrame(() => {
-        document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
-    prevActiveCategoryRef.current = activeCategoryId;
-  }, [activeCategoryId]);
-
-  useEffect(() => {
     if (categoryIdParam && prevCategoryIdParamRef.current !== categoryIdParam) {
       requestAnimationFrame(() => {
         document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -683,24 +686,68 @@ const HomePage = () => {
     prevCategoryIdParamRef.current = categoryIdParam;
   }, [categoryIdParam]);
 
-  const displayedProducts = useMemo(() => {
+  const catalogProducts = useMemo(() => {
     let list = products;
     if (categoryIdParam) {
       list = list.filter((p) => productInDbCategory(p, categoryIdParam));
-    } else if (activeCategoryId) {
-      list = list.filter((p) =>
-        productMatchesStorefrontCategoryNav(p, activeCategoryId, categoryResolution)
-      );
     }
-    if (productIdParam) {
-      const inList = list.some((p) => String(p._id) === productIdParam);
-      const exists = products.some((p) => String(p._id) === productIdParam);
-      if (!inList && exists) {
-        list = products;
-      }
+    const q = productSearchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter((p) => getProductNameSearchHaystack(p).includes(q));
     }
     return list;
-  }, [products, categoryIdParam, activeCategoryId, productIdParam, categoryResolution]);
+  }, [products, categoryIdParam, productSearchQuery]);
+
+  const productsByNavSection = useMemo(() => {
+    /** @type {Record<string, typeof products>} */
+    const buckets = {};
+    for (const id of CATEGORY_NAV_IDS) {
+      buckets[id] = [];
+    }
+    for (const p of catalogProducts) {
+      const slot = resolveProductStorefrontNavSlot(p, categoryResolution);
+      buckets[slot].push(p);
+    }
+    return buckets;
+  }, [catalogProducts, categoryResolution]);
+
+  const renderedSectionNavIds = useMemo(
+    () => CATEGORY_NAV_IDS.filter((id) => (productsByNavSection[id] ?? []).length > 0),
+    [productsByNavSection]
+  );
+
+  const sectionDomIds = useMemo(
+    () => renderedSectionNavIds.map((id) => `category-${id}`),
+    [renderedSectionNavIds]
+  );
+
+  const spySectionDomId = useActiveSection(sectionDomIds, {
+    enabled: !loading && sectionDomIds.length > 0,
+    rootMargin: '-35% 0px -55% 0px',
+  });
+
+  const navVisualActiveId = useMemo(() => {
+    if (!spySectionDomId || !spySectionDomId.startsWith('category-')) return null;
+    return spySectionDomId.slice('category-'.length);
+  }, [spySectionDomId]);
+
+  useEffect(() => {
+    if (loading) return;
+    const prev = prevUrlCategoryRef.current;
+    if (activeCategoryId) {
+      const run = () => {
+        const el = document.getElementById(`category-${activeCategoryId}`);
+        if (el) scrollToCategorySection(activeCategoryId);
+      };
+      requestAnimationFrame(() => requestAnimationFrame(run));
+      prevUrlCategoryRef.current = activeCategoryId;
+      return;
+    }
+    if (prev != null) {
+      requestAnimationFrame(() => scrollToElementById('products-catalog-top'));
+    }
+    prevUrlCategoryRef.current = activeCategoryId;
+  }, [loading, activeCategoryId]);
 
   const handleCategorySelect = useCallback((id) => {
     setSearchParams((sp) => {
@@ -725,6 +772,7 @@ const HomePage = () => {
       next.delete('product');
       return next;
     }, { replace: true });
+    requestAnimationFrame(() => scrollToElementById('products-catalog-top'));
   }, [setSearchParams]);
 
   useEffect(() => {
@@ -746,7 +794,7 @@ const HomePage = () => {
       }, { replace: true });
     }
     return undefined;
-  }, [loading, productIdParam, products, displayedProducts.length, setSearchParams]);
+  }, [loading, productIdParam, products, setSearchParams]);
 
   return (
     <div>
@@ -754,7 +802,14 @@ const HomePage = () => {
       <MarqueeBar lang={lang} />
 
       {/* Products section */}
-      <section id="products-section" style={{ background: colors.bg, padding: isMobile ? '48px 0 64px' : '64px 0 80px' }}>
+      <section
+        id="products-section"
+        style={{
+          background: colors.bg,
+          padding: isMobile ? '48px 0 64px' : '64px 0 80px',
+          scrollMarginTop: STOREFRONT_STICKY_HEADER_SCROLL_MARGIN,
+        }}
+      >
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
 
           {/* Section header */}
@@ -778,20 +833,87 @@ const HomePage = () => {
             }}>
               {t('home:products.badge')}
             </span>
-            <h2 style={{
-              margin: 0,
-              fontSize: isMobile ? '26px' : '32px',
-              fontWeight: 700,
-              color: colors.textPrimary,
-              letterSpacing: '-0.3px',
-            }}>
-              {t('home:products.heading')}
-            </h2>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'stretch' : 'center',
+                justifyContent: 'space-between',
+                gap: '16px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <h2 style={{
+                margin: 0,
+                flex: isMobile ? 'none' : '0 1 auto',
+                fontSize: isMobile ? '26px' : '32px',
+                fontWeight: 700,
+                color: colors.textPrimary,
+                letterSpacing: '-0.3px',
+              }}>
+                {t('home:products.heading')}
+              </h2>
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  flex: isMobile ? 'none' : '1 1 240px',
+                  maxWidth: isMobile ? '100%' : '320px',
+                  minWidth: 0,
+                }}
+              >
+                <Search
+                  aria-hidden
+                  size={18}
+                  strokeWidth={2}
+                  style={{
+                    position: 'absolute',
+                    insetInlineStart: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: colors.textMuted,
+                    pointerEvents: 'none',
+                  }}
+                />
+                <input
+                  type="search"
+                  value={productSearchQuery}
+                  onChange={(e) => setProductSearchQuery(e.target.value)}
+                  placeholder={t('home:products.searchPlaceholder')}
+                  aria-label={t('home:products.searchPlaceholder')}
+                  autoComplete="off"
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.primaryBorder;
+                    e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.primarySurface}`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border;
+                    e.currentTarget.style.boxShadow = shadow.sm;
+                  }}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    paddingBlock: '10px',
+                    paddingInlineStart: '40px',
+                    paddingInlineEnd: '14px',
+                    borderRadius: '10px',
+                    border: `1px solid ${colors.border}`,
+                    background: colors.surface,
+                    color: colors.textPrimary,
+                    fontSize: '15px',
+                    lineHeight: 1.4,
+                    boxShadow: shadow.sm,
+                    outline: 'none',
+                    textAlign: productSearchQuery ? 'start' : 'center',
+                  }}
+                />
+              </div>
+            </div>
           </motion.div>
 
           {isMobile && (
             <CategoryBarMobile
-              activeId={activeCategoryId}
+              activeId={navVisualActiveId}
               onSelect={handleCategorySelect}
               onShowAll={handleShowAllCategories}
             />
@@ -847,41 +969,76 @@ const HomePage = () => {
           >
             {!isMobile && (
               <CategorySidebar
-                activeId={activeCategoryId}
+                activeId={navVisualActiveId}
                 onSelect={handleCategorySelect}
                 onShowAll={handleShowAllCategories}
               />
             )}
 
             <div style={{ flex: 1, minWidth: 0 }}>
-              {/* Grid */}
-              {loading ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
-                  {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
-                </div>
-              ) : products.length === 0 && !error ? (
-                <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:empty')}</p>
-              ) : displayedProducts.length === 0 && (activeCategoryId || categoryIdParam) ? (
-                <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:categories.filterEmpty')}</p>
-              ) : (
-                <motion.div
-                  variants={listVariants}
-                  initial="initial"
-                  whileInView="animate"
-                  viewport={{ once: true, amount: 0.05 }}
-                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}
-                >
-                  {displayedProducts.map((product) => (
-                    <motion.div
-                      key={product._id}
-                      id={product._id ? `product-${product._id}` : undefined}
-                      variants={itemVariants}
+              <div
+                id="products-catalog-top"
+                style={{ scrollMarginTop: STOREFRONT_STICKY_HEADER_SCROLL_MARGIN }}
+              >
+                {loading ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
+                    {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
+                  </div>
+                ) : products.length === 0 && !error ? (
+                  <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:empty')}</p>
+                ) : catalogProducts.length === 0 && productSearchQuery.trim() ? (
+                  <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:products.searchNoResults')}</p>
+                ) : catalogProducts.length === 0 && categoryIdParam ? (
+                  <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:categories.filterEmpty')}</p>
+                ) : renderedSectionNavIds.length === 0 ? (
+                  <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:empty')}</p>
+                ) : (
+                  renderedSectionNavIds.map((navId, idx) => (
+                    <section
+                      key={navId}
+                      id={`category-${navId}`}
+                      aria-labelledby={`category-heading-${navId}`}
+                      style={{
+                        scrollMarginTop: STOREFRONT_STICKY_HEADER_SCROLL_MARGIN,
+                        marginTop: idx === 0 ? 0 : 40,
+                      }}
                     >
-                      <ProductCard product={product} lang={lang} />
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
+                      <h3
+                        id={`category-heading-${navId}`}
+                        style={{
+                          margin: '0 0 18px',
+                          fontSize: isMobile ? '20px' : '22px',
+                          fontWeight: 700,
+                          color: colors.textPrimary,
+                          letterSpacing: '-0.2px',
+                        }}
+                      >
+                        {t(`home:categories.${navId}`)}
+                      </h3>
+                      <motion.div
+                        variants={listVariants}
+                        initial="initial"
+                        animate="animate"
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                          gap: '20px',
+                        }}
+                      >
+                        {(productsByNavSection[navId] ?? []).map((product) => (
+                          <motion.div
+                            key={product._id}
+                            id={product._id ? `product-${product._id}` : undefined}
+                            variants={itemVariants}
+                          >
+                            <ProductCard product={product} lang={lang} orderingDisabled={!canOrderNow} />
+                          </motion.div>
+                        ))}
+                      </motion.div>
+                    </section>
+                  ))
+                )}
+              </div>
             </div>
           </div>
 

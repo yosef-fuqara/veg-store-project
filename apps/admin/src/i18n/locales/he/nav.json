@@ -1,0 +1,22 @@
+{
+  "brand": "אבו אל-אנס",
+  "adminPanel": "פאנל ניהול",
+  "admin": "ניהול",
+  "signOut": "התנתקות",
+  "loadingSession": "טוען את ההתחברות…",
+  "items": {
+    "products": "מוצרים",
+    "categories": "קטגוריות",
+    "orders": "הזמנות",
+    "sales": "מכירות",
+    "popups": "פופאפים",
+    "storeStatus": "מצב החנות"
+  },
+  "languageSwitcher": {
+    "label": "שפה",
+    "english": "English",
+    "hebrew": "עברית",
+    "shortEnglish": "EN",
+    "shortHebrew": "HE"
+  }
+}

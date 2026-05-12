@@ -1,5 +1,7 @@
 const request = require("supertest");
+const User = require("../../src/models/user.model");
 const { getApp, apiUrl } = require("../helpers/test-app");
+const { hashPasswordResetToken } = require("../../src/utils/passwordResetToken");
 const {
   registerCustomer,
   createAdminUser,
@@ -30,6 +32,28 @@ describe("Auth", () => {
       const res = await registerCustomer({ email: "x@test.com" });
       expect(res.status).toBe(400);
       expect(res.body.details).toBeDefined();
+    });
+
+    it("returns 400 for invalid Israeli phone", async () => {
+      const res = await registerCustomer({
+        name: "Bad Phone",
+        phone: "1234567890",
+        email: `badphone.${Date.now()}@test.com`,
+        password: DEFAULT_PASSWORD
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it("normalizes +972 phone on register", async () => {
+      const email = `intl.${Date.now()}@test.com`;
+      const res = await registerCustomer({
+        name: "Intl User",
+        phone: "+972-50-1234567",
+        email,
+        password: DEFAULT_PASSWORD
+      });
+      expect(res.status).toBe(201);
+      expect(res.body.data.user.phone).toBe("0501234567");
     });
   });
 
@@ -98,6 +122,124 @@ describe("Auth", () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.user.email).toBe(user.email);
+    });
+  });
+
+  describe("POST /auth/forgot-password", () => {
+    const genericMessage = /if an account exists for that email/i;
+
+    it("returns 200 with generic message for unknown email", async () => {
+      const res = await request(getApp())
+        .post(apiUrl("/auth/forgot-password"))
+        .send({ email: `nobody.${Date.now()}@test.com` });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toMatch(genericMessage);
+    });
+
+    it("returns 200 with generic message for known user and stores reset hash", async () => {
+      const user = await createCustomerUser();
+      const res = await request(getApp())
+        .post(apiUrl("/auth/forgot-password"))
+        .send({ email: user.email });
+
+      expect(res.status).toBe(200);
+      expect(res.body.message).toMatch(genericMessage);
+
+      const updated = await User.findById(user._id).lean();
+      expect(updated.passwordResetTokenHash).toBeTruthy();
+      expect(updated.passwordResetExpires).toBeTruthy();
+    });
+
+    it("returns 400 when email invalid", async () => {
+      const res = await request(getApp())
+        .post(apiUrl("/auth/forgot-password"))
+        .send({ email: "not-an-email" });
+      expect(res.status).toBe(400);
+    });
+
+    it("does not set reset fields for inactive user", async () => {
+      const user = await createCustomerUser({ isActive: false });
+      const res = await request(getApp())
+        .post(apiUrl("/auth/forgot-password"))
+        .send({ email: user.email });
+
+      expect(res.status).toBe(200);
+      const updated = await User.findById(user._id).lean();
+      expect(updated.passwordResetTokenHash).toBeFalsy();
+    });
+  });
+
+  describe("POST /auth/reset-password", () => {
+    it("returns 400 for invalid token", async () => {
+      const res = await request(getApp()).post(apiUrl("/auth/reset-password")).send({
+        token: "deadbeef".repeat(8),
+        newPassword: "NewPassword999!"
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/invalid or expired/i);
+    });
+
+    it("returns 400 for expired token", async () => {
+      const user = await createCustomerUser();
+      const plainToken = "b".repeat(64);
+      await User.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            passwordResetTokenHash: hashPasswordResetToken(plainToken),
+            passwordResetExpires: new Date(Date.now() - 1000)
+          }
+        }
+      );
+
+      const res = await request(getApp()).post(apiUrl("/auth/reset-password")).send({
+        token: plainToken,
+        newPassword: "NewPassword999!"
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/invalid or expired/i);
+    });
+
+    it("returns 400 when new password too short", async () => {
+      const res = await request(getApp()).post(apiUrl("/auth/reset-password")).send({
+        token: "a".repeat(64),
+        newPassword: "short"
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it("updates password and clears reset fields for valid token", async () => {
+      const user = await createCustomerUser();
+      const plainToken = "a".repeat(64);
+      await User.updateOne(
+        { _id: user._id },
+        {
+          $set: {
+            passwordResetTokenHash: hashPasswordResetToken(plainToken),
+            passwordResetExpires: new Date(Date.now() + 60 * 60 * 1000)
+          }
+        }
+      );
+
+      const newPassword = "ResetPass888!";
+      const res = await request(getApp()).post(apiUrl("/auth/reset-password")).send({
+        token: plainToken,
+        newPassword
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+
+      const updated = await User.findById(user._id).lean();
+      expect(updated.passwordResetTokenHash).toBeNull();
+      expect(updated.passwordResetExpires).toBeNull();
+
+      const login = await request(getApp())
+        .post(apiUrl("/auth/login"))
+        .send({ email: user.email, password: newPassword });
+      expect(login.status).toBe(200);
     });
   });
 

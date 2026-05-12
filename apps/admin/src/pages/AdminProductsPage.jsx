@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { deleteProduct, getAdminProducts, setProductFrozen } from "../services/productService";
 import { useToast } from "../features/toast/ToastContext";
 import { pickLocalizedName } from "../utils/localizedDisplayName";
@@ -22,10 +23,10 @@ const colors = {
 };
 
 const STATUS_STYLES = {
-  active:   { bg: '#dcfce7', color: '#166534', border: '#bbf7d0', label: 'Active' },
-  inactive: { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0', label: 'Inactive' },
-  frozen:   { bg: '#e0f2fe', color: '#0369a1', border: '#bae6fd', label: 'Frozen' },
-  deleted:  { bg: '#fef2f2', color: '#991b1b', border: '#fecaca', label: 'Deleted' },
+  active:   { bg: '#dcfce7', color: '#166534', border: '#bbf7d0' },
+  inactive: { bg: '#f1f5f9', color: '#475569', border: '#e2e8f0' },
+  frozen:   { bg: '#e0f2fe', color: '#0369a1', border: '#bae6fd' },
+  deleted:  { bg: '#fef2f2', color: '#991b1b', border: '#fecaca' },
 };
 
 const formatCurrency = (value) => {
@@ -62,6 +63,7 @@ const interactiveBtn = {
 };
 
 const AdminProductsPage = () => {
+  const { t } = useTranslation(["products", "common"]);
   const { showToast } = useToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -96,11 +98,11 @@ const AdminProductsPage = () => {
     try {
       setItems(await getAdminProducts());
     } catch (err) {
-      setError(err.userMessage || 'Failed to load products');
+      setError(err.userMessage || t('products:list.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setPage(1); }, [search, statusFilter]);
@@ -158,25 +160,25 @@ const AdminProductsPage = () => {
     closeProductMenu();
     try {
       await setProductFrozen(product._id, !product.isFrozen);
-      showToast(product.isFrozen ? 'Product unfrozen.' : 'Product frozen.');
+      showToast(product.isFrozen ? t('products:list.toasts.unfrozen') : t('products:list.toasts.frozen'));
       await load();
     } catch (err) {
-      showToast(err.userMessage || 'Action failed', 'error');
+      showToast(err.userMessage || t('products:list.toasts.actionFailed'), 'error');
     } finally {
       setBusyId('');
     }
   };
 
   const handleDelete = async (product) => {
-    if (!window.confirm(`Delete "${pickLocalizedName(product.name)}"?`)) return;
+    if (!window.confirm(t('products:list.confirmDelete', { name: pickLocalizedName(product.name) }))) return;
     setBusyId(product._id);
     closeProductMenu();
     try {
       await deleteProduct(product._id);
-      showToast('Product deleted.');
+      showToast(t('products:list.toasts.deleted'));
       await load();
     } catch (err) {
-      showToast(err.userMessage || 'Delete failed', 'error');
+      showToast(err.userMessage || t('products:list.toasts.deleteFailed'), 'error');
     } finally {
       setBusyId('');
     }
@@ -258,7 +260,7 @@ const AdminProductsPage = () => {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
-            Add Product
+            {t('products:list.addProduct')}
           </Link>
           <Link
             to="/categories"
@@ -283,7 +285,7 @@ const AdminProductsPage = () => {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M4 7h16M4 12h16M4 17h10"/>
             </svg>
-            Manage categories
+            {t('products:list.manageCategories')}
           </Link>
           <Link
             to="/categories/new"
@@ -310,15 +312,15 @@ const AdminProductsPage = () => {
               <line x1="16" y1="15" x2="22" y2="15"/>
               <line x1="19" y1="12" x2="19" y2="18"/>
             </svg>
-            Add Category
+            {t('products:list.addCategory')}
           </Link>
         </div>
         <div style={{ textAlign: 'end', flex: '1 1 200px', minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: '36px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.5px' }}>
-            Products
+            {t('products:list.pageTitle')}
           </h1>
           <p style={{ margin: '8px 0 0', fontSize: '14px', color: colors.textMuted, lineHeight: 1.5 }}>
-            Manage your fruit and vegetable inventory
+            {t('products:list.pageSubtitle')}
           </p>
         </div>
       </div>
@@ -328,7 +330,7 @@ const AdminProductsPage = () => {
         <div style={{ padding: '12px 16px', borderRadius: '10px', background: colors.errorBg, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
           <span style={{ minWidth: 0 }}>{error}</span>
           <button type="button" onClick={load} className="admin-products-retry" style={{ flexShrink: 0, padding: '6px 12px', borderRadius: '8px', border: `1px solid ${colors.errorBorder}`, background: 'transparent', color: colors.error, cursor: 'pointer', fontSize: '12px', fontWeight: 600, ...interactiveBtn }}>
-            Retry
+            {t('common:retry')}
           </button>
         </div>
       )}
@@ -373,7 +375,7 @@ const AdminProductsPage = () => {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
               </svg>
-              Filter
+              {t('common:filter')}
               {statusFilter !== 'all' && (
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: colors.primary, display: 'inline-block', marginInlineStart: '2px' }} />
               )}
@@ -412,7 +414,7 @@ const AdminProductsPage = () => {
                       transition: 'background 0.12s',
                     }}
                   >
-                    {opt === 'all' ? 'All statuses' : opt.charAt(0).toUpperCase() + opt.slice(1)}
+                    {opt === 'all' ? t('common:allStatuses') : t(`products:list.status.${opt}`)}
                   </button>
                 ))}
               </div>
@@ -429,8 +431,8 @@ const AdminProductsPage = () => {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search products…"
-              aria-label="Search products"
+              placeholder={t('products:list.searchPlaceholder')}
+              aria-label={t('products:list.searchAria')}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
               style={searchInputStyle}
@@ -442,7 +444,7 @@ const AdminProductsPage = () => {
         {loading ? (
           <div style={{ padding: '8px 0 16px' }} aria-busy="true" aria-live="polite">
             <div style={{ padding: '12px 20px 8px', fontSize: '12px', fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Loading
+              {t('common:loadingDots')}
             </div>
             <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
               <table style={{ width: '100%', minWidth: '720px', borderCollapse: 'collapse' }}>
@@ -487,12 +489,12 @@ const AdminProductsPage = () => {
               </svg>
             </div>
             <div style={{ fontSize: '15px', fontWeight: 600, color: colors.textPrimary, marginBottom: '6px' }}>
-              No products found
+              {t('products:list.empty.title')}
             </div>
             <div style={{ fontSize: '13px', color: colors.textMuted, lineHeight: 1.5 }}>
               {search || statusFilter !== 'all'
-                ? 'Try adjusting your search or filter.'
-                : 'Add your first product to get started.'}
+                ? t('products:list.empty.withSearch')
+                : t('products:list.empty.withoutSearch')}
             </div>
           </div>
         ) : (
@@ -506,7 +508,15 @@ const AdminProductsPage = () => {
             <table style={{ width: '100%', minWidth: '880px', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  {['Actions', 'Status', 'Stock', 'Price', 'Category', 'Product Name', 'Image'].map((h) => (
+                  {[
+                    t('products:list.tableHeaders.actions'),
+                    t('products:list.tableHeaders.status'),
+                    t('products:list.tableHeaders.stock'),
+                    t('products:list.tableHeaders.price'),
+                    t('products:list.tableHeaders.category'),
+                    t('products:list.tableHeaders.productName'),
+                    t('products:list.tableHeaders.image')
+                  ].map((h) => (
                     <th key={h} style={{
                       padding: '12px 16px',
                       textAlign: 'start',
@@ -570,7 +580,7 @@ const AdminProductsPage = () => {
                           disabled={isBusy}
                           aria-expanded={menuId === String(product._id)}
                           aria-haspopup="true"
-                          aria-label={isBusy ? 'Working…' : `Actions for ${name}`}
+                          aria-label={isBusy ? t('products:list.workingAria') : t('products:list.actionsMenuAria', { name })}
                           style={{
                             background: menuId === String(product._id) ? colors.borderLight : 'none',
                             border: 'none',
@@ -607,7 +617,7 @@ const AdminProductsPage = () => {
                       {/* Status */}
                       <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
                         <Pill bg={stateStyle.bg} color={stateStyle.color} border={stateStyle.border}>
-                          {stateStyle.label}
+                          {t(`products:list.status.${state}`)}
                         </Pill>
                       </td>
 
@@ -618,7 +628,7 @@ const AdminProductsPage = () => {
                           color={inStock ? '#166534' : '#991b1b'}
                           border={inStock ? '#bbf7d0' : '#fecaca'}
                         >
-                          {inStock ? 'In Stock' : 'Out of Stock'}
+                          {inStock ? t('products:list.stock.in') : t('products:list.stock.out')}
                         </Pill>
                       </td>
 
@@ -636,7 +646,7 @@ const AdminProductsPage = () => {
                             )}
                             {product.unit && (
                               <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '4px' }}>
-                                Per {product.unit}
+                                {t('products:list.perUnit', { unit: product.unit })}
                               </div>
                             )}
                           </div>
@@ -715,7 +725,7 @@ const AdminProductsPage = () => {
               {(() => {
                 const start = (safePage - 1) * pageSize + 1;
                 const end = Math.min(safePage * pageSize, filtered.length);
-                return `Showing ${start}–${end} of ${filtered.length}`;
+                return t('common:showingRange', { start, end, total: filtered.length });
               })()}
             </span>
             {totalPages > 1 && (
@@ -725,7 +735,7 @@ const AdminProductsPage = () => {
               className="admin-products-page"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePage === 1}
-              aria-label="Previous page"
+              aria-label={t('common:previous')}
               style={{
                 padding: '8px 14px',
                 borderRadius: '10px',
@@ -750,7 +760,7 @@ const AdminProductsPage = () => {
               className="admin-products-page"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage >= totalPages}
-              aria-label="Next page"
+              aria-label={t('common:next')}
               style={{
                 padding: '8px 14px',
                 borderRadius: '10px',
@@ -802,8 +812,7 @@ const AdminProductsPage = () => {
                       borderBottom: `1px solid ${colors.borderLight}`,
                     }}
                   >
-                    This product is already removed from the catalog. Freeze and Delete are hidden because removal already
-                    happened (soft delete).
+                    {t('products:list.menu.deletedNote')}
                   </div>
                 )}
                 <Link
@@ -828,7 +837,7 @@ const AdminProductsPage = () => {
                   }}
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                  Edit
+                  {t('products:list.menu.edit')}
                 </Link>
                 {!menuProduct.isDeleted && (
                   <button
@@ -857,7 +866,7 @@ const AdminProductsPage = () => {
                     }}
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    {menuProduct.isFrozen ? 'Unfreeze' : 'Freeze'}
+                    {menuProduct.isFrozen ? t('products:list.menu.unfreeze') : t('products:list.menu.freeze')}
                   </button>
                 )}
                 {!menuProduct.isDeleted && (
@@ -887,7 +896,7 @@ const AdminProductsPage = () => {
                     }}
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                    Remove from catalog
+                    {t('products:list.menu.removeFromCatalog')}
                   </button>
                 )}
               </div>,

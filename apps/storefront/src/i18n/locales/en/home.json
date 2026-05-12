@@ -17,6 +17,17 @@
     "unit": "unit",
     "box": "box"
   },
+  "buyByQuantity": "By quantity",
+  "buyByAmount": "By amount (₪)",
+  "purchaseModeLockedInCartQuantity": "Already in your cart by quantity — continue that way or remove the line.",
+  "purchaseModeLockedInCartAmount": "Already in your cart by amount — continue that way or remove the line.",
+  "quantityLabel": "Quantity",
+  "amountPlaceholder": "Amount in ₪",
+  "estimatedQtyApprox": "About {{qty}} {{unit}} (estimate)",
+  "addByAmount": "Add for amount",
+  "productDescription": "Product description",
+  "productDescriptionClose": "Close",
+  "productDescriptionHint": "Show store description",
   "hero": {
     "badge": "Fruits & Vegetables",
     "subtitle": "Abu Al-Anas vegetables — the tastiest way to start your day.",
@@ -29,7 +40,9 @@
   },
   "products": {
     "badge": "Fresh & Healthy",
-    "heading": "Our Products"
+    "heading": "Our Products",
+    "searchPlaceholder": "Search product...",
+    "searchNoResults": "No products match your search."
   },
   "categories": {
     "navAria": "Browse by category",
@@ -39,6 +52,8 @@
     "herbs": "Herbs",
     "spices": "Spices",
     "platters": "Fruit platters & sliced plates",
+    "pickles": "Pickles",
+    "natural-juices": "Natural juices",
     "other": "Other products",
     "filterEmpty": "No products match this category. Try another category or tap the same icon to show all products."
   },

@@ -6,9 +6,16 @@ const {
   computeCartTotals,
   buildCheckoutPreview,
   assertProductPurchasable,
-  getEffectiveUnitPrice
+  getEffectiveUnitPrice,
+  deriveQuantityFromPurchaseAmount,
+  assertQuantityAllowedForProduct,
+  PURCHASE_MODE_QUANTITY,
+  PURCHASE_MODE_AMOUNT,
+  floorPayableIls
 } = require("../services/cart.service");
 const { isWrapAllowedForUnit, WRAP_PRICE_PER_KG } = require("../constants/product");
+
+const PRODUCT_CART_FIELDS = "price salePrice stockStatus unit allowPurchaseByAmount";
 
 const getOrCreateCart = async (userId) => {
   let cart = await Cart.findOne({ user: userId });
@@ -24,12 +31,16 @@ const formatCartResponse = async (cart) => {
 
   // Persist the normalized rows (incl. coerced wrap flag) so a stale toggle
   // for a now-non-kg product can't sneak back on a future request.
-  cart.items = items.map(({ product, quantity, unitPriceSnapshot, wrap }) => ({
-    product,
-    quantity,
-    unitPriceSnapshot,
-    wrap
-  }));
+  cart.items = items.map(
+    ({ product, quantity, unitPriceSnapshot, wrap, purchaseMode, requestedAmountIls }) => ({
+      product,
+      quantity,
+      unitPriceSnapshot,
+      wrap,
+      purchaseMode,
+      requestedAmountIls
+    })
+  );
   await cart.save();
 
   return {
@@ -41,10 +52,14 @@ const formatCartResponse = async (cart) => {
       unitPriceSnapshot: item.unitPriceSnapshot,
       wrap: item.wrap,
       wrapFee: item.wrapFee,
+      purchaseMode: item.purchaseMode,
+      requestedAmountIls: item.requestedAmountIls,
+      lineProductSubtotal: item.lineProductSubtotal,
       productSnapshot: item.productSnapshot
     })),
     subtotal,
     wrapTotal,
+    payableTotal: floorPayableIls(subtotal + wrapTotal),
     wrapPricePerKg: WRAP_PRICE_PER_KG,
     updatedAt: cart.updatedAt
   };
@@ -60,15 +75,52 @@ const getCart = async (req, res, next) => {
   }
 };
 
+const lineIsPurchaseByAmount = (line) =>
+  line &&
+  line.purchaseMode === PURCHASE_MODE_AMOUNT &&
+  typeof line.requestedAmountIls === "number" &&
+  Number.isFinite(line.requestedAmountIls) &&
+  line.requestedAmountIls > 0;
+
+const mergeIntoQuantityLine = (line, addQuantity, unitPrice) => {
+  line.quantity = roundSafeSum(line.quantity, addQuantity);
+  line.unitPriceSnapshot = unitPrice;
+  line.purchaseMode = PURCHASE_MODE_QUANTITY;
+  line.requestedAmountIls = undefined;
+};
+
+/** Second (or further) add-by-amount on the same product: sum requested ₪ and re-derive weight. */
+const mergeIntoAmountLine = (line, addPurchaseAmountIls, unitPrice, product) => {
+  const prev = lineIsPurchaseByAmount(line) ? Number(line.requestedAmountIls) : 0;
+  const nextRequested = roundHalfUpNum(prev + Number(addPurchaseAmountIls), 2);
+  const { quantity: derivedQty } = deriveQuantityFromPurchaseAmount(
+    nextRequested,
+    unitPrice,
+    product
+  );
+  assertQuantityAllowedForProduct(product, derivedQty);
+  line.quantity = derivedQty;
+  line.unitPriceSnapshot = unitPrice;
+  line.purchaseMode = PURCHASE_MODE_AMOUNT;
+  line.requestedAmountIls = nextRequested;
+};
+
+const roundSafeSum = (a, b) => roundHalfUpNum(Number(a) + Number(b), 4);
+
+const roundHalfUpNum = (value, decimalPlaces) => {
+  const f = 10 ** decimalPlaces;
+  return Math.round((Number(value) + Number.EPSILON) * f) / f;
+};
+
 const addCartItem = async (req, res, next) => {
   try {
-    const { productId, quantity, wrap } = req.body;
+    const { productId, quantity, purchaseAmountIls, wrap } = req.body;
     const product = await Product.findOne({
       _id: productId,
       isActive: true,
       isFrozen: false,
       isDeleted: { $ne: true }
-    }).select("price salePrice stockStatus unit");
+    }).select(PRODUCT_CART_FIELDS);
 
     assertProductPurchasable(product);
 
@@ -78,21 +130,65 @@ const addCartItem = async (req, res, next) => {
     const cart = await getOrCreateCart(req.user._id);
     const existingItem = cart.items.find((item) => String(item.product) === productId);
 
-    if (existingItem) {
-      existingItem.quantity += quantity;
-      existingItem.unitPriceSnapshot = unitPrice;
-      // Adding more of an existing item only changes the wrap flag if the
-      // client explicitly opted in/out this time around.
-      if (wrapRequested !== undefined) {
-        existingItem.wrap = wrapAllowed && wrapRequested;
+    const byAmount = typeof purchaseAmountIls === "number";
+
+    if (byAmount) {
+      const { quantity: derivedQty } = deriveQuantityFromPurchaseAmount(
+        purchaseAmountIls,
+        unitPrice,
+        product
+      );
+      assertQuantityAllowedForProduct(product, derivedQty);
+
+      if (existingItem) {
+        if (!lineIsPurchaseByAmount(existingItem)) {
+          throw new AppError(
+            "This product is already in the cart by quantity. Remove the line or finish checkout before buying by amount.",
+            StatusCodes.BAD_REQUEST,
+            null,
+            "CART_ADD_AMOUNT_BLOCKED_QUANTITY_LINE"
+          );
+        }
+        mergeIntoAmountLine(existingItem, purchaseAmountIls, unitPrice, product);
+        if (wrapRequested !== undefined) {
+          existingItem.wrap = wrapAllowed && wrapRequested;
+        }
+      } else {
+        cart.items.push({
+          product: product._id,
+          quantity: derivedQty,
+          unitPriceSnapshot: unitPrice,
+          purchaseMode: PURCHASE_MODE_AMOUNT,
+          requestedAmountIls: purchaseAmountIls,
+          wrap: wrapAllowed && Boolean(wrapRequested)
+        });
       }
     } else {
-      cart.items.push({
-        product: product._id,
-        quantity,
-        unitPriceSnapshot: unitPrice,
-        wrap: wrapAllowed && Boolean(wrapRequested)
-      });
+      assertQuantityAllowedForProduct(product, quantity);
+
+      if (existingItem) {
+        if (lineIsPurchaseByAmount(existingItem)) {
+          throw new AppError(
+            "This product is already in the cart by amount. Remove the line or finish checkout before buying by quantity.",
+            StatusCodes.BAD_REQUEST,
+            null,
+            "CART_ADD_QUANTITY_BLOCKED_AMOUNT_LINE"
+          );
+        }
+        mergeIntoQuantityLine(existingItem, quantity, unitPrice);
+        if (wrapRequested !== undefined) {
+          existingItem.wrap = wrapAllowed && wrapRequested;
+        }
+      } else {
+        cart.items.push({
+          product: product._id,
+          quantity,
+          unitPriceSnapshot: unitPrice,
+          purchaseMode: PURCHASE_MODE_QUANTITY,
+          requestedAmountIls: undefined,
+          wrap: wrapAllowed && Boolean(wrapRequested)
+        });
+      }
     }
 
     await cart.save();
@@ -120,12 +216,54 @@ const updateCartItemQuantity = async (req, res, next) => {
       isActive: true,
       isFrozen: false,
       isDeleted: { $ne: true }
-    }).select("price salePrice stockStatus unit");
+    }).select(PRODUCT_CART_FIELDS);
 
     assertProductPurchasable(product);
 
+    const isAmountLine = lineIsPurchaseByAmount(item);
+
+    if (typeof req.body.quantity === "number" && isAmountLine) {
+      throw new AppError(
+        "This line was added by amount. Remove the item to switch to quantity, or adjust the amount only.",
+        StatusCodes.BAD_REQUEST,
+        null,
+        "CART_UPDATE_QUANTITY_BLOCKED_AMOUNT_LINE"
+      );
+    }
+
+    if (typeof req.body.purchaseAmountIls === "number" && !isAmountLine) {
+      throw new AppError(
+        "This line is by quantity. Remove the item to switch to buying by amount.",
+        StatusCodes.BAD_REQUEST,
+        null,
+        "CART_UPDATE_AMOUNT_BLOCKED_QUANTITY_LINE"
+      );
+    }
+
+    if (typeof req.body.purchaseAmountIls === "number") {
+      if (!product.allowPurchaseByAmount) {
+        throw new AppError(
+          "This product does not support buying by money amount",
+          StatusCodes.BAD_REQUEST
+        );
+      }
+      const unitPrice = getEffectiveUnitPrice(product);
+      const { quantity: derivedQty } = deriveQuantityFromPurchaseAmount(
+        req.body.purchaseAmountIls,
+        unitPrice,
+        product
+      );
+      assertQuantityAllowedForProduct(product, derivedQty);
+      item.quantity = derivedQty;
+      item.purchaseMode = PURCHASE_MODE_AMOUNT;
+      item.requestedAmountIls = req.body.purchaseAmountIls;
+    }
+
     if (typeof req.body.quantity === "number") {
+      assertQuantityAllowedForProduct(product, req.body.quantity);
       item.quantity = req.body.quantity;
+      item.purchaseMode = PURCHASE_MODE_QUANTITY;
+      item.requestedAmountIls = undefined;
     }
     if (typeof req.body.wrap === "boolean") {
       // Wrap is silently dropped for non-kg products so the customer is never
@@ -160,7 +298,7 @@ const removeCartItem = async (req, res, next) => {
     const payload = await formatCartResponse(cart);
     return res
       .status(StatusCodes.OK)
-      .json({ success: true, message: "Cart item removed", data: { cart: payload } });
+      .json({ success: true, message: "Item removed", data: { cart: payload } });
   } catch (error) {
     return next(error);
   }
@@ -175,7 +313,15 @@ const clearCart = async (req, res, next) => {
     return res.status(StatusCodes.OK).json({
       success: true,
       message: "Cart cleared",
-      data: { cart: { items: [], subtotal: 0, wrapTotal: 0, wrapPricePerKg: WRAP_PRICE_PER_KG } }
+      data: {
+        cart: {
+          items: [],
+          subtotal: 0,
+          wrapTotal: 0,
+          payableTotal: 0,
+          wrapPricePerKg: WRAP_PRICE_PER_KG
+        }
+      }
     });
   } catch (error) {
     return next(error);
