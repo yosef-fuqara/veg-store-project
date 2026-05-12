@@ -8,6 +8,7 @@ const { PAYMENT_STATUS, PAYMENT_METHOD } = require("../constants/order");
 const { getPaymentProvider } = require("./payment/get-payment-provider");
 const {
   scheduleOnlinePaymentPaid,
+  scheduleOnlinePaymentFailed,
   scheduleBankTransferAdminDecision
 } = require("./order-email.service");
 
@@ -137,6 +138,8 @@ async function handleWebhook(req) {
 
   if (nextStatus === PAYMENT_STATUS.PAID) {
     scheduleOnlinePaymentPaid(order._id);
+  } else if (nextStatus === PAYMENT_STATUS.FAILED || nextStatus === PAYMENT_STATUS.CANCELLED) {
+    scheduleOnlinePaymentFailed(order._id);
   }
 
   return { duplicate: false, order };

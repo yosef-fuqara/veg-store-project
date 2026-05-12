@@ -40,10 +40,7 @@
   },
   "orderStatus": {
     "new": "جديد",
-    "seen": "تمت المعاينة",
     "confirmed": "تم التأكيد",
-    "preparing": "قيد التحضير",
-    "ready_for_delivery": "جاهز للتوصيل",
     "sent_with_delivery_company": "أُرسل مع شركة التوصيل",
     "delivered": "تم التسليم",
     "cancelled": "ملغي"

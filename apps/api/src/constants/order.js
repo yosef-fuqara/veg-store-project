@@ -1,10 +1,6 @@
 const ORDER_STATUS = {
   NEW: "new",
-  /** Admin opened order details; internal queue signal — no customer email. */
-  SEEN: "seen",
   CONFIRMED: "confirmed",
-  PREPARING: "preparing",
-  READY_FOR_DELIVERY: "ready_for_delivery",
   SENT_WITH_DELIVERY_COMPANY: "sent_with_delivery_company",
   DELIVERED: "delivered",
   CANCELLED: "cancelled"

@@ -426,13 +426,13 @@ describe("Orders", () => {
       .get(apiUrl(`/orders/admin/${orderId}`))
       .set("Authorization", `Bearer ${aToken}`);
     expect(detail.status).toBe(200);
-    expect(detail.body.data.order.orderStatus).toBe(ORDER_STATUS.SEEN);
+    expect(detail.body.data.order.orderStatus).toBe(ORDER_STATUS.NEW);
 
     const detailAgain = await request(getApp())
       .get(apiUrl(`/orders/admin/${orderId}`))
       .set("Authorization", `Bearer ${aToken}`);
     expect(detailAgain.status).toBe(200);
-    expect(detailAgain.body.data.order.orderStatus).toBe(ORDER_STATUS.SEEN);
+    expect(detailAgain.body.data.order.orderStatus).toBe(ORDER_STATUS.NEW);
   });
 
   it("admin updates order status with valid transition", async () => {

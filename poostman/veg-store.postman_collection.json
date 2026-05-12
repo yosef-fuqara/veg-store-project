@@ -5886,7 +5886,7 @@
     },
     {
       "name": "10 Order status transition flow",
-      "description": "Walks the full new->confirmed->preparing->ready_for_delivery->sent_with_delivery_company->delivered path, plus invalid-transition and cancellation rules.",
+      "description": "Walks new->confirmed->sent_with_delivery_company->delivered, invalid-transition and cancellation rules.",
       "item": [
         {
           "name": "POST /cart/items (seed cart)",
@@ -6127,129 +6127,7 @@
           ]
         },
         {
-          "name": "PATCH .../status confirmed -> preparing",
-          "_postman_id": "19df782011d-0068",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/orders/admin/{{orderStatusFlowId}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "orders",
-                "admin",
-                "{{orderStatusFlowId}}",
-                "status"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"orderStatus\": \"preparing\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "// Boilerplate assertions:",
-                  "pm.test(\"Content-Type is JSON\", () => {",
-                  "    const ct = pm.response.headers.get(\"Content-Type\") || \"\";",
-                  "    pm.expect(ct).to.include(\"application/json\");",
-                  "});",
-                  "pm.test(\"body has success flag\", () => {",
-                  "    const body = pm.response.json();",
-                  "    pm.expect(body).to.have.property(\"success\");",
-                  "});",
-                  "",
-                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"orderStatus preparing\", () => pm.expect(pm.response.json().data.order.orderStatus).to.eql(\"preparing\"));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "PATCH .../status preparing -> ready_for_delivery",
-          "_postman_id": "19df782011d-0069",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/orders/admin/{{orderStatusFlowId}}/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "orders",
-                "admin",
-                "{{orderStatusFlowId}}",
-                "status"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"orderStatus\": \"ready_for_delivery\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "// Boilerplate assertions:",
-                  "pm.test(\"Content-Type is JSON\", () => {",
-                  "    const ct = pm.response.headers.get(\"Content-Type\") || \"\";",
-                  "    pm.expect(ct).to.include(\"application/json\");",
-                  "});",
-                  "pm.test(\"body has success flag\", () => {",
-                  "    const body = pm.response.json();",
-                  "    pm.expect(body).to.have.property(\"success\");",
-                  "});",
-                  "",
-                  "pm.test(\"status 200\", () => pm.response.to.have.status(200));",
-                  "pm.test(\"orderStatus ready_for_delivery\", () => pm.expect(pm.response.json().data.order.orderStatus).to.eql(\"ready_for_delivery\"));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "PATCH .../status ready -> sent_with_delivery_company",
+          "name": "PATCH .../status confirmed -> sent_with_delivery_company",
           "_postman_id": "19df782011d-006a",
           "request": {
             "method": "PATCH",

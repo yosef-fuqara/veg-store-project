@@ -40,10 +40,7 @@
   },
   "orderStatus": {
     "new": "חדשה",
-    "seen": "נראה",
     "confirmed": "אושרה",
-    "preparing": "בהכנה",
-    "ready_for_delivery": "מוכנה למשלוח",
     "sent_with_delivery_company": "נשלחה עם חברת משלוחים",
     "delivered": "נמסרה",
     "cancelled": "בוטלה"

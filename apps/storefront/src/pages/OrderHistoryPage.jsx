@@ -51,7 +51,7 @@ const badgeTone = (status) => {
   if (["cancelled", "failed"].includes(status)) {
     return { background: colors.errorSurface, color: colors.error, border: colors.errorBorder };
   }
-  if (["pending_payment", "bank_transfer_pending", "preparing", "ready_for_delivery", "sent_with_delivery_company"].includes(status)) {
+  if (["pending_payment", "bank_transfer_pending", "sent_with_delivery_company"].includes(status)) {
     return { background: colors.warningSurface, color: colors.warning, border: colors.warningBorder };
   }
   return { background: colors.primarySurface, color: colors.primary, border: colors.primaryBorder };

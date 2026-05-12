@@ -2,11 +2,11 @@
 
 ## Order Status
 
-`new` -> `confirmed` -> `preparing` -> `ready_for_delivery` -> `sent_with_delivery_company` -> `delivered`
+`new` -> `confirmed` -> `sent_with_delivery_company` -> `delivered`
 
 Cancellation path:
 
-- `new` or `confirmed` or `preparing` -> `cancelled` (policy controlled in API service layer)
+- `new` or `confirmed` -> `cancelled` (policy controlled in API service layer)
 
 ## Payment Status
 
@@ -23,8 +23,6 @@ Cancellation path:
 
 - `new`
 - `confirmed`
-- `preparing`
-- `ready_for_delivery`
 - `sent_with_delivery_company`
 - `delivered`
 - `cancelled`
@@ -50,3 +48,9 @@ Cancellation path:
 - Enforce transition map in one service (single source of truth).
 - Keep payment provider status mapping explicit and versioned.
 - Persist provider transaction references and raw responses safely for audits.
+
+## Legacy order statuses (removed)
+
+Older deployments may still have documents with `seen`, `preparing`, or `ready_for_delivery`. Run the one-off migration from `apps/api`:
+
+`npm run migrate:order-status-prune`

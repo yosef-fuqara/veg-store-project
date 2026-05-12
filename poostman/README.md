@@ -94,7 +94,7 @@ flowchart TD
 | 07 | Orders - bit | bit method also goes to `pending_payment` |
 | 08 | Orders - bank_transfer | initial `bank_transfer_pending`, customer-on-admin 403, admin on credit_card 400, approval 200, double-approval 400 |
 | 09 | Payment webhooks | wrong/missing secret 401, success -> paid, fail -> failed, cancelled -> cancelled, idempotent replay (`duplicate: true`), already-paid 400, bank-transfer rejected 400, unknown order 404, missing `outcome` 400 |
-| 10 | Order status flow | full happy path `new -> confirmed -> preparing -> ready_for_delivery -> sent_with_delivery_company -> delivered`, invalid skip 400, terminal cancellation 400, `new -> cancelled` 200, admin filter `?orderStatus=delivered`, no-auth 401, customer 403, admin detail 200 |
+| 10 | Order status flow | full happy path `new -> confirmed -> sent_with_delivery_company -> delivered`, invalid skip 400, terminal cancellation 400, `new -> cancelled` 200, admin filter `?orderStatus=delivered`, no-auth 401, customer 403, admin detail 200 |
 | 11 | Cross-customer ownership | customer B cannot view customer A's order (404) |
 | 12 | Misc security | malformed JSON body, malformed `Authorization: Bearer` header |
 

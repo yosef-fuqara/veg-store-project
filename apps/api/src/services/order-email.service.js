@@ -2,15 +2,35 @@ const Order = require("../models/order.model");
 const User = require("../models/user.model");
 const env = require("../config/env");
 const { sendEmail, isMailConfigured } = require("./mail.service");
+const {
+  sendTransactionalWhatsAppToCustomer,
+  buildCustomerOrderStatusMessage
+} = require("./whatsapp.service");
 const { ORDER_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } = require("../constants/order");
+
+/** Customer-facing order lifecycle emails only (maps from admin orderStatus). */
+const ORDER_NOTIFY_EVENT = {
+  /** Store accepted the order (was: ORDER_RECEIVED / ORDER_CONFIRMED). */
+  ORDER_CONFIRMED: "ORDER_CONFIRMED",
+  ORDER_SENT_WITH_DELIVERY: "ORDER_SENT_WITH_DELIVERY",
+  ORDER_DELIVERED: "ORDER_DELIVERED",
+  ORDER_CANCELLED: "ORDER_CANCELLED"
+};
 
 const KEYS = {
   BANK_TRANSFER_SUBMITTED: "bank_transfer_submitted",
   ADMIN_BANK_TRANSFER_ALERT: "admin_bank_transfer_alert",
   PAYMENT_ONLINE_PAID: "payment_online_paid",
+  PAYMENT_ONLINE_FAILED: "payment_online_failed",
   BANK_TRANSFER_APPROVED: "bank_transfer_approved",
   BANK_TRANSFER_REJECTED: "bank_transfer_rejected",
-  orderStatus: (status) => `order_status:${status}`
+  /** @deprecated Prefer orderNotifyEvent; kept for legacy idempotency checks. */
+  orderStatus: (status) => `order_status:${status}`,
+  orderNotifyEvent: (eventId) => `order_notify:${eventId}`,
+  /** WhatsApp idempotency (stored in same emailNotifications Mixed map). */
+  WA_ORDER_SENT_WITH_DELIVERY: "wa_notify:ORDER_SENT_WITH_DELIVERY",
+  WA_ORDER_DELIVERED: "wa_notify:ORDER_DELIVERED",
+  WA_ORDER_CANCELLED: "wa_notify:ORDER_CANCELLED"
 };
 
 const logSkip = (reason) => {
@@ -45,9 +65,14 @@ const getCustomerEmail = async (order) => {
   return user?.email || "";
 };
 
-async function sendCustomerOnce(orderId, key, build) {
+async function sendCustomerOnce(orderId, key, build, legacyKeys = []) {
   const order = await Order.findById(orderId).lean();
-  if (!order || alreadySent(order, key)) {
+  if (!order) {
+    return;
+  }
+  const sent =
+    alreadySent(order, key) || legacyKeys.some((legacyKey) => alreadySent(order, legacyKey));
+  if (sent) {
     return;
   }
   if (!isMailConfigured()) {
@@ -62,6 +87,24 @@ async function sendCustomerOnce(orderId, key, build) {
   const { subject, text, html } = build(order);
   await sendEmail({ to, subject, text, html });
   await markSent(orderId, key);
+}
+
+async function sendCustomerWhatsappOnce(orderId, waKey, buildMessage) {
+  const order = await Order.findById(orderId).lean();
+  if (!order) {
+    return;
+  }
+  if (alreadySent(order, waKey)) {
+    return;
+  }
+  const message = buildMessage(order);
+  const result = await sendTransactionalWhatsAppToCustomer({
+    customerPhone: order.customerPhone,
+    message
+  });
+  if (result?.ok) {
+    await markSent(orderId, waKey);
+  }
 }
 
 async function sendAdminOnce(orderId, key, build) {
@@ -116,6 +159,19 @@ function scheduleOnlinePaymentPaid(orderId) {
   });
 }
 
+/** Webhook: payment failed or cancelled by provider */
+function scheduleOnlinePaymentFailed(orderId) {
+  safeRun("onlinePaymentFailed", async () => {
+    await sendCustomerOnce(orderId, KEYS.PAYMENT_ONLINE_FAILED, (order) => ({
+      subject: "Payment was not completed",
+      text: `We could not complete your online payment for this order.\n\n${orderSummaryLine(order)}\n\nIf you still want the order, try placing it again or contact the store.`,
+      html: `<p>We could not complete your online payment for this order.</p><p>${orderSummaryLine(
+        order
+      )}</p><p>If you still want the order, try placing it again or contact the store.</p>`
+    }));
+  });
+}
+
 /** Admin approved or rejected bank transfer payment */
 function scheduleBankTransferAdminDecision(orderId, nextPaymentStatus) {
   safeRun("bankTransferAdminDecision", async () => {
@@ -137,67 +193,91 @@ function scheduleBankTransferAdminDecision(orderId, nextPaymentStatus) {
   });
 }
 
-const ORDER_STATUS_MESSAGES = {
-  [ORDER_STATUS.CONFIRMED]: {
-    subject: "Order status: confirmed",
-    text: "Your order status is now: confirmed.",
-    html: "<p>Your order status is now: <strong>confirmed</strong>.</p>"
-  },
-  [ORDER_STATUS.PREPARING]: {
-    subject: "Order status: preparing",
-    text: "Your order status is now: preparing.",
-    html: "<p>Your order status is now: <strong>preparing</strong>.</p>"
-  },
-  [ORDER_STATUS.READY_FOR_DELIVERY]: {
-    subject: "Order status: ready for delivery",
-    text: "Your order status is now: ready for delivery.",
-    html: "<p>Your order status is now: <strong>ready for delivery</strong>.</p>"
-  },
-  [ORDER_STATUS.SENT_WITH_DELIVERY_COMPANY]: {
-    subject: "Order status: sent with delivery company",
-    text: "Your order status is now: sent with delivery company.",
-    html: "<p>Your order status is now: <strong>sent with delivery company</strong>.</p>"
-  },
-  [ORDER_STATUS.DELIVERED]: {
-    subject: "Order status: delivered",
-    text: "Your order status is now: delivered.",
-    html: "<p>Your order status is now: <strong>delivered</strong>.</p>"
-  },
-  [ORDER_STATUS.CANCELLED]: {
-    subject: "Order status: cancelled",
-    text: "Your order status is now: cancelled.",
-    html: "<p>Your order status is now: <strong>cancelled</strong>.</p>"
+const ORDER_STATUS_TO_NOTIFY_EVENT = {
+  [ORDER_STATUS.CONFIRMED]: ORDER_NOTIFY_EVENT.ORDER_CONFIRMED,
+  [ORDER_STATUS.SENT_WITH_DELIVERY_COMPANY]: ORDER_NOTIFY_EVENT.ORDER_SENT_WITH_DELIVERY,
+  [ORDER_STATUS.DELIVERED]: ORDER_NOTIFY_EVENT.ORDER_DELIVERED,
+  [ORDER_STATUS.CANCELLED]: ORDER_NOTIFY_EVENT.ORDER_CANCELLED
+};
+
+const NOTIFY_EVENT_MESSAGES = {
+  [ORDER_NOTIFY_EVENT.ORDER_CONFIRMED]: {
+    subject: "Your order has been received",
+    text: "Your order has been received by the store.",
+    html: "<p>Your order has been received by the store.</p>"
   }
 };
 
+/** Prevents duplicate confirmed email after migrating from `order_status:confirmed`. */
+const LEGACY_ORDER_CONFIRMED_KEYS = [KEYS.orderStatus(ORDER_STATUS.CONFIRMED)];
+
+/**
+ * Order status notifications: email for confirmed only; WhatsApp for sent / delivered / cancelled.
+ */
 function scheduleOrderStatusChange(orderId, newOrderStatus) {
   safeRun("orderStatusChange", async () => {
-    const msg = ORDER_STATUS_MESSAGES[newOrderStatus];
-    if (!msg) {
-      return;
-    }
-    const key = KEYS.orderStatus(newOrderStatus);
-    if (newOrderStatus === ORDER_STATUS.CONFIRMED) {
-      const order = await Order.findById(orderId).lean();
-      if (
-        order?.paymentMethod === PAYMENT_METHOD.BANK_TRANSFER &&
-        alreadySent(order, KEYS.BANK_TRANSFER_APPROVED)
-      ) {
-        logSkip("confirmed email already covered by bank transfer approval");
+    try {
+      const notifyEvent = ORDER_STATUS_TO_NOTIFY_EVENT[newOrderStatus];
+      if (!notifyEvent) {
         return;
       }
+
+      if (newOrderStatus === ORDER_STATUS.CONFIRMED) {
+        const order = await Order.findById(orderId).lean();
+        if (!order) {
+          return;
+        }
+        if (
+          order?.paymentMethod === PAYMENT_METHOD.BANK_TRANSFER &&
+          alreadySent(order, KEYS.BANK_TRANSFER_APPROVED)
+        ) {
+          logSkip("confirmed email already covered by bank transfer approval");
+          return;
+        }
+        const msg = NOTIFY_EVENT_MESSAGES[ORDER_NOTIFY_EVENT.ORDER_CONFIRMED];
+        const key = KEYS.orderNotifyEvent(ORDER_NOTIFY_EVENT.ORDER_CONFIRMED);
+        const legacyKeys = LEGACY_ORDER_CONFIRMED_KEYS;
+        await sendCustomerOnce(
+          orderId,
+          key,
+          (o) => ({
+            subject: msg.subject,
+            text: `${msg.text}\n\n${orderSummaryLine(o)}`,
+            html: `${msg.html}<p>${orderSummaryLine(o)}</p>`
+          }),
+          legacyKeys
+        );
+        return;
+      }
+
+      if (newOrderStatus === ORDER_STATUS.SENT_WITH_DELIVERY_COMPANY) {
+        await sendCustomerWhatsappOnce(orderId, KEYS.WA_ORDER_SENT_WITH_DELIVERY, (o) =>
+          buildCustomerOrderStatusMessage(o, "on_the_way")
+        );
+        return;
+      }
+      if (newOrderStatus === ORDER_STATUS.DELIVERED) {
+        await sendCustomerWhatsappOnce(orderId, KEYS.WA_ORDER_DELIVERED, (o) =>
+          buildCustomerOrderStatusMessage(o, "delivered")
+        );
+        return;
+      }
+      if (newOrderStatus === ORDER_STATUS.CANCELLED) {
+        await sendCustomerWhatsappOnce(orderId, KEYS.WA_ORDER_CANCELLED, (o) =>
+          buildCustomerOrderStatusMessage(o, "cancelled")
+        );
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn(`[order-email] orderStatusChange:`, err?.message || err);
     }
-    await sendCustomerOnce(orderId, key, (order) => ({
-      subject: msg.subject,
-      text: `${msg.text}\n\n${orderSummaryLine(order)}`,
-      html: `${msg.html}<p>${orderSummaryLine(order)}</p>`
-    }));
   });
 }
 
 module.exports = {
   scheduleBankTransferOrderCreated,
   scheduleOnlinePaymentPaid,
+  scheduleOnlinePaymentFailed,
   scheduleBankTransferAdminDecision,
   scheduleOrderStatusChange,
   KEYS

@@ -62,7 +62,8 @@ describe("WhatsApp admin notification", () => {
           deliveryArea: "nazareth",
           total: 270,
           paymentMethod: "credit_card",
-          hasPreorderItems: true
+          hasPreorderItems: true,
+          items: [{ name: "Tomatoes", quantity: 2, unit: "kg" }]
         },
         { name: "Yossi" }
       );
@@ -74,7 +75,31 @@ describe("WhatsApp admin notification", () => {
       expect(msg).toMatch(/270/);
       expect(msg).toMatch(/credit_card/);
       expect(msg).toMatch(/preorder/i);
+      expect(msg).toMatch(/Tomatoes/);
     });
+  });
+
+  it("toWaApiDigits normalizes Israeli mobile", () => {
+    jest.isolateModules(() => {
+      const { toWaApiDigits } = require("../../src/services/whatsapp.service");
+      expect(toWaApiDigits("0501234567")).toBe("972501234567");
+      expect(toWaApiDigits("+972 50-123-4567")).toBe("972501234567");
+    });
+  });
+
+  it("sendTransactionalWhatsApp never throws on invalid provider", async () => {
+    process.env.WHATSAPP_NOTIFICATIONS_ENABLED = "true";
+    process.env.WHATSAPP_PROVIDER = "unknown_xyz";
+    process.env.NODE_ENV = "test";
+    let result;
+    await jest.isolateModulesAsync(async () => {
+      const { sendTransactionalWhatsApp } = require("../../src/services/whatsapp.service");
+      result = await sendTransactionalWhatsApp({
+        toWaDigits: "972501234567",
+        message: "hi"
+      });
+    });
+    expect(result?.ok).toBe(false);
   });
 
   it("notifyAdminOfNewOrder never throws (provider failure is swallowed)", async () => {

@@ -1,23 +1,66 @@
 const env = require("../config/env");
 const { resolveDeliveryAreaLabel } = require("../constants/delivery");
+const { normalizeIsraeliMobile } = require("../utils/israeliMobilePhone");
 
 const truthy = (value) =>
   typeof value === "string" && ["1", "true", "yes", "on"].includes(value.toLowerCase());
 
+/**
+ * Provider + feature flag; does not require admin destination (used for customer messages).
+ */
+const isWhatsAppProviderReady = () => {
+  if (!truthy(env.whatsappNotificationsEnabled)) {
+    return false;
+  }
+  const provider = String(env.whatsappProvider || "").toLowerCase();
+  if (!provider) {
+    return false;
+  }
+  if (provider === "meta_cloud") {
+    return Boolean(env.whatsappApiToken && env.whatsappPhoneNumberId);
+  }
+  if (provider === "twilio") {
+    return Boolean(
+      env.whatsappTwilioAccountSid && env.whatsappApiToken && env.whatsappTwilioFrom
+    );
+  }
+  if (provider === "log") {
+    return true;
+  }
+  return false;
+};
+
 const isWhatsAppEnabled = () =>
-  truthy(env.whatsappNotificationsEnabled) &&
-  Boolean(env.adminWhatsappPhone) &&
-  Boolean(env.whatsappProvider);
+  isWhatsAppProviderReady() && Boolean(env.adminWhatsappPhone);
+
+/**
+ * Digits without "+" for Meta / Twilio WhatsApp APIs.
+ * @param {unknown} input
+ * @returns {string | null}
+ */
+function toWaApiDigits(input) {
+  if (input == null || input === "") {
+    return null;
+  }
+  const raw = String(input).trim();
+  const local = normalizeIsraeliMobile(raw);
+  if (local) {
+    return `972${local.slice(1)}`;
+  }
+  const compact = raw.replace(/\s/g, "");
+  if (compact.startsWith("+")) {
+    const d = compact.slice(1).replace(/\D/g, "");
+    return d.length ? d : null;
+  }
+  const digitsOnly = compact.replace(/\D/g, "");
+  return digitsOnly.length ? digitsOnly : null;
+}
 
 const buildOrderMessage = (order, user) => {
   const orderId = String(order?._id || "");
   const customerName = user?.name || order?.customerName || "-";
   const customerPhone = order?.customerPhone || user?.phone || "-";
-  const area = resolveDeliveryAreaLabel(
-    order?.deliveryArea,
-    order?.deliveryAddress?.city,
-    "he"
-  );
+  const area = resolveDeliveryAreaLabel(order?.deliveryArea, order?.deliveryAddress?.city, "he");
   const total = typeof order?.total === "number" ? order.total : 0;
   const paymentMethod = order?.paymentMethod || "-";
   const adminBaseUrl = env.adminBaseUrl;
@@ -32,13 +75,19 @@ const buildOrderMessage = (order, user) => {
     `Total: ${total} ILS`,
     `Payment: ${paymentMethod}`
   ];
+  const itemLines = (order?.items || [])
+    .slice(0, 4)
+    .map(
+      (line) => `${line.name} x${line.quantity}${line.unit ? ` ${line.unit}` : ""}`
+    );
+  if (itemLines.length) {
+    lines.push(`Items: ${itemLines.join("; ")}`);
+  }
   if (order?.hasPreorderItems) {
     lines.push("⚠ Contains preorder/custom platter items");
   }
   const wrapTotal = typeof order?.wrapTotal === "number" ? order.wrapTotal : 0;
   if (wrapTotal > 0) {
-    // Surface the wrap requirement so the packer knows to grab cling-film
-    // before they start picking the order.
     const wrappedItems = (order.items || [])
       .filter((line) => line?.wrap)
       .map((line) => `${line.name} x${line.quantity}${line.unit ? ` ${line.unit}` : ""}`);
@@ -52,6 +101,20 @@ const buildOrderMessage = (order, user) => {
   }
   return lines.join("\n");
 };
+
+function buildCustomerOrderStatusMessage(order, kind) {
+  const id = String(order?._id || "");
+  if (kind === "on_the_way") {
+    return `Your order is on the way. Order #${id}`;
+  }
+  if (kind === "delivered") {
+    return `Your order has been delivered. Order #${id}`;
+  }
+  if (kind === "cancelled") {
+    return `Your order was cancelled. Order #${id}`;
+  }
+  return `Order update #${id}`;
+}
 
 const sendViaMetaCloud = async ({ to, message }) => {
   const url = `https://graph.facebook.com/v20.0/${env.whatsappPhoneNumberId}/messages`;
@@ -103,6 +166,55 @@ const sendViaTwilio = async ({ to, message }) => {
   }
 };
 
+async function dispatchWhatsAppText({ toWaDigits, message }) {
+  const provider = String(env.whatsappProvider || "").toLowerCase();
+  if (!toWaDigits || !message) {
+    throw new Error("WhatsApp send requires destination and message");
+  }
+  if (provider === "meta_cloud") {
+    await sendViaMetaCloud({ to: toWaDigits, message });
+  } else if (provider === "twilio") {
+    await sendViaTwilio({ to: toWaDigits, message });
+  } else if (provider === "log") {
+    // eslint-disable-next-line no-console
+    console.info("[whatsapp] log provider; to:", toWaDigits, "message:", message);
+  } else {
+    throw new Error(`Unknown WhatsApp provider "${provider}"`);
+  }
+}
+
+/**
+ * Low-level transactional send; never throws to caller.
+ */
+async function sendTransactionalWhatsApp({ toWaDigits, message }) {
+  try {
+    if (!isWhatsAppProviderReady()) {
+      // eslint-disable-next-line no-console
+      console.info("[whatsapp] provider disabled or incomplete; skipping message send");
+      return { ok: false, reason: "disabled_or_incomplete" };
+    }
+    if (!toWaDigits || !message) {
+      return { ok: false, reason: "invalid_input" };
+    }
+    await dispatchWhatsAppText({ toWaDigits, message });
+    return { ok: true };
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn("[whatsapp] transactional send failed:", err?.message);
+    return { ok: false, error: err?.message };
+  }
+}
+
+async function sendTransactionalWhatsAppToCustomer({ customerPhone, message }) {
+  const digits = toWaApiDigits(customerPhone);
+  if (!digits) {
+    // eslint-disable-next-line no-console
+    console.info("[whatsapp] skip customer message: could not normalize phone");
+    return { ok: false, reason: "bad_phone" };
+  }
+  return sendTransactionalWhatsApp({ toWaDigits: digits, message });
+}
+
 /**
  * Notify the business owner of a new order via WhatsApp.
  *
@@ -118,22 +230,26 @@ const notifyAdminOfNewOrder = async (order, user) => {
       return { ok: false, reason: "disabled" };
     }
 
-    const provider = String(env.whatsappProvider || "").toLowerCase();
-    const to = env.adminWhatsappPhone;
-    const message = buildOrderMessage(order, user);
+    const toWaDigits = toWaApiDigits(env.adminWhatsappPhone);
+    if (!toWaDigits) {
+      // eslint-disable-next-line no-console
+      console.warn("[whatsapp] admin phone could not be normalized; skipping");
+      return { ok: false, reason: "bad_admin_phone" };
+    }
 
-    if (provider === "meta_cloud") {
-      await sendViaMetaCloud({ to, message });
-    } else if (provider === "twilio") {
-      await sendViaTwilio({ to, message });
-    } else if (provider === "log") {
+    const message = buildOrderMessage(order, user);
+    const provider = String(env.whatsappProvider || "").toLowerCase();
+    if (provider === "log") {
       // eslint-disable-next-line no-console
       console.info("[whatsapp] log provider; would send:", message);
-    } else {
-      // eslint-disable-next-line no-console
-      console.warn(`[whatsapp] unknown provider "${provider}"; skipping`);
-      return { ok: false, reason: "unknown_provider" };
+      return { ok: true };
     }
+
+    if (!isWhatsAppProviderReady()) {
+      return { ok: false, reason: "incomplete_provider" };
+    }
+
+    await dispatchWhatsAppText({ toWaDigits, message });
     return { ok: true };
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -145,5 +261,10 @@ const notifyAdminOfNewOrder = async (order, user) => {
 module.exports = {
   notifyAdminOfNewOrder,
   isWhatsAppEnabled,
-  buildOrderMessage
+  isWhatsAppProviderReady,
+  buildOrderMessage,
+  buildCustomerOrderStatusMessage,
+  toWaApiDigits,
+  sendTransactionalWhatsApp,
+  sendTransactionalWhatsAppToCustomer
 };

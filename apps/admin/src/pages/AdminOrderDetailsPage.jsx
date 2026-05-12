@@ -14,8 +14,7 @@ import { formatAdminOrderStatusLabel, formatAdminPaymentStatusLabel } from "../u
 import { useAdminLanguage } from "../i18n/useAdminLanguage";
 
 const ORDER_STATUS_OPTIONS = [
-  "new", "seen", "confirmed", "preparing", "ready_for_delivery",
-  "sent_with_delivery_company", "delivered", "cancelled"
+  "new", "confirmed", "sent_with_delivery_company", "delivered", "cancelled"
 ];
 
 const PAYMENT_STATUS_OPTIONS = ["bank_transfer_approved", "failed", "cancelled"];
@@ -43,10 +42,7 @@ const colors = {
 
 const ORDER_STATUS_STYLES = {
   new:                       { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
-  seen:                      { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1' },
   confirmed:                 { bg: '#ecfeff', color: '#0e7490', border: '#a5f3fc' },
-  preparing:                 { bg: '#f5f3ff', color: '#6d28d9', border: '#ddd6fe' },
-  ready_for_delivery:        { bg: '#ecfccb', color: '#3f6212', border: '#bef264' },
   sent_with_delivery_company:{ bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' },
   delivered:                 { bg: '#dcfce7', color: '#166534', border: '#bbf7d0' },
   cancelled:                 { bg: '#fef2f2', color: '#991b1b', border: '#fecaca' },

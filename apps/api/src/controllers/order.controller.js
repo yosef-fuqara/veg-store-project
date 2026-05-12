@@ -13,7 +13,7 @@ const {
   assertPreorderTiming
 } = require("../services/order.service");
 const { adminUpdateBankTransferPayment } = require("../services/payment.service");
-const { notifyAdminOfNewOrder } = require("../services/whatsapp.service");
+const { notifyOrderCreated, notifyOrderStatusChanged } = require("../services/order-notification.service");
 const {
   ALLOWED_DELIVERY_AREAS,
   LOCAL_DELIVERY_AREA,
@@ -24,10 +24,7 @@ const {
   snapshotCityForOrder
 } = require("../constants/delivery");
 const { ORDER_STATUS, PAYMENT_METHOD } = require("../constants/order");
-const {
-  scheduleBankTransferOrderCreated,
-  scheduleOrderStatusChange
-} = require("../services/order-email.service");
+const { scheduleBankTransferOrderCreated } = require("../services/order-email.service");
 const {
   uploadBufferToCloudinary,
   destroyCloudinaryImage
@@ -138,13 +135,7 @@ const createOrder = async (req, res, next) => {
     cart.items = [];
     await cart.save();
 
-    // Fire-and-forget admin notification. Failure here must NEVER fail the
-    // order itself; the WhatsApp service swallows and logs errors.
-    notifyAdminOfNewOrder(order, req.user).catch((err) => {
-      // Defensive: notifier should already log internally.
-      // eslint-disable-next-line no-console
-      console.warn("[orders] admin notification dispatch error:", err?.message);
-    });
+    notifyOrderCreated(order, req.user);
 
     if (req.body.paymentMethod === PAYMENT_METHOD.BANK_TRANSFER) {
       scheduleBankTransferOrderCreated(order._id);
@@ -252,11 +243,6 @@ const adminGetOrder = async (req, res, next) => {
       throw new AppError("Order not found", StatusCodes.NOT_FOUND);
     }
 
-    if (order.orderStatus === ORDER_STATUS.NEW) {
-      order.orderStatus = ORDER_STATUS.SEEN;
-      await order.save();
-    }
-
     return res.status(StatusCodes.OK).json({
       success: true,
       data: { order }
@@ -279,7 +265,7 @@ const adminUpdateOrderStatus = async (req, res, next) => {
     await order.save();
 
     if (previousOrderStatus !== order.orderStatus) {
-      scheduleOrderStatusChange(order._id, order.orderStatus);
+      notifyOrderStatusChanged(order._id, order.orderStatus);
     }
 
     return res.status(StatusCodes.OK).json({

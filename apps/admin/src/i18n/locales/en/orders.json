@@ -94,10 +94,7 @@
   },
   "orderStatuses": {
     "new": "New",
-    "seen": "Seen",
     "confirmed": "Confirmed",
-    "preparing": "Preparing",
-    "ready_for_delivery": "Ready for delivery",
     "sent_with_delivery_company": "Sent with courier",
     "delivered": "Delivered",
     "cancelled": "Cancelled"
