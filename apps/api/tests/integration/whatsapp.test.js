@@ -87,6 +87,44 @@ describe("WhatsApp admin notification", () => {
     });
   });
 
+  it("toTwilioWhatsAppParty normalizes Sandbox-style From handles", () => {
+    jest.isolateModules(() => {
+      const { toTwilioWhatsAppParty } = require("../../src/services/whatsapp.service");
+      expect(toTwilioWhatsAppParty("+14155238886")).toBe("whatsapp:+14155238886");
+      expect(toTwilioWhatsAppParty("whatsapp:+14155238886")).toBe("whatsapp:+14155238886");
+      expect(toTwilioWhatsAppParty("14155238886")).toBe("whatsapp:+14155238886");
+      expect(toTwilioWhatsAppParty("972501234567")).toBe("whatsapp:+972501234567");
+    });
+  });
+
+  it("Twilio outbound uses normalized whatsapp:+ parties", async () => {
+    process.env.WHATSAPP_NOTIFICATIONS_ENABLED = "true";
+    process.env.WHATSAPP_PROVIDER = "twilio";
+    process.env.WHATSAPP_TWILIO_ACCOUNT_SID = "ACxxxxxxxx";
+    process.env.WHATSAPP_API_TOKEN = "secret";
+    process.env.WHATSAPP_TWILIO_FROM = "whatsapp:+14155238886";
+
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => ""
+    });
+    global.fetch = fetchMock;
+
+    await jest.isolateModulesAsync(async () => {
+      const { sendTransactionalWhatsApp } = require("../../src/services/whatsapp.service");
+      const result = await sendTransactionalWhatsApp({
+        toWaDigits: "972501234567",
+        message: "hello"
+      });
+      expect(result?.ok).toBe(true);
+    });
+
+    const body = fetchMock.mock.calls[0][1].body;
+    expect(body).toContain("From=whatsapp%3A%2B14155238886");
+    expect(body).toContain("To=whatsapp%3A%2B972501234567");
+  });
+
   it("sendTransactionalWhatsApp never throws on invalid provider", async () => {
     process.env.WHATSAPP_NOTIFICATIONS_ENABLED = "true";
     process.env.WHATSAPP_PROVIDER = "unknown_xyz";

@@ -34,6 +34,29 @@ const isWhatsAppEnabled = () =>
   isWhatsAppProviderReady() && Boolean(env.adminWhatsappPhone);
 
 /**
+ * Twilio expects addresses like `whatsapp:+14155238886`. Env may include `whatsapp:`
+ * or omit `+`; this normalizes safely for the Messages API.
+ * @param {string} raw
+ * @returns {string}
+ */
+function toTwilioWhatsAppParty(raw) {
+  const s0 = String(raw || "").trim();
+  if (!s0) {
+    return "";
+  }
+  const inner = s0.replace(/^whatsapp:/i, "").replace(/\s/g, "");
+  if (!inner) {
+    return "";
+  }
+  const e164 = inner.startsWith("+") ? inner : `+${inner}`;
+  const digitsOnly = e164.replace(/^\+/, "").replace(/\D/g, "");
+  if (!digitsOnly.length) {
+    return "";
+  }
+  return `whatsapp:${e164}`;
+}
+
+/**
  * Digits without "+" for Meta / Twilio WhatsApp APIs.
  * @param {unknown} input
  * @returns {string | null}
@@ -138,17 +161,22 @@ const sendViaMetaCloud = async ({ to, message }) => {
   }
 };
 
-const sendViaTwilio = async ({ to, message }) => {
+const sendViaTwilio = async ({ toWaDigits, message }) => {
   const accountSid = env.whatsappTwilioAccountSid;
   const authToken = env.whatsappApiToken;
   const fromNumber = env.whatsappTwilioFrom;
   if (!accountSid || !authToken || !fromNumber) {
     throw new Error("Twilio WhatsApp credentials are incomplete");
   }
+  const fromParty = toTwilioWhatsAppParty(fromNumber);
+  const toParty = toTwilioWhatsAppParty(toWaDigits);
+  if (!fromParty || !toParty) {
+    throw new Error("Twilio WhatsApp From or To address is invalid");
+  }
   const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
   const params = new URLSearchParams({
-    From: `whatsapp:${fromNumber}`,
-    To: `whatsapp:${to}`,
+    From: fromParty,
+    To: toParty,
     Body: message
   });
   const auth = Buffer.from(`${accountSid}:${authToken}`).toString("base64");
@@ -174,7 +202,7 @@ async function dispatchWhatsAppText({ toWaDigits, message }) {
   if (provider === "meta_cloud") {
     await sendViaMetaCloud({ to: toWaDigits, message });
   } else if (provider === "twilio") {
-    await sendViaTwilio({ to: toWaDigits, message });
+    await sendViaTwilio({ toWaDigits, message });
   } else if (provider === "log") {
     // eslint-disable-next-line no-console
     console.info("[whatsapp] log provider; to:", toWaDigits, "message:", message);
@@ -238,17 +266,6 @@ const notifyAdminOfNewOrder = async (order, user) => {
     }
 
     const message = buildOrderMessage(order, user);
-    const provider = String(env.whatsappProvider || "").toLowerCase();
-    if (provider === "log") {
-      // eslint-disable-next-line no-console
-      console.info("[whatsapp] log provider; would send:", message);
-      return { ok: true };
-    }
-
-    if (!isWhatsAppProviderReady()) {
-      return { ok: false, reason: "incomplete_provider" };
-    }
-
     await dispatchWhatsAppText({ toWaDigits, message });
     return { ok: true };
   } catch (err) {
@@ -265,6 +282,7 @@ module.exports = {
   buildOrderMessage,
   buildCustomerOrderStatusMessage,
   toWaApiDigits,
+  toTwilioWhatsAppParty,
   sendTransactionalWhatsApp,
   sendTransactionalWhatsAppToCustomer
 };

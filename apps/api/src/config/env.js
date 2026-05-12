@@ -38,13 +38,15 @@ const env = {
   paymentCancelUrl: process.env.PAYMENT_CANCEL_URL || "",
   // Admin notifications
   adminBaseUrl: process.env.ADMIN_BASE_URL || "",
-  whatsappNotificationsEnabled: process.env.WHATSAPP_NOTIFICATIONS_ENABLED || "false",
+  whatsappNotificationsEnabled:
+    process.env.WHATSAPP_NOTIFICATIONS_ENABLED || process.env.WHATSAPP_ENABLED || "false",
   whatsappProvider: process.env.WHATSAPP_PROVIDER || "",
-  whatsappApiToken: process.env.WHATSAPP_API_TOKEN || "",
+  whatsappApiToken: process.env.WHATSAPP_API_TOKEN || process.env.TWILIO_AUTH_TOKEN || "",
   whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
-  whatsappTwilioAccountSid: process.env.WHATSAPP_TWILIO_ACCOUNT_SID || "",
-  whatsappTwilioFrom: process.env.WHATSAPP_TWILIO_FROM || "",
-  adminWhatsappPhone: process.env.ADMIN_WHATSAPP_PHONE || "",
+  whatsappTwilioAccountSid:
+    process.env.WHATSAPP_TWILIO_ACCOUNT_SID || process.env.TWILIO_ACCOUNT_SID || "",
+  whatsappTwilioFrom: process.env.WHATSAPP_TWILIO_FROM || process.env.TWILIO_WHATSAPP_FROM || "",
+  adminWhatsappPhone: process.env.ADMIN_WHATSAPP_PHONE || process.env.WHATSAPP_ADMIN_PHONE || "",
   // SMTP (optional — order flows work without mail)
   mailHost: process.env.MAIL_HOST || "",
   mailPort: Number(process.env.MAIL_PORT || 587),
