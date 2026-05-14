@@ -1,6 +1,6 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Search } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ArrowDown, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ProductCard from "../components/ProductCard";
@@ -148,74 +148,374 @@ const HERO_BACKGROUND_IMAGE_URL =
 
 const HERO_TRUST_KEYS = /** @type {const} */ (['home:hero.trust1', 'home:hero.trust2', 'home:hero.trust3']);
 
-// ─── Hero trust bar (localized) ───────────────────────────────────────────────
+// ── Decorative fruit illustrations (pure CSS — no images, no emoji) ───────────
+
+const Lemon = ({ size }) => (
+  <div
+    style={{
+      width: size,
+      height: size * 0.72,
+      borderRadius: '50%',
+      transform: 'rotate(-18deg)',
+      background: `
+        radial-gradient(ellipse at 30% 26%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 40%),
+        radial-gradient(ellipse at 60% 70%, #b07700 0%, #e1a91a 28%, #f6d24a 60%, #fff1a8 100%)
+      `,
+      boxShadow: `
+        0 30px 50px -22px rgba(80,55,0,0.55),
+        0 14px 28px -16px rgba(180,120,0,0.55),
+        inset 0 -8px 20px rgba(120,80,0,0.32),
+        inset 0 8px 18px rgba(255,255,255,0.32)
+      `,
+      position: 'relative',
+    }}
+  >
+    {/* darker pointed tip hint */}
+    <div
+      aria-hidden
+      style={{
+        position: 'absolute',
+        right: -size * 0.02,
+        top: '42%',
+        width: size * 0.1,
+        height: size * 0.1,
+        borderRadius: '50%',
+        background: 'rgba(120,75,0,0.45)',
+        filter: 'blur(6px)',
+      }}
+    />
+  </div>
+);
+
+const Tomato = ({ size }) => (
+  <div style={{ width: size, height: size, position: 'relative' }}>
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        borderRadius: '50% 50% 48% 48% / 52% 52% 50% 50%',
+        background: `
+          radial-gradient(circle at 32% 28%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 36%),
+          radial-gradient(circle at 70% 72%, #5a100b 0%, #b9241a 38%, #e8463a 72%, #ffb3a4 100%)
+        `,
+        boxShadow: `
+          0 30px 50px -20px rgba(60,10,5,0.55),
+          0 14px 28px -16px rgba(180,30,20,0.55),
+          inset 0 -10px 22px rgba(80,10,5,0.34),
+          inset 0 8px 18px rgba(255,255,255,0.22)
+        `,
+      }}
+    />
+    {/* calyx (stem leaves) */}
+    {[-45, -15, 15, 45].map((deg, i) => (
+      <div
+        key={i}
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: -size * 0.04,
+          left: '50%',
+          width: size * 0.07,
+          height: size * 0.22,
+          borderRadius: '50% 50% 30% 30%',
+          background: 'linear-gradient(180deg, #4ea84c 0%, #1e6b3c 75%, #0c3a1d 100%)',
+          transform: `translate(-50%, 0) rotate(${deg}deg)`,
+          transformOrigin: 'center 90%',
+          boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.18), inset 0 -2px 4px rgba(0,0,0,0.18)',
+        }}
+      />
+    ))}
+  </div>
+);
+
+const Watermelon = ({ size }) => {
+  const rind = Math.max(6, size * 0.07);
+  return (
+    <div
+      style={{
+        width: size,
+        height: size * 0.55,
+        position: 'relative',
+        overflow: 'hidden',
+        transform: 'rotate(-6deg)',
+      }}
+    >
+      {/* full circle anchored at bottom — only lower half shows */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          background: `
+            radial-gradient(circle at 50% 35%, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0) 28%),
+            radial-gradient(circle at 50% 55%, #ff7080 0%, #e8384a 42%, #a8182a 78%)
+          `,
+          border: `${rind}px solid #2c8a3d`,
+          boxSizing: 'border-box',
+          boxShadow: `
+            inset 0 -6px 16px rgba(80,10,15,0.34),
+            inset 0 6px 14px rgba(255,255,255,0.18),
+            0 28px 50px -22px rgba(60,5,10,0.55)
+          `,
+        }}
+      />
+      {/* light-green inner ring between rind and flesh */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          bottom: rind - 2,
+          left: rind - 2,
+          width: size - (rind - 2) * 2,
+          height: size - (rind - 2) * 2,
+          borderRadius: '50%',
+          border: `${Math.max(2, size * 0.022)}px solid #c9ec8b`,
+          boxSizing: 'border-box',
+          pointerEvents: 'none',
+        }}
+      />
+      {/* seeds */}
+      {[
+        { left: '28%', top: '38%', r: -16 },
+        { left: '48%', top: '30%', r: 8 },
+        { left: '66%', top: '40%', r: -6 },
+        { left: '38%', top: '58%', r: 22 },
+        { left: '60%', top: '62%', r: -22 },
+      ].map((s, i) => (
+        <div
+          key={i}
+          aria-hidden
+          style={{
+            position: 'absolute',
+            left: s.left,
+            top: s.top,
+            width: Math.max(4, size * 0.05),
+            height: Math.max(7, size * 0.085),
+            borderRadius: '50%',
+            background: 'linear-gradient(180deg, #1a1209 0%, #2c1f10 100%)',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.18)',
+            transform: `rotate(${s.r}deg)`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+const Avocado = ({ size }) => (
+  <div style={{ width: size * 0.7, height: size, position: 'relative', transform: 'rotate(8deg)' }}>
+    {/* skin */}
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        borderRadius: '50% 50% 50% 50% / 38% 38% 62% 62%',
+        background: 'linear-gradient(160deg, #1b3a1f 0%, #2a5a32 55%, #152a18 100%)',
+        boxShadow:
+          '0 28px 50px -22px rgba(15,30,15,0.55), 0 14px 28px -16px rgba(40,75,40,0.45), inset 0 -6px 16px rgba(0,0,0,0.28), inset 0 4px 10px rgba(255,255,255,0.10)',
+      }}
+    />
+    {/* flesh */}
+    <div
+      style={{
+        position: 'absolute',
+        top: '6%',
+        left: '12%',
+        right: '12%',
+        bottom: '6%',
+        borderRadius: '50% 50% 50% 50% / 38% 38% 62% 62%',
+        background: `
+          radial-gradient(ellipse at 38% 28%, #f9f0a8 0%, #d8e07a 24%, #9ec84d 58%, #5e9a3a 100%)
+        `,
+        boxShadow: 'inset 0 -8px 18px rgba(60,90,30,0.32), inset 0 6px 16px rgba(255,255,255,0.24)',
+      }}
+    />
+    {/* pit */}
+    <div
+      style={{
+        position: 'absolute',
+        width: '34%',
+        height: '24%',
+        left: '50%',
+        top: '64%',
+        transform: 'translate(-50%, -50%)',
+        borderRadius: '50%',
+        background:
+          'radial-gradient(circle at 35% 30%, #b07a44 0%, #6e3a18 55%, #3a1c08 100%)',
+        boxShadow:
+          'inset 0 -4px 10px rgba(0,0,0,0.4), inset 0 3px 8px rgba(255,200,120,0.20), 0 6px 10px rgba(40,20,10,0.4)',
+      }}
+    />
+  </div>
+);
+
+const FRUIT_COMPONENTS = { lemon: Lemon, tomato: Tomato, watermelon: Watermelon, avocado: Avocado };
+
+// Floating wrapper — same motion API as the old PremiumOrb so layout/perf stays predictable.
+const FruitFloater = ({
+  type,
+  size,
+  top,
+  bottom,
+  insetInlineStart,
+  insetInlineEnd,
+  floatRange = 14,
+  floatDuration = 7,
+  rotateRange = 3,
+  delay = 0,
+  opacity = 1,
+  reduced,
+}) => {
+  const Fruit = FRUIT_COMPONENTS[type];
+  if (!Fruit) return null;
+  return (
+    <motion.div
+      aria-hidden
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={
+        reduced
+          ? { opacity, scale: 1 }
+          : { opacity, scale: 1, y: [0, -floatRange, 0], rotate: [0, rotateRange, 0] }
+      }
+      transition={
+        reduced
+          ? { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }
+          : {
+              opacity: { duration: 0.9, delay: 0.2 + delay * 0.08 },
+              scale: { duration: 0.9, delay: 0.2 + delay * 0.08, ease: [0.25, 0.1, 0.25, 1] },
+              y: { duration: floatDuration, repeat: Infinity, ease: 'easeInOut', delay },
+              rotate: { duration: floatDuration * 1.6, repeat: Infinity, ease: 'easeInOut', delay },
+            }
+      }
+      style={{
+        position: 'absolute',
+        top,
+        bottom,
+        insetInlineStart,
+        insetInlineEnd,
+        pointerEvents: 'none',
+        zIndex: 2,
+        // light drop-shadow filter ties the fruit to its background
+        filter: 'drop-shadow(0 18px 24px rgba(0,0,0,0.35))',
+      }}
+    >
+      <Fruit size={size} />
+    </motion.div>
+  );
+};
+
+// Large soft ambient blob (atmospheric depth)
+const AmbientBlob = ({ size, color, top, bottom, insetInlineStart, insetInlineEnd, reduced, drift = 24, duration = 16, delay = 0 }) => (
+  <motion.div
+    aria-hidden
+    initial={{ opacity: 0 }}
+    animate={
+      reduced
+        ? { opacity: 0.6 }
+        : { opacity: 0.65, x: [0, drift, 0], y: [0, -drift * 0.6, 0] }
+    }
+    transition={
+      reduced
+        ? { duration: 1.2 }
+        : {
+            opacity: { duration: 1.2 },
+            x: { duration, repeat: Infinity, ease: 'easeInOut', delay },
+            y: { duration: duration * 1.2, repeat: Infinity, ease: 'easeInOut', delay },
+          }
+    }
+    style={{
+      position: 'absolute',
+      top,
+      bottom,
+      insetInlineStart,
+      insetInlineEnd,
+      width: size,
+      height: size,
+      borderRadius: '50%',
+      background: `radial-gradient(circle at 50% 50%, ${color} 0%, rgba(0,0,0,0) 65%)`,
+      filter: 'blur(40px)',
+      pointerEvents: 'none',
+      zIndex: 1,
+    }}
+  />
+);
+
+// ─── Hero trust bar (localized) — premium glass chips ─────────────────────────
 const HeroTrustBar = ({ t, isMobile }) => (
   <motion.div
-    initial={{ opacity: 0, y: 8 }}
+    initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+    transition={{ duration: 0.5, delay: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
     style={{
       display: 'flex',
       flexDirection: isMobile ? 'column' : 'row',
-      flexWrap: isMobile ? 'nowrap' : 'wrap',
+      flexWrap: 'wrap',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: '12px',
-      rowGap: isMobile ? '12px' : '16px',
+      gap: isMobile ? '8px' : '10px',
       width: '100%',
-      maxWidth: '480px',
-      padding: isMobile ? '12px 16px' : '14px 20px',
+      maxWidth: '560px',
       boxSizing: 'border-box',
-      borderRadius: '14px',
-      border: '1px solid rgba(255,255,255,0.18)',
-      background: 'rgba(255,255,255,0.08)',
-      backdropFilter: 'blur(10px)',
     }}
   >
     {HERO_TRUST_KEYS.map((key, i) => (
-      <Fragment key={key}>
-        {i > 0 && (
-          <span
-            aria-hidden
-            style={{
-              display: isMobile ? 'none' : 'block',
-              width: '1px',
-              height: '16px',
-              flexShrink: 0,
-              alignSelf: 'center',
-              background: 'rgba(255,255,255,0.22)',
-              marginInline: '4px',
-            }}
-          />
-        )}
-        <motion.span
-          whileHover={{ opacity: 0.88 }}
-          transition={{ duration: 0.2 }}
-          style={{
-            fontSize: isMobile ? '13px' : '14px',
-            fontWeight: 500,
-            letterSpacing: '0.02em',
-            lineHeight: 1.45,
-            color: 'rgba(255,255,255,0.94)',
-            textAlign: 'center',
-            textShadow: '0 1px 12px rgba(0,0,0,0.18)',
-          }}
-        >
-          {t(key)}
-        </motion.span>
-      </Fragment>
+      <motion.span
+        key={key}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.4 + i * 0.08, ease: [0.25, 0.1, 0.25, 1] }}
+        whileHover={{ y: -2 }}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: isMobile ? '8px 14px' : '9px 18px',
+          borderRadius: '9999px',
+          border: '1px solid rgba(255,255,255,0.22)',
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%)',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+          color: 'rgba(255,255,255,0.96)',
+          fontSize: isMobile ? '12.5px' : '13.5px',
+          fontWeight: 500,
+          letterSpacing: '0.02em',
+          lineHeight: 1.3,
+          textAlign: 'center',
+          textShadow: '0 1px 10px rgba(0,0,0,0.22)',
+          boxShadow:
+            '0 8px 24px -10px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18)',
+        }}
+      >
+        {t(key)}
+      </motion.span>
     ))}
   </motion.div>
 );
 
-// ─── Hero section ─────────────────────────────────────────────────────────────
+// ─── Hero section — premium 3D-inspired layered composition ───────────────────
 const HeroSection = ({ t, isMobile }) => {
+  const reduced = useReducedMotion();
+
   const scrollToProducts = () => {
     document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const heroOverlay =
-    'linear-gradient(180deg, rgba(18, 56, 36, 0.55) 0%, rgba(10, 38, 26, 0.84) 100%)';
+    'linear-gradient(180deg, rgba(12, 44, 28, 0.62) 0%, rgba(8, 30, 20, 0.92) 100%)';
+
+  // Decorative floating fruit — premium CSS illustrations, not plain spheres.
+  // Order is chosen so mobile (first 2) keeps the most iconic pair (watermelon + lemon).
+  const fruits = [
+    { type: 'watermelon', size: isMobile ? 130 : 200, bottom: isMobile ? 40 : 64, insetInlineStart: isMobile ? -28 : 40, floatRange: 12, floatDuration: 6.8, delay: 0.0 },
+    { type: 'lemon',      size: isMobile ? 78  : 120, top:    isMobile ? 36 : 80, insetInlineEnd:   isMobile ? -10 : 90, floatRange: 16, floatDuration: 8.0, delay: 0.6 },
+    { type: 'tomato',     size: isMobile ? 70  : 110, top:    isMobile ? 150: 200, insetInlineStart: isMobile ? 12 : 130, floatRange: 14, floatDuration: 7.2, delay: 1.1 },
+    { type: 'avocado',    size: isMobile ? 80  : 130, bottom: isMobile ? 90 : 110, insetInlineEnd:   isMobile ? 10 : 64, floatRange: 10, floatDuration: 6.4, delay: 1.6 },
+  ];
+  const visibleFruits = isMobile ? fruits.slice(0, 2) : fruits;
 
   return (
     <section
@@ -226,8 +526,10 @@ const HeroSection = ({ t, isMobile }) => {
         maxWidth: '100%',
         overflow: 'hidden',
         boxSizing: 'border-box',
+        background: '#0a1f14',
       }}
     >
+      {/* Background photo (kept, slightly darker overlay for premium feel) */}
       <img
         src={HERO_BACKGROUND_IMAGE_URL}
         alt=""
@@ -244,8 +546,12 @@ const HeroSection = ({ t, isMobile }) => {
           objectPosition: 'center',
           zIndex: 0,
           pointerEvents: 'none',
+          transform: 'scale(1.05)',
+          filter: 'saturate(1.05) contrast(1.02)',
         }}
       />
+
+      {/* Tonal overlay */}
       <div
         aria-hidden
         style={{
@@ -254,117 +560,268 @@ const HeroSection = ({ t, isMobile }) => {
           zIndex: 1,
           pointerEvents: 'none',
           background: heroOverlay,
-          boxShadow: 'inset 0 0 64px rgba(0,0,0,0.18)',
+          boxShadow: 'inset 0 0 80px rgba(0,0,0,0.28)',
         }}
       />
 
+      {/* Ambient drifting color blobs (atmosphere) */}
+      <AmbientBlob
+        size={isMobile ? 360 : 540}
+        color="rgba(74, 199, 122, 0.45)"
+        top={isMobile ? -120 : -160}
+        insetInlineStart={isMobile ? -120 : -120}
+        reduced={reduced}
+      />
+      <AmbientBlob
+        size={isMobile ? 320 : 480}
+        color="rgba(241, 168, 58, 0.30)"
+        bottom={isMobile ? -140 : -180}
+        insetInlineEnd={isMobile ? -120 : -100}
+        duration={20}
+        delay={1.2}
+        reduced={reduced}
+      />
+
+      {/* Subtle grain / dotted texture for depth (CSS only) */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 1,
+          pointerEvents: 'none',
+          backgroundImage:
+            'radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)',
+          backgroundSize: '3px 3px',
+          mixBlendMode: 'overlay',
+          opacity: 0.35,
+        }}
+      />
+
+      {/* Decorative floating fruit — premium CSS illustrations, no emoji, no images */}
+      {visibleFruits.map((f, i) => (
+        <FruitFloater key={i} {...f} reduced={reduced} />
+      ))}
+
+      {/* Soft top vignette for headline contrast */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 1,
+          pointerEvents: 'none',
+          background:
+            'radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 35%, rgba(0,0,0,0.35) 100%)',
+        }}
+      />
+
+      {/* Content */}
       <div
         style={{
           position: 'relative',
-          zIndex: 2,
+          zIndex: 3,
           maxWidth: '1200px',
           margin: '0 auto',
-          padding: isMobile ? '48px 24px 56px' : '72px 24px 80px',
+          padding: isMobile ? '64px 20px 72px' : '104px 24px 112px',
           boxSizing: 'border-box',
           width: '100%',
           minWidth: 0,
         }}
       >
-        <div
+        <motion.div
+          initial="hidden"
+          animate="show"
+          variants={{
+            hidden: {},
+            show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
+          }}
           style={{
+            position: 'relative',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: '20px',
-            maxWidth: 'min(100%, 720px)',
+            gap: isMobile ? '20px' : '26px',
+            maxWidth: 'min(100%, 760px)',
             marginInline: 'auto',
             width: '100%',
+            padding: isMobile ? '28px 22px 30px' : '40px 44px 44px',
             boxSizing: 'border-box',
+            borderRadius: isMobile ? '22px' : '28px',
+            border: '1px solid rgba(255,255,255,0.16)',
+            background:
+              'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+            boxShadow:
+              '0 50px 100px -30px rgba(0,0,0,0.55), 0 20px 50px -20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)',
           }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
+          {/* inner highlight stroke */}
+          <span
+            aria-hidden
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '24px',
-              width: '100%',
-              boxSizing: 'border-box',
+              position: 'absolute',
+              inset: 0,
+              borderRadius: 'inherit',
+              pointerEvents: 'none',
+              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
+            }}
+          />
+
+          <motion.span
+            variants={{
+              hidden: { opacity: 0, y: 12 },
+              show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } },
+            }}
+            style={{
+              padding: '7px 18px',
+              borderRadius: '9999px',
+              border: '1px solid rgba(255,255,255,0.30)',
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              color: colors.textInverse,
+              fontSize: '12.5px',
+              fontWeight: 700,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              textAlign: 'center',
+              boxShadow:
+                '0 8px 24px -10px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.25)',
             }}
           >
-            <span style={{
-              padding: '6px 16px',
-              borderRadius: '9999px',
-              border: '1px solid rgba(255,255,255,0.32)',
-              background: 'rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(8px)',
+            {t('home:hero.badge')}
+          </motion.span>
+
+          <motion.h1
+            variants={{
+              hidden: { opacity: 0, y: 18 },
+              show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] } },
+            }}
+            style={{
+              margin: 0,
+              fontFamily: "'Rubik', 'Segoe UI', system-ui, sans-serif",
+              fontSize: isMobile
+                ? 'clamp(30px, 8vw, 44px)'
+                : 'clamp(40px, 4.2vw, 64px)',
+              fontWeight: 700,
+              lineHeight: 1.15,
               color: colors.textInverse,
-              fontSize: '13px',
-              fontWeight: 600,
-              letterSpacing: '0.3px',
+              letterSpacing: isMobile ? '-0.015em' : '-0.025em',
+              textShadow: '0 4px 32px rgba(0,0,0,0.45)',
               textAlign: 'center',
-            }}>
-              {t('home:hero.badge')}
-            </span>
+              width: '100%',
+              maxWidth: 'min(100%, 680px)',
+              boxSizing: 'border-box',
+              background:
+                'linear-gradient(180deg, #ffffff 0%, #e8f1ea 100%)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            {t('home:hero.subtitle')}
+          </motion.h1>
 
-            <h1
-              style={{
-                margin: 0,
-                fontFamily: "'Rubik', 'Segoe UI', system-ui, sans-serif",
-                fontSize: isMobile
-                  ? 'clamp(28px, 7.5vw, 42px)'
-                  : 'clamp(36px, 3.6vw, 56px)',
-                fontWeight: 700,
-                lineHeight: 1.22,
-                color: colors.textInverse,
-                letterSpacing: isMobile ? '-0.01em' : '-0.015em',
-                textShadow: '0 2px 28px rgba(0,0,0,0.32)',
-                textAlign: 'center',
-                width: '100%',
-                maxWidth: 'min(100%, 680px)',
-                boxSizing: 'border-box',
-              }}
-            >
-              {t('home:hero.subtitle')}
-            </h1>
-
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 12 },
+              show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } },
+            }}
+            style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+          >
             <HeroTrustBar t={t} isMobile={isMobile} />
+          </motion.div>
+
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 14 },
+              show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.25, 0.1, 0.25, 1] } },
+            }}
+            style={{
+              position: 'relative',
+              width: '100%',
+              maxWidth: 'min(100%, 420px)',
+              marginTop: isMobile ? '4px' : '8px',
+            }}
+          >
+            {/* CTA soft glow */}
+            <motion.span
+              aria-hidden
+              animate={reduced ? { opacity: 0.5 } : { opacity: [0.45, 0.75, 0.45] }}
+              transition={reduced ? { duration: 0.6 } : { duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                position: 'absolute',
+                inset: '-14px',
+                borderRadius: '20px',
+                background:
+                  'radial-gradient(ellipse at 50% 50%, rgba(74,199,122,0.55) 0%, rgba(74,199,122,0) 70%)',
+                filter: 'blur(14px)',
+                zIndex: 0,
+                pointerEvents: 'none',
+              }}
+            />
 
             <motion.button
               type="button"
               onClick={scrollToProducts}
-              animate={{ y: [0, -8, 0] }}
-              transition={{
-                y: { repeat: Infinity, duration: 4, ease: 'easeInOut', delay: 0.5 },
-                scale: { duration: 0.15 },
-                background: { duration: 0.15 },
-              }}
-              whileHover={{ scale: 1.03, background: 'rgba(255,255,255,0.94)' }}
+              whileHover={reduced ? undefined : { y: -3, scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 26 }}
               style={{
+                position: 'relative',
+                zIndex: 1,
                 width: '100%',
-                maxWidth: 'min(100%, 400px)',
                 boxSizing: 'border-box',
-                padding: isMobile ? '12px 28px' : '14px 32px',
-                borderRadius: '10px',
+                padding: isMobile ? '14px 26px' : '16px 32px',
+                borderRadius: '14px',
                 border: '1px solid rgba(255,255,255,0.55)',
-                background: colors.surface,
+                background:
+                  'linear-gradient(180deg, #ffffff 0%, #f1efe9 100%)',
                 color: colors.primary,
-                fontSize: '15px',
-                fontWeight: 600,
+                fontSize: isMobile ? '15px' : '16px',
+                fontWeight: 700,
                 cursor: 'pointer',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)',
-                letterSpacing: '0.2px',
+                boxShadow:
+                  '0 22px 50px -16px rgba(0,0,0,0.55), 0 10px 24px -12px rgba(30,107,60,0.55), inset 0 1px 0 rgba(255,255,255,0.9)',
+                letterSpacing: '0.3px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
               }}
             >
-              {t('home:hero.cta')}
+              <span>{t('home:hero.cta')}</span>
+              <motion.span
+                aria-hidden
+                animate={reduced ? { y: 0 } : { y: [0, 3, 0] }}
+                transition={reduced ? { duration: 0.4 } : { duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <ArrowDown size={18} strokeWidth={2.4} />
+              </motion.span>
             </motion.button>
           </motion.div>
-        </div>
+        </motion.div>
       </div>
+
+      {/* Soft fade-out to next section */}
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: '64px',
+          zIndex: 2,
+          pointerEvents: 'none',
+          background:
+            'linear-gradient(180deg, rgba(26, 92, 46, 0) 0%, rgba(26, 92, 46, 0.55) 60%, #1a5c2e 100%)',
+        }}
+      />
     </section>
   );
 };
@@ -750,6 +1207,7 @@ const HomePage = () => {
   }, [loading, activeCategoryId]);
 
   const handleCategorySelect = useCallback((id) => {
+    setProductSearchQuery('');
     setSearchParams((sp) => {
       const next = new URLSearchParams(sp);
       next.delete('categoryId');
@@ -765,6 +1223,7 @@ const HomePage = () => {
   }, [setSearchParams]);
 
   const handleShowAllCategories = useCallback(() => {
+    setProductSearchQuery('');
     setSearchParams((sp) => {
       const next = new URLSearchParams(sp);
       next.delete('cat');
