@@ -34,5 +34,6 @@
   "selectPlaceholder": "Select",
   "somethingWentWrong": "Something went wrong",
   "errorGeneric": "Something went wrong. Please try again.",
-  "currencySymbol": "₪"
+  "currencySymbol": "₪",
+  "unnamedProduct": "Unnamed product"
 }

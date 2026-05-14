@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import RequireAuth from "../components/RequireAuth";
@@ -16,13 +16,28 @@ import AdminSalesDashboardPage from "../pages/AdminSalesDashboardPage";
 import AdminPromotionsPage from "../pages/AdminPromotionsPage";
 import AdminStoreStatusPage from "../pages/AdminStoreStatusPage";
 import AbuAlAnasLogo from "../components/common/Logo";
+import PageTransition from "../components/common/PageTransition";
 import * as storeSettingsService from "../services/storeSettingsService";
 import { formatApiError } from "../utils/formatApiError";
 import { useAdminLanguage } from "../i18n/useAdminLanguage";
 import LanguageSwitcher from "../i18n/LanguageSwitcher";
+import { getStorefrontUrl } from "../utils/storefrontUrl";
 
 const MOBILE_MAX_WIDTH = 767;
 const MOBILE_MEDIA = `(max-width: ${MOBILE_MAX_WIDTH}px)`;
+
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "admin-sidebar-collapsed";
+const SIDEBAR_EXPANDED_WIDTH = 220;
+const SIDEBAR_COLLAPSED_WIDTH = 72;
+
+function readSidebarCollapsed() {
+  try {
+    if (typeof localStorage === "undefined") return false;
+    return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 const colors = {
   primary:    '#1e6b3c',
@@ -117,13 +132,78 @@ function useIsMobileNav() {
   return isMobile;
 }
 
-const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
+const sidebarWidthMotion = "width 0.28s cubic-bezier(0.4, 0, 0.2, 1)";
+
+/** Chevron: collapse points toward screen edge that sidebar sits on; expand points the other way. Mirrored in RTL via scaleX. */
+const SidebarCollapseToggle = ({ expanded, isRtl, onClick, labelCollapse, labelExpand }) => (
+  <button
+    type="button"
+    className="admin-sidebar-collapse-toggle"
+    onClick={onClick}
+    aria-label={expanded ? labelCollapse : labelExpand}
+    title={expanded ? labelCollapse : labelExpand}
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "36px",
+      height: "36px",
+      flexShrink: 0,
+      borderRadius: "10px",
+      border: `1px solid ${colors.border}`,
+      background: colors.bg,
+      color: colors.textPrimary,
+      cursor: "pointer",
+      padding: 0,
+      transition: "background 0.15s, border-color 0.15s",
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.background = colors.activeNavBg;
+      e.currentTarget.style.borderColor = colors.primary;
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.background = colors.bg;
+      e.currentTarget.style.borderColor = colors.border;
+    }}
+  >
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      style={{ transform: isRtl ? "scaleX(-1)" : undefined }}
+    >
+      {expanded ? (
+        <polyline points="13 6 7 12 13 18" />
+      ) : (
+        <polyline points="11 6 17 12 11 18" />
+      )}
+    </svg>
+  </button>
+);
+
+const externalLinkIcon = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
+
+const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl, desktopCollapsed, onToggleDesktopCollapse, storefrontUrl }) => {
   const { user, logout } = useAuth();
   const { t } = useTranslation(["nav", "storeStatus"]);
   const [hovered, setHovered] = useState('');
   const [storeOpen, setStoreOpen] = useState(null);
   const [storeToggleBusy, setStoreToggleBusy] = useState(false);
   const [storeToggleError, setStoreToggleError] = useState('');
+
+  const rail = !isMobile && desktopCollapsed;
 
   useEffect(() => {
     let cancelled = false;
@@ -145,30 +225,39 @@ const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
   const offCanvasX = isRtl ? '-100%' : '100%';
 
   const asideBase = {
-    width: '220px',
     flexShrink: 0,
     background: colors.surface,
     borderInlineStart: `1px solid ${colors.border}`,
     display: 'flex',
     flexDirection: 'column',
-    minHeight: '100vh',
-    alignSelf: 'flex-start',
+    boxSizing: 'border-box',
+    overflowX: 'hidden',
+    overflowY: 'auto',
+    overscrollBehavior: 'contain',
+    WebkitOverflowScrolling: 'touch',
   };
 
   const asideDesktop = {
     ...asideBase,
-    position: 'sticky',
-    top: 0,
-    transform: 'none',
+    position: 'relative',
+    alignSelf: 'stretch',
+    minHeight: 0,
+    height: '100%',
+    maxHeight: '100%',
     zIndex: 1,
+    width: rail ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH,
+    transition: sidebarWidthMotion,
   };
 
   const asideMobile = {
     ...asideBase,
+    alignSelf: 'flex-start',
+    minHeight: '100vh',
     position: 'fixed',
     insetBlockStart: 0,
     insetBlockEnd: 0,
     insetInlineEnd: 0,
+    width: SIDEBAR_EXPANDED_WIDTH,
     maxWidth: 'min(220px, 92vw)',
     zIndex: 1000,
     boxShadow: mobileOpen ? '-4px 0 24px rgba(28, 25, 23, 0.12)' : 'none',
@@ -181,42 +270,133 @@ const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
     if (isMobile) onMobileClose();
   };
 
+  const storeTitle =
+    storeOpen === null
+      ? t('storeStatus:buttons.loadingStore')
+      : storeOpen
+        ? t('storeStatus:buttons.closeStore')
+        : t('storeStatus:buttons.openStore');
+
+  const storeBtnStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: rail ? '10px 8px' : '11px 14px',
+    borderRadius: '10px',
+    fontSize: rail ? '0' : '13px',
+    fontWeight: 700,
+    color: '#fff',
+    background:
+      storeOpen === null ? '#78716c' : storeOpen === false ? colors.primary : '#b45309',
+    boxShadow:
+      storeOpen === null
+        ? 'none'
+        : storeOpen === false
+          ? '0 2px 8px rgba(30,107,60,0.22)'
+          : '0 2px 8px rgba(180,83,9,0.25)',
+    border: '2px solid transparent',
+    boxSizing: 'border-box',
+    width: rail ? '100%' : '100%',
+    minHeight: rail ? '44px' : undefined,
+    textAlign: 'center',
+    lineHeight: 1.35,
+    cursor: storeOpen === null || storeToggleBusy ? 'wait' : 'pointer',
+    opacity: storeOpen === null || storeToggleBusy ? 0.75 : 1,
+    fontFamily: 'inherit',
+  };
+
   return (
     <aside
       id="admin-app-sidebar"
+      className="scrollbar-hidden"
       style={isMobile ? asideMobile : asideDesktop}
       aria-hidden={isMobile && !mobileOpen}
     >
       {/* Brand */}
-      <div style={{ padding: '24px 20px 20px', borderBottom: `1px solid ${colors.border}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <AbuAlAnasLogo size={42} title={t('nav:brand')} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: colors.textPrimary, lineHeight: 1.2 }}>
-              {t('nav:brand')}
+      <div
+        style={{
+          padding: rail ? '12px 8px 10px' : '24px 20px 20px',
+          borderBottom: `1px solid ${colors.border}`,
+          transition: 'padding 0.2s ease',
+        }}
+      >
+        {rail ? (
+          <>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                marginBottom: '8px',
+              }}
+            >
+              <SidebarCollapseToggle
+                expanded={!desktopCollapsed}
+                isRtl={isRtl}
+                onClick={onToggleDesktopCollapse}
+                labelCollapse={t('nav:sidebar.collapse')}
+                labelExpand={t('nav:sidebar.expand')}
+              />
             </div>
-            <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '1px', color: colors.textMuted, textTransform: 'uppercase', marginTop: '2px' }}>
-              {t('nav:adminPanel')}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                gap: '0',
+              }}
+            >
+              <AbuAlAnasLogo size={36} title={t('nav:brand')} />
             </div>
+          </>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+              <AbuAlAnasLogo size={42} title={t('nav:brand')} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: colors.textPrimary, lineHeight: 1.2 }}>
+                  {t('nav:brand')}
+                </div>
+                <div style={{ fontSize: '10px', fontWeight: 600, letterSpacing: '1px', color: colors.textMuted, textTransform: 'uppercase', marginTop: '2px' }}>
+                  {t('nav:adminPanel')}
+                </div>
+              </div>
+            </div>
+            {!isMobile && (
+              <SidebarCollapseToggle
+                expanded={!desktopCollapsed}
+                isRtl={isRtl}
+                onClick={onToggleDesktopCollapse}
+                labelCollapse={t('nav:sidebar.collapse')}
+                labelExpand={t('nav:sidebar.expand')}
+              />
+            )}
           </div>
-        </div>
-        {user && (
+        )}
+        {user && !rail && (
           <div style={{ marginTop: '10px', fontSize: '12px', color: colors.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {user.name || user.email}
           </div>
         )}
-        {/* Language switcher: desktop sidebar */}
         {!isMobile && (
-          <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-start' }}>
-            <LanguageSwitcher size="sm" />
+          <div style={{ marginTop: rail ? '10px' : '14px', display: 'flex', justifyContent: rail ? 'center' : 'flex-start' }}>
+            <LanguageSwitcher size="sm" rail={rail} />
           </div>
         )}
       </div>
 
       {/* Quick store toggle */}
-      <div style={{ padding: '0 12px 14px', borderBottom: `1px solid ${colors.border}`, paddingTop: '14px' }}>
+      <div style={{ padding: rail ? '0 8px 12px' : '0 12px 14px', borderBottom: `1px solid ${colors.border}`, paddingTop: '14px' }}>
         <button
           type="button"
+          title={storeTitle}
           disabled={storeOpen === null || storeToggleBusy}
           onClick={async () => {
             if (storeOpen === null) return;
@@ -233,59 +413,112 @@ const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
               setStoreToggleBusy(false);
             }
           }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '11px 14px',
-            borderRadius: '10px',
-            fontSize: '13px',
-            fontWeight: 700,
-            color: '#fff',
-            background:
-              storeOpen === null ? '#78716c' : storeOpen === false ? colors.primary : '#b45309',
-            boxShadow:
-              storeOpen === null
-                ? 'none'
-                : storeOpen === false
-                  ? '0 2px 8px rgba(30,107,60,0.22)'
-                  : '0 2px 8px rgba(180,83,9,0.25)',
-            border: '2px solid transparent',
-            boxSizing: 'border-box',
-            width: '100%',
-            textAlign: 'center',
-            lineHeight: 1.35,
-            cursor: storeOpen === null || storeToggleBusy ? 'wait' : 'pointer',
-            opacity: storeOpen === null || storeToggleBusy ? 0.75 : 1,
-            fontFamily: 'inherit',
-          }}
+          style={storeBtnStyle}
         >
-          {storeOpen === null
-            ? t('storeStatus:buttons.loadingStore')
-            : storeOpen
-              ? t('storeStatus:buttons.closeStore')
-              : t('storeStatus:buttons.openStore')}
+          {rail ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          ) : (
+            storeTitle
+          )}
         </button>
-        {storeToggleError ? (
+        {!rail && storeToggleError ? (
           <div style={{ marginTop: 8, fontSize: 11, color: colors.error, lineHeight: 1.35 }} role="alert">
             {storeToggleError}
           </div>
         ) : null}
+        {rail && storeToggleError ? (
+          <div title={storeToggleError} style={{ marginTop: 6, fontSize: 9, color: colors.error, lineHeight: 1.25, textAlign: 'center', cursor: 'help' }} role="alert">
+            !
+          </div>
+        ) : null}
+      </div>
+
+      {/* View customer storefront (new tab only — no auth handoff) */}
+      <div
+        style={{
+          padding: rail ? '0 8px 12px' : '0 12px 14px',
+          paddingTop: '12px',
+          borderBottom: `1px solid ${colors.border}`,
+        }}
+      >
+        {storefrontUrl ? (
+          <a
+            href={storefrontUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={t('nav:viewStore')}
+            aria-label={t('nav:viewStore')}
+            onMouseEnter={() => setHovered('viewstore')}
+            onMouseLeave={() => setHovered('')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: rail ? '0' : '8px',
+              width: '100%',
+              padding: rail ? '10px 8px' : '9px 14px',
+              borderRadius: '10px',
+              border: `1px solid ${hovered === 'viewstore' ? colors.primary : colors.border}`,
+              background: hovered === 'viewstore' ? colors.activeNavBg : 'transparent',
+              color: colors.primary,
+              fontSize: rail ? '0' : '13px',
+              fontWeight: 600,
+              textDecoration: 'none',
+              cursor: 'pointer',
+              transition: 'background 0.12s, border-color 0.12s',
+              boxSizing: 'border-box',
+              minHeight: rail ? '44px' : undefined,
+              fontFamily: 'inherit',
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0, color: colors.primary }}>{externalLinkIcon}</span>
+            {!rail && t('nav:viewStore')}
+          </a>
+        ) : (
+          <span
+            title={t('nav:viewStoreUnavailable')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: rail ? '0' : '8px',
+              width: '100%',
+              padding: rail ? '10px 8px' : '9px 14px',
+              borderRadius: '10px',
+              border: `1px dashed ${colors.border}`,
+              color: colors.textMuted,
+              fontSize: rail ? '0' : '12px',
+              fontWeight: 500,
+              cursor: 'not-allowed',
+              boxSizing: 'border-box',
+              minHeight: rail ? '44px' : undefined,
+              lineHeight: 1.35,
+              textAlign: 'center',
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0, opacity: 0.55 }}>{externalLinkIcon}</span>
+            {!rail && t('nav:viewStore')}
+          </span>
+        )}
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+      <nav style={{ flex: 1, padding: rail ? '10px 8px' : '14px 12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
         {NAV_ITEMS.map(({ to, labelKey, icon }) => (
           <NavLink
             key={to}
             to={to}
+            title={t(`nav:${labelKey}`)}
             onClick={navLinkAfterNav}
             style={({ isActive }) => ({
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
-              padding: '9px 14px',
+              justifyContent: rail ? 'center' : 'flex-start',
+              gap: rail ? '0' : '10px',
+              padding: rail ? '11px 8px' : '9px 14px',
               borderRadius: '10px',
               textDecoration: 'none',
               fontSize: '14px',
@@ -297,11 +530,11 @@ const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
           >
             {({ isActive }) => (
               <>
-                <span style={{ color: isActive ? colors.primary : colors.textMuted, display: 'flex', alignItems: 'center' }}>
+                <span style={{ color: isActive ? colors.primary : colors.textMuted, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                   {icon}
                 </span>
-                {t(`nav:${labelKey}`)}
-                {isActive && (
+                {!rail && t(`nav:${labelKey}`)}
+                {!rail && isActive && (
                   <span style={{ marginInlineStart: 'auto', fontSize: '12px', color: colors.primary }}>›</span>
                 )}
               </>
@@ -312,27 +545,40 @@ const Sidebar = ({ isMobile, mobileOpen, onMobileClose, isRtl }) => {
 
       {/* Sign out */}
       {user && (
-        <div style={{ padding: '14px 12px', borderTop: `1px solid ${colors.border}` }}>
+        <div style={{ padding: rail ? '12px 8px' : '14px 12px', borderTop: `1px solid ${colors.border}` }}>
           <button
             type="button"
+            title={t('nav:signOut')}
             onClick={() => logout()}
             onMouseEnter={() => setHovered('logout')}
             onMouseLeave={() => setHovered('')}
             style={{
               width: '100%',
-              padding: '8px 14px',
+              padding: rail ? '10px 8px' : '8px 14px',
               borderRadius: '10px',
               border: `1px solid ${colors.border}`,
               background: hovered === 'logout' ? colors.bg : 'transparent',
               color: colors.textPrimary,
-              fontSize: '13px',
+              fontSize: rail ? '0' : '13px',
               fontWeight: 500,
               cursor: 'pointer',
               textAlign: 'center',
               transition: 'background 0.12s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: rail ? '44px' : undefined,
             }}
           >
-            {t('nav:signOut')}
+            {rail ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            ) : (
+              t('nav:signOut')
+            )}
           </button>
         </div>
       )}
@@ -366,7 +612,7 @@ const MobileNavBackdrop = ({ open, onClose }) => {
   );
 };
 
-const MobileTopBar = ({ onOpenMenu, menuOpen }) => {
+const MobileTopBar = ({ onOpenMenu, menuOpen, storefrontUrl }) => {
   const { t } = useTranslation(["nav", "common"]);
   return (
     <header
@@ -418,6 +664,30 @@ const MobileTopBar = ({ onOpenMenu, menuOpen }) => {
           {t('nav:admin')}
         </span>
       </div>
+      {storefrontUrl ? (
+        <a
+          href={storefrontUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={t('nav:viewStore')}
+          title={t('nav:viewStore')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
+            border: `1px solid ${colors.border}`,
+            background: colors.bg,
+            color: colors.primary,
+            flexShrink: 0,
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          {externalLinkIcon}
+        </a>
+      ) : null}
       <LanguageSwitcher size="sm" />
     </header>
   );
@@ -432,9 +702,22 @@ const App = () => {
   const showSidebar = user?.role === 'admin' && !isAuthPage;
   const isMobile = useIsMobileNav();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => readSidebarCollapsed());
+  const storefrontUrl = useMemo(() => getStorefrontUrl(), []);
 
   const closeMobileNav = useCallback(() => setMobileNavOpen(false), []);
   const openMobileNav = useCallback(() => setMobileNavOpen(true), []);
+  const toggleSidebarCollapsed = useCallback(() => {
+    setSidebarCollapsed((v) => !v);
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, sidebarCollapsed ? '1' : '0');
+    } catch {
+      /* ignore quota / private mode */
+    }
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     if (!isMobile) setMobileNavOpen(false);
@@ -462,6 +745,12 @@ const App = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [showSidebar, isMobile, mobileNavOpen, closeMobileNav]);
 
+  const [initialLoad, setInitialLoad] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setInitialLoad(false), 2200);
+    return () => clearTimeout(t);
+  }, []);
+
   const mainPadding = isAuthPage
     ? '0'
     : isMobile
@@ -473,18 +762,36 @@ const App = () => {
   // breaking the LTR English layout.
   const shellDirection = isRtl ? 'row-reverse' : 'row';
 
+  /** Desktop + sidebar: lock shell to viewport so sidebar and main scroll independently */
+  const layoutScrollLocked = showSidebar && !isMobile;
+
   return (
     <>
+      <PageTransition isLoading={initialLoad} />
       <style>{`
         @media ${MOBILE_MEDIA} {
           .admin-mobile-topbar { display: flex !important; }
+        }
+        .admin-sidebar-collapse-toggle:focus-visible {
+          outline: 2px solid ${colors.primary};
+          outline-offset: 2px;
+        }
+        .scrollbar-hidden {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .scrollbar-hidden::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
       <div
         style={{
           display: 'flex',
           flexDirection: shellDirection,
-          minHeight: '100vh',
+          minHeight: layoutScrollLocked ? '100vh' : '100vh',
+          height: layoutScrollLocked ? '100vh' : undefined,
+          maxHeight: layoutScrollLocked ? '100vh' : undefined,
+          overflow: layoutScrollLocked ? 'hidden' : undefined,
           background: colors.bg,
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
           position: 'relative',
@@ -496,23 +803,38 @@ const App = () => {
             mobileOpen={mobileNavOpen}
             onMobileClose={closeMobileNav}
             isRtl={isRtl}
+            desktopCollapsed={sidebarCollapsed}
+            onToggleDesktopCollapse={toggleSidebarCollapsed}
+            storefrontUrl={storefrontUrl}
           />
         )}
         <main
           style={{
             flex: 1,
             padding: mainPadding,
-            overflow: 'auto',
             minWidth: 0,
             width: '100%',
             maxWidth: '100%',
             boxSizing: 'border-box',
             display: 'flex',
             flexDirection: 'column',
+            ...(layoutScrollLocked
+              ? {
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  minHeight: 0,
+                  height: '100%',
+                  maxHeight: '100%',
+                  overscrollBehavior: 'contain',
+                  WebkitOverflowScrolling: 'touch',
+                }
+              : {
+                  overflow: 'auto',
+                }),
           }}
         >
           {showSidebar && isMobile && (
-            <MobileTopBar onOpenMenu={openMobileNav} menuOpen={mobileNavOpen} />
+            <MobileTopBar onOpenMenu={openMobileNav} menuOpen={mobileNavOpen} storefrontUrl={storefrontUrl} />
           )}
           <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
             <Routes>

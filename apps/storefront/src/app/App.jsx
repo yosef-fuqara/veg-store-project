@@ -7,6 +7,7 @@ import PageTransition from "../components/common/PageTransition";
 import AbuAlAnasLogo from "../components/common/Logo";
 import { STORE_CONTACT_PHONES } from "../config/storeContactPhones";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import { HeaderStoreNavigation } from "../components/StoreNavigation";
 import Footer from "../components/Footer";
 import PromotionPopup from "../components/PromotionPopup";
 import StoreClosedSection from "../components/StoreClosedSection";
@@ -473,22 +474,34 @@ const AppNav = () => {
           <NavPhonePopover t={t} dir={dir} menuOpen={menuOpen} />
           {navStoreHoursCompact ? (
             <span
-              title={`${t('nav:storeHoursLabel')} ${navStoreHoursCompact}`}
               style={{
-                fontSize: isMobile ? 11 : 12,
-                fontWeight: 600,
-                color: colors.textSecondary,
-                whiteSpace: 'nowrap',
-                letterSpacing: '0.02em',
-                lineHeight: 1.2,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
                 minWidth: 0,
+                flexShrink: 1,
                 maxWidth: isMobile ? 200 : 320,
               }}
-              aria-label={`${t('nav:storeHoursLabel')} ${navStoreHoursCompact}`}
             >
-              {t('nav:storeHoursLabel')} {navStoreHoursCompact}
+              <span
+                title={`${t('nav:storeHoursLabel')} ${navStoreHoursCompact}`}
+                style={{
+                  fontSize: isMobile ? 11 : 12,
+                  fontWeight: 600,
+                  color: colors.textSecondary,
+                  whiteSpace: 'nowrap',
+                  letterSpacing: '0.02em',
+                  lineHeight: 1.2,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  minWidth: 0,
+                  flex: '1 1 auto',
+                }}
+                aria-label={`${t('nav:storeHoursLabel')} ${navStoreHoursCompact}`}
+              >
+                {t('nav:storeHoursLabel')} {navStoreHoursCompact}
+              </span>
+              <HeaderStoreNavigation menuOpen={menuOpen} />
             </span>
           ) : null}
         </div>

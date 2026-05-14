@@ -4,6 +4,8 @@
   "admin": "ניהול",
   "signOut": "התנתקות",
   "loadingSession": "טוען את ההתחברות…",
+  "viewStore": "צפה באתר",
+  "viewStoreUnavailable": "בפרודקשן יש להגדיר VITE_STOREFRONT_URL כדי לפתוח את החנות.",
   "items": {
     "products": "מוצרים",
     "categories": "קטגוריות",
@@ -15,8 +17,10 @@
   "languageSwitcher": {
     "label": "שפה",
     "english": "English",
-    "hebrew": "עברית",
-    "shortEnglish": "EN",
-    "shortHebrew": "HE"
+    "hebrew": "עברית"
+  },
+  "sidebar": {
+    "collapse": "כווץ סרגל צד",
+    "expand": "הרחב סרגל צד"
   }
 }

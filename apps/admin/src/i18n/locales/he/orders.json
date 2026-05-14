@@ -57,7 +57,8 @@
       "product": "מוצר",
       "qty": "כמות",
       "unitPrice": "מחיר ליחידה",
-      "lineTotal": "סה״כ לשורה"
+      "lineTotal": "סה״כ לשורה",
+      "noImage": "אין תמונת מוצר"
     },
     "itemBadges": {
       "preorder": "הזמנה מראש",

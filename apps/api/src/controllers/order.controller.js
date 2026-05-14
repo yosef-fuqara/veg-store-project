@@ -31,6 +31,16 @@ const {
 } = require("../services/image-upload.service");
 const { getOrderCreationBlockResponse } = require("../services/store-settings.service");
 
+/**
+ * Admin order JSON: join user + each line's Product so `items[].product.imageUrl`
+ * matches the live catalog field used by the storefront (`ProductCard` / product API).
+ * Does not alter stored order rows or pricing.
+ */
+const ADMIN_ORDER_RESPONSE_POPULATE = [
+  { path: "user", select: "name email phone" },
+  { path: "items.product", select: "imageUrl" }
+];
+
 const getOrCreateCart = async (userId) => {
   let cart = await Cart.findOne({ user: userId });
   if (!cart) {
@@ -237,7 +247,7 @@ const adminListOrders = async (req, res, next) => {
 
 const adminGetOrder = async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id).populate("user", "name email phone");
+    const order = await Order.findById(req.params.id).populate(ADMIN_ORDER_RESPONSE_POPULATE);
 
     if (!order) {
       throw new AppError("Order not found", StatusCodes.NOT_FOUND);
@@ -268,6 +278,8 @@ const adminUpdateOrderStatus = async (req, res, next) => {
       notifyOrderStatusChanged(order._id, order.orderStatus);
     }
 
+    await order.populate(ADMIN_ORDER_RESPONSE_POPULATE);
+
     return res.status(StatusCodes.OK).json({
       success: true,
       message: "Order status updated",
@@ -281,6 +293,7 @@ const adminUpdateOrderStatus = async (req, res, next) => {
 const adminUpdatePaymentStatus = async (req, res, next) => {
   try {
     const order = await adminUpdateBankTransferPayment(req.params.id, req.body);
+    await order.populate(ADMIN_ORDER_RESPONSE_POPULATE);
 
     return res.status(StatusCodes.OK).json({
       success: true,

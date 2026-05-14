@@ -6,6 +6,7 @@ import AbuAlAnasLogo from "./common/Logo";
 import DeveloperBrandMark from "./DeveloperBrandMark";
 import { CATEGORY_NAV_IDS } from "../utils/categoryFilter";
 import { STORE_CONTACT_PHONES } from "../config/storeContactPhones";
+import { FooterStoreNavigation } from "./StoreNavigation";
 
 const colors = {
   primary: "#1e6b3c",
@@ -177,6 +178,7 @@ const Footer = () => {
                 </a>
               ))}
             </div>
+            <FooterStoreNavigation />
           </div>
         </div>
 

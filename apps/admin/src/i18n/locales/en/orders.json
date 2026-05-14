@@ -55,7 +55,8 @@
       "product": "Product",
       "qty": "Qty",
       "unitPrice": "Unit Price",
-      "lineTotal": "Line Total"
+      "lineTotal": "Line Total",
+      "noImage": "No product image"
     },
     "itemBadges": {
       "preorder": "Preorder",

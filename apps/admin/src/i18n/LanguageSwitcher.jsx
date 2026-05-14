@@ -21,12 +21,16 @@ const LANG_OPTIONS = [
  * Compact dropdown for switching the admin language.
  * Renders the current language as a short code (EN / HE) plus a chevron.
  */
-const LanguageSwitcher = ({ size = "md" }) => {
+/**
+ * @param {{ size?: "sm" | "md", rail?: boolean }} props
+ * — rail: icon-sized trigger for collapsed desktop sidebar (still opens full dropdown)
+ */
+const LanguageSwitcher = ({ size = "md", rail = false }) => {
   const { t } = useTranslation("nav");
   const { lang, changeLanguage } = useAdminLanguage();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
-  const isCompact = size === "sm";
+  const isCompact = size === "sm" || rail;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -50,20 +54,22 @@ const LanguageSwitcher = ({ size = "md" }) => {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: "6px",
-    padding: isCompact ? "6px 10px" : "8px 12px",
+    gap: rail ? "4px" : "6px",
+    padding: rail ? "8px 6px" : isCompact ? "6px 10px" : "8px 12px",
     borderRadius: "10px",
     border: `1px solid ${open ? colors.primary : colors.border}`,
     background: open ? colors.bg : colors.surface,
     color: colors.textPrimary,
-    fontSize: "12px",
+    fontSize: rail ? "11px" : "12px",
     fontWeight: 600,
     cursor: "pointer",
     letterSpacing: "0.04em",
     fontFamily: "inherit",
     transition: "background 0.15s, border-color 0.15s",
     whiteSpace: "nowrap",
-    minWidth: isCompact ? "44px" : "52px"
+    minWidth: rail ? "40px" : isCompact ? "44px" : "52px",
+    width: rail ? "44px" : "auto",
+    boxSizing: "border-box",
   };
 
   return (
@@ -77,37 +83,41 @@ const LanguageSwitcher = ({ size = "md" }) => {
         title={t("languageSwitcher.label")}
         style={triggerStyle}
       >
-        <svg
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M2 12h20" />
-          <path d="M12 2a15 15 0 0 1 0 20" />
-          <path d="M12 2a15 15 0 0 0 0 20" />
-        </svg>
+        {!rail && (
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M2 12h20" />
+            <path d="M12 2a15 15 0 0 1 0 20" />
+            <path d="M12 2a15 15 0 0 0 0 20" />
+          </svg>
+        )}
         <span>{currentOption.short}</span>
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-          style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        {!rail && (
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+            style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        )}
       </button>
       {open && (
         <div

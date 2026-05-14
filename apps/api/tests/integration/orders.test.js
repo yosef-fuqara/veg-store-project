@@ -427,6 +427,11 @@ describe("Orders", () => {
       .set("Authorization", `Bearer ${aToken}`);
     expect(detail.status).toBe(200);
     expect(detail.body.data.order.orderStatus).toBe(ORDER_STATUS.NEW);
+    const firstLine = detail.body.data.order.items[0];
+    expect(firstLine.product).toMatchObject({
+      imageUrl: product.imageUrl
+    });
+    expect(String(firstLine.product._id)).toBe(String(product._id));
 
     const detailAgain = await request(getApp())
       .get(apiUrl(`/orders/admin/${orderId}`))

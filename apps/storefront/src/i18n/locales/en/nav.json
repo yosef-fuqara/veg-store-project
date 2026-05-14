@@ -11,5 +11,6 @@
   "language": "Language",
   "brandName": "Abu Al-Anas",
   "brandTagline": "Fruits & Vegetables",
-  "storeHoursLabel": "Hours of operation"
+  "storeHoursLabel": "Hours of operation",
+  "navigateToStoreTooltip": "Navigate to Store"
 }

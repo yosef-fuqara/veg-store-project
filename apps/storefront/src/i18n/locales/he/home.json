@@ -64,6 +64,12 @@
     "categoriesTitle": "קנו לפי קטגוריה",
     "rights": "כל הזכויות שמורות.",
     "whatsappAria": "שלחו הודעה בוואטסאפ",
-    "creditPrefix": "עוצב ופותח על ידי"
+    "creditPrefix": "עוצב ופותח על ידי",
+    "navigateToStore": "נווט לחנות",
+    "navigateMenuAria": "בחרו ב-Google Maps או ב-Waze לפתיחת הוראות הגעה",
+    "locationShort": "ניווט",
+    "location": "מיקום",
+    "dismissFloatingNavAria": "הסתרת כפתור הניווט",
+    "dismissFloatingWhatsappAria": "הסתרת כפתור וואטסאפ"
   }
 }

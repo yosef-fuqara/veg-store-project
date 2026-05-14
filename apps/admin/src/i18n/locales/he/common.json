@@ -34,5 +34,6 @@
   "selectPlaceholder": "בחר",
   "somethingWentWrong": "משהו השתבש",
   "errorGeneric": "משהו השתבש. נסה שוב.",
-  "currencySymbol": "₪"
+  "currencySymbol": "₪",
+  "unnamedProduct": "מוצר ללא שם"
 }

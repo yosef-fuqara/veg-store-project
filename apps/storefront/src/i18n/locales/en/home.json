@@ -64,6 +64,12 @@
     "categoriesTitle": "Shop by category",
     "rights": "All rights reserved.",
     "whatsappAria": "Chat with us on WhatsApp",
-    "creditPrefix": "Designed & developed by"
+    "creditPrefix": "Designed & developed by",
+    "navigateToStore": "Navigate to Store",
+    "navigateMenuAria": "Choose Google Maps or Waze to open directions",
+    "locationShort": "Location",
+    "location": "Location",
+    "dismissFloatingNavAria": "Hide navigation shortcut",
+    "dismissFloatingWhatsappAria": "Hide WhatsApp shortcut"
   }
 }

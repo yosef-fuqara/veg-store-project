@@ -11,7 +11,7 @@ const normalizeLang = (raw) => {
 
 /**
  * Syncs the active admin language with <html lang>/<html dir>, exposes a setter,
- * and reports the current direction. RTL only for Hebrew.
+ * and reports the current direction. RTL for Hebrew.
  */
 export function useAdminLanguage() {
   const { i18n } = useTranslation();

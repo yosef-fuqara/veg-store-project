@@ -4,6 +4,8 @@
   "admin": "Admin",
   "signOut": "Sign Out",
   "loadingSession": "Loading session…",
+  "viewStore": "View Store",
+  "viewStoreUnavailable": "Set VITE_STOREFRONT_URL in production to open the store.",
   "items": {
     "products": "Products",
     "categories": "Categories",
@@ -15,8 +17,10 @@
   "languageSwitcher": {
     "label": "Language",
     "english": "English",
-    "hebrew": "עברית",
-    "shortEnglish": "EN",
-    "shortHebrew": "HE"
+    "hebrew": "עברית"
+  },
+  "sidebar": {
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
   }
 }

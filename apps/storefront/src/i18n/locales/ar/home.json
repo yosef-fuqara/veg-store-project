@@ -64,6 +64,12 @@
     "categoriesTitle": "تسوّق حسب الفئة",
     "rights": "جميع الحقوق محفوظة.",
     "whatsappAria": "راسلونا عبر واتساب",
-    "creditPrefix": "صُمم وطُوّر بواسطة"
+    "creditPrefix": "صُمم وطُوّر بواسطة",
+    "navigateToStore": "الملاحة إلى المتجر",
+    "navigateMenuAria": "اختر Google Maps أو Waze لفتح الاتجاهات",
+    "locationShort": "الموقع",
+    "location": "الموقع",
+    "dismissFloatingNavAria": "إخفاء اختصار الملاحة",
+    "dismissFloatingWhatsappAria": "إخفاء اختصار واتساب"
   }
 }

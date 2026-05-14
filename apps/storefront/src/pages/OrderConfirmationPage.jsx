@@ -176,7 +176,7 @@ const OrderConfirmationPage = () => {
         transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
       >
         {/* Status header (tone follows payment status) */}
-        <div style={{ background: headerUi.surface, border: `1px solid ${headerUi.border}`, borderRadius: '14px', padding: '28px 24px', marginBottom: '24px', textAlign: 'center' }}>
+        <div style={{ background: headerUi.surface, border: `1px solid ${headerUi.border}`, borderRadius: '14px', padding: '28px 24px', marginBottom: '16px', textAlign: 'center' }}>
           <div style={{ fontSize: '36px', lineHeight: 1, marginBottom: '12px', color: headerUi.accent }} aria-hidden>{headerUi.icon}</div>
           <h1 style={{ margin: '0 0 8px', fontSize: '22px', fontWeight: 700, color: headerUi.accent }}>
             {confirmationTitleForPaymentStatus(order.paymentStatus, t)}
@@ -184,6 +184,34 @@ const OrderConfirmationPage = () => {
           <p style={{ margin: 0, fontSize: '13px', color: colors.textSecondary, fontFamily: 'monospace' }}>
             {order._id}
           </p>
+        </div>
+
+        {/* Refresh status — placed directly under the confirmation header so the
+            customer can quickly re-check the order status without scrolling. */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+          <motion.button
+            type="button"
+            onClick={load}
+            disabled={loading}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ duration: 0.12 }}
+            style={{
+              width: '100%',
+              maxWidth: '320px',
+              padding: '12px 20px',
+              borderRadius: '10px',
+              border: `1.5px solid ${colors.primary}`,
+              background: colors.surface,
+              color: colors.primary,
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
+            {t("refreshStatus")}
+          </motion.button>
         </div>
 
         {/* Order details card */}
@@ -334,21 +362,26 @@ const OrderConfirmationPage = () => {
           </div>
         </div>
 
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <motion.button
-            type="button"
-            onClick={load}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.96 }}
-            transition={{ duration: 0.12 }}
-            style={{ padding: '10px 20px', borderRadius: '10px', border: `1.5px solid ${colors.primary}`, background: 'transparent', color: colors.primary, fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
-          >
-            {t("refreshStatus")}
-          </motion.button>
+        {/* Bottom action — Continue shopping closes the flow after the user
+            has reviewed the order status and details above. */}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
           <Link
             to="/"
-            style={{ display: 'inline-flex', alignItems: 'center', padding: '10px 24px', borderRadius: '10px', background: colors.primary, color: colors.textInverse, fontSize: '15px', fontWeight: 600, textDecoration: 'none', boxShadow: '0 4px 14px rgba(30,107,60,0.30)' }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              maxWidth: '320px',
+              padding: '12px 24px',
+              borderRadius: '10px',
+              background: colors.primary,
+              color: colors.textInverse,
+              fontSize: '15px',
+              fontWeight: 600,
+              textDecoration: 'none',
+              boxShadow: '0 4px 14px rgba(30,107,60,0.30)',
+            }}
           >
             {t("continueShopping")}
           </Link>

@@ -10,7 +10,7 @@ import {
 } from "../services/announcementService";
 import { getAdminProducts } from "../services/productService";
 import { getAdminCategories } from "../services/categoryService";
-import { pickLocalizedName } from "../utils/localizedDisplayName";
+import { pickLocalizedName, pickLocalizedProductName } from "../utils/localizedDisplayName";
 import { useToast } from "../features/toast/ToastContext";
 
 const colors = {
@@ -555,13 +555,13 @@ const AdminPromotionsPage = () => {
                         <option value="">{catalogLoading ? t("promotions:form.fields.loadingProducts") : t("promotions:form.fields.selectProduct")}</option>
                         {[...products]
                           .sort((a, b) =>
-                            pickLocalizedName(a.name).localeCompare(pickLocalizedName(b.name), undefined, {
+                            pickLocalizedProductName(a).localeCompare(pickLocalizedProductName(b), undefined, {
                               sensitivity: "base"
                             })
                           )
                           .map((p) => (
                             <option key={p._id} value={p._id}>
-                              {pickLocalizedName(p.name)}
+                              {pickLocalizedProductName(p)}
                             </option>
                           ))}
                       </select>
@@ -580,7 +580,7 @@ const AdminPromotionsPage = () => {
                         <option value="">{catalogLoading ? t("promotions:form.fields.loadingCategories") : t("promotions:form.fields.selectCategory")}</option>
                         {[...categories]
                           .sort((a, b) =>
-                            pickLocalizedName(a.name).localeCompare(pickLocalizedName(b.name), undefined, {
+                            pickLocalizedProductName(a).localeCompare(pickLocalizedProductName(b), undefined, {
                               sensitivity: "base"
                             })
                           )

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -15,7 +15,12 @@ import {
   formatApproxWeightQuantity,
   PURCHASE_AMOUNT_CART_STEP_ILS
 } from "../utils/cartLineQuantity";
-import { WhatsAppFabCircle } from "./WhatsAppFloat";
+import { WhatsAppFabDismissible } from "./WhatsAppFloat";
+import { FloatingStoreNavigationFab } from "./StoreNavigation";
+import {
+  liquidGlassBrandFabBase,
+  liquidGlassFabPointerHover,
+} from "./floatingFabGlass";
 
 const colors = {
   primary: "#1e6b3c",
@@ -92,6 +97,18 @@ export function CartDrawerHost() {
   const { fabCartAnchorRef, cartBumpKey } = useCartVisualFeedback();
   const dir = lang === "he" || lang === "ar" ? "rtl" : "ltr";
   const drawerSlideFrom = dir === "rtl" ? "-100%" : "100%";
+
+  const [floatCompact, setFloatCompact] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 480px)");
+    const apply = () => setFloatCompact(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  const auxFabSize = floatCompact ? 48 : 56;
+  const floatStackGap = floatCompact ? 8 : 10;
+  const cartFabIconSize = Math.max(22, Math.round((auxFabSize * 24) / 56));
 
   useEffect(() => {
     if (open && user && !initializing) {
@@ -623,51 +640,61 @@ export function CartDrawerHost() {
           zIndex: 120,
           display: "flex",
           flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
+          justifyContent: "flex-end",
+          alignItems: "flex-end",
           paddingLeft: "max(24px, env(safe-area-inset-left, 0px))",
           paddingRight: "max(24px, env(safe-area-inset-right, 0px))",
           pointerEvents: "none",
           boxSizing: "border-box",
         }}
       >
-        <span style={{ pointerEvents: "auto", display: "flex", flexShrink: 0 }}>
-          <WhatsAppFabCircle />
-        </span>
-        <motion.button
-          type="button"
-          onClick={openCartDrawer}
-          aria-label={t("cart:drawerOpen")}
-          aria-expanded={open}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
-          transition={{ duration: 0.12 }}
+        <div
           style={{
-            width: 56,
-            height: 56,
-            borderRadius: 9999,
-            border: "none",
-            background: colors.primary,
-            color: colors.textInverse,
-            cursor: "pointer",
-            boxShadow: shadowPrimary,
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
+            gap: floatStackGap,
             pointerEvents: "auto",
+            flexShrink: 0,
+            maxWidth: "100%",
           }}
         >
-          <span style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <CartAnchorPulse
-              bumpKey={cartBumpKey}
-              anchorRef={fabCartAnchorRef}
-              inlineFlexStyle={{ display: "flex", alignItems: "center", justifyContent: "center" }}
-            >
-              <CartIconGlyph size={24} />
-            </CartAnchorPulse>
-          </span>
-        </motion.button>
+          <FloatingStoreNavigationFab size={auxFabSize} />
+          <WhatsAppFabDismissible size={auxFabSize} />
+          <motion.button
+            type="button"
+            onClick={openCartDrawer}
+            aria-label={t("cart:drawerOpen")}
+            aria-expanded={open}
+            whileTap={{ scale: 0.96 }}
+            transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+            style={{
+              ...liquidGlassBrandFabBase(auxFabSize),
+              color: colors.primary,
+              outline: "none",
+              pointerEvents: "auto",
+            }}
+            onMouseEnter={(e) => liquidGlassFabPointerHover(e, true)}
+            onMouseLeave={(e) => liquidGlassFabPointerHover(e, false)}
+            onFocus={(e) => {
+              e.currentTarget.style.outline = "2px solid rgba(30,107,60,0.45)";
+              e.currentTarget.style.outlineOffset = "2px";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.outline = "none";
+            }}
+          >
+            <span style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CartAnchorPulse
+                bumpKey={cartBumpKey}
+                anchorRef={fabCartAnchorRef}
+                inlineFlexStyle={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+              >
+                <CartIconGlyph size={cartFabIconSize} />
+              </CartAnchorPulse>
+            </span>
+          </motion.button>
+        </div>
       </div>
     </>
   );

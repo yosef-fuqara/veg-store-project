@@ -26,6 +26,17 @@ const navIconProps = {
   'aria-hidden': true,
 };
 
+/** Hides scrollbar visuals while keeping overflow scroll (Firefox / legacy Edge / WebKit). */
+const SCROLLBAR_HIDDEN_CSS = `
+  .scrollbar-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
 const ICONS = {
   fruits: () => <Apple {...navIconProps} />,
   vegetables: () => <Carrot {...navIconProps} />,
@@ -37,7 +48,8 @@ const ICONS = {
   other: () => <Store {...navIconProps} />,
 };
 
-const NAV_TOP_DESKTOP = '80px';
+/** Matches `STOREFRONT_STICKY_HEADER_SCROLL_MARGIN` in storefrontNavScroll.js (nav + offset) */
+const NAV_TOP_DESKTOP = '88px';
 
 function CategoryButton({
   id,
@@ -248,6 +260,7 @@ export function CategorySidebar({ activeId, onSelect, onShowAll }) {
   return (
     <>
       <style>{`
+        ${SCROLLBAR_HIDDEN_CSS}
         .category-nav-sidebar .category-nav-item-wrap:hover .category-nav-flyout {
           opacity: 1;
         }
@@ -258,7 +271,7 @@ export function CategorySidebar({ activeId, onSelect, onShowAll }) {
         }
       `}</style>
       <nav
-        className="category-nav-sidebar"
+        className="category-nav-sidebar scrollbar-hidden"
         aria-label={t('categories.navAria')}
         style={{
           flexShrink: 0,
@@ -266,6 +279,11 @@ export function CategorySidebar({ activeId, onSelect, onShowAll }) {
           position: 'sticky',
           top: NAV_TOP_DESKTOP,
           alignSelf: 'flex-start',
+          maxHeight: `calc(100vh - ${NAV_TOP_DESKTOP} - 16px)`,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch',
           padding: '12px 8px',
           borderRadius: '14px',
           background: colors.surfaceRaised,
@@ -318,21 +336,23 @@ export function CategoryBarMobile({ activeId, onSelect, onShowAll }) {
   }, [activeId]);
 
   return (
-    <nav
-      ref={navRef}
-      aria-label={t('categories.navAria')}
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        gap: '12px',
-        overflowX: 'auto',
-        overflowY: 'hidden',
-        paddingBottom: '12px',
-        marginBottom: '8px',
-        WebkitOverflowScrolling: 'touch',
-        scrollbarWidth: 'thin',
-      }}
-    >
+    <>
+      <style>{SCROLLBAR_HIDDEN_CSS}</style>
+      <nav
+        ref={navRef}
+        className="scrollbar-hidden"
+        aria-label={t('categories.navAria')}
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          gap: '12px',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          paddingBottom: '12px',
+          marginBottom: '8px',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
       {onShowAll ? (
         <motion.button
           key="show-all"
@@ -453,5 +473,6 @@ export function CategoryBarMobile({ activeId, onSelect, onShowAll }) {
         );
       })}
     </nav>
+    </>
   );
 }

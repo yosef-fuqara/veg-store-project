@@ -30,6 +30,9 @@ import {
 } from "../utils/vegstorePersistence";
 import { isOutsideConfiguredBusinessHoursNow } from "../utils/businessHoursNotice";
 import { normalizeIsraeliMobile } from "../utils/israeliMobilePhone";
+import { Landmark } from "lucide-react";
+import bitMarkSvg from "../assets/payment/bit-mark.svg";
+import cardsMarkSvg from "../assets/payment/cards-mark.svg";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -108,6 +111,79 @@ const sectionTitleStyle = {
   fontSize: '15px',
   fontWeight: 600,
   color: colors.textPrimary,
+};
+
+const shadowSm = '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)';
+
+const cardSectionStyle = {
+  ...sectionStyle,
+  borderRadius: '14px',
+  boxShadow: shadowSm,
+  gap: '16px',
+};
+
+/** Product image for checkout line — uses cart snapshot or direct URL from API. */
+const checkoutLineImageUrl = (item) => {
+  const snap = item?.productSnapshot?.imageUrl;
+  if (typeof snap === 'string' && snap.trim()) return snap.trim();
+  const direct = item?.imageUrl;
+  if (typeof direct === 'string' && direct.trim()) return direct.trim();
+  return '';
+};
+
+const paymentLeadingGraphicStyle = {
+  flexShrink: 0,
+  width: "44px",
+  height: "36px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+/** Decorative only; label + radio provide the accessible name. */
+const CheckoutPaymentMethodGraphic = ({ method }) => {
+  if (method === "credit_card") {
+    return (
+      <span style={paymentLeadingGraphicStyle} aria-hidden>
+        <img
+          src={cardsMarkSvg}
+          alt=""
+          width={72}
+          height={34}
+          draggable={false}
+          style={{
+            display: "block",
+            width: "64px",
+            height: "auto",
+            maxHeight: "28px",
+            objectFit: "contain",
+          }}
+        />
+      </span>
+    );
+  }
+  if (method === "bit") {
+    return (
+      <span style={paymentLeadingGraphicStyle} aria-hidden>
+        <img
+          src={bitMarkSvg}
+          alt=""
+          width={40}
+          height={40}
+          draggable={false}
+          style={{ display: "block", width: "34px", height: "34px", objectFit: "contain" }}
+        />
+      </span>
+    );
+  }
+  if (method === "bank_transfer") {
+    return (
+      <span style={paymentLeadingGraphicStyle} aria-hidden>
+        <Landmark size={26} strokeWidth={1.85} color={colors.textSecondary} />
+      </span>
+    );
+  }
+  return <span style={{ ...paymentLeadingGraphicStyle, width: "32px" }} aria-hidden />;
 };
 
 const initialForm = {
@@ -597,70 +673,78 @@ const CheckoutPage = () => {
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: isNarrow ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(0, 340px)',
-        gap: isNarrow ? '24px' : '32px',
+        gridTemplateColumns: isNarrow ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(280px, 400px)',
+        gap: isNarrow ? '24px' : '40px',
         alignItems: 'start',
       }}>
 
-        {/* Form */}
-        <form noValidate onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0, width: '100%' }}>
+        <form noValidate onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0, width: '100%' }}>
 
-          {/* Delivery address */}
           <div
             id="checkout-delivery"
-            style={{ ...sectionStyle, scrollMarginTop: "80px" }}
+            style={{ ...cardSectionStyle, scrollMarginTop: "80px" }}
           >
-            <h3 style={sectionTitleStyle}>{t("deliveryAddress")}</h3>
-            <label style={labelStyle}>
-              {t("streetRequired")}
-              <input ref={assignFieldRef("deliveryAddress.street")} value={form.deliveryAddress.street} onChange={updateAddress("street")} maxLength={120} required onFocus={focus("street")} onBlur={blur} style={inputStyle("deliveryAddress.street")} />
-              {fieldErr("deliveryAddress.street")}
-            </label>
-            <label style={labelStyle}>
-              {t("building")}
-              <input ref={assignFieldRef("deliveryAddress.building")} value={form.deliveryAddress.building} onChange={updateAddress("building")} maxLength={50} onFocus={focus("building")} onBlur={blur} style={inputStyle("deliveryAddress.building")} />
-              {fieldErr("deliveryAddress.building")}
-            </label>
-            <label style={labelStyle}>
-              {t("apartment")}
-              <input ref={assignFieldRef("deliveryAddress.apartment")} value={form.deliveryAddress.apartment} onChange={updateAddress("apartment")} maxLength={50} onFocus={focus("apartment")} onBlur={blur} style={inputStyle("deliveryAddress.apartment")} />
-              {fieldErr("deliveryAddress.apartment")}
-            </label>
+            <h3 style={{ margin: 0, fontSize: '18px', lineHeight: '28px', fontWeight: 600, color: colors.textPrimary }}>
+              {t("deliveryDetails")}
+            </h3>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: isNarrow ? 'minmax(0, 1fr)' : 'repeat(2, minmax(0, 1fr))',
+                gap: '16px',
+              }}
+            >
+              <label style={{ ...labelStyle, minWidth: 0 }}>
+                {t("streetRequired")}
+                <input ref={assignFieldRef("deliveryAddress.street")} value={form.deliveryAddress.street} onChange={updateAddress("street")} maxLength={120} required onFocus={focus("deliveryAddress.street")} onBlur={blur} style={inputStyle("deliveryAddress.street")} />
+                {fieldErr("deliveryAddress.street")}
+              </label>
+              <label style={{ ...labelStyle, minWidth: 0 }}>
+                {t("building")}
+                <input ref={assignFieldRef("deliveryAddress.building")} value={form.deliveryAddress.building} onChange={updateAddress("building")} maxLength={50} onFocus={focus("deliveryAddress.building")} onBlur={blur} style={inputStyle("deliveryAddress.building")} />
+                {fieldErr("deliveryAddress.building")}
+              </label>
+              <label style={{ ...labelStyle, minWidth: 0, gridColumn: isNarrow ? undefined : 'span 2' }}>
+                {t("apartment")}
+                <input ref={assignFieldRef("deliveryAddress.apartment")} value={form.deliveryAddress.apartment} onChange={updateAddress("apartment")} maxLength={50} onFocus={focus("deliveryAddress.apartment")} onBlur={blur} style={inputStyle("deliveryAddress.apartment")} />
+                {fieldErr("deliveryAddress.apartment")}
+              </label>
+            </div>
+
             <label style={labelStyle}>
               {t("addressNotes")}
-              <textarea ref={assignFieldRef("deliveryAddress.notes")} value={form.deliveryAddress.notes} onChange={updateAddress("notes")} maxLength={500} rows={2} onFocus={focus("addressNotes")} onBlur={blur} style={{ ...inputStyle("deliveryAddress.notes"), resize: 'vertical' }} />
+              <textarea ref={assignFieldRef("deliveryAddress.notes")} value={form.deliveryAddress.notes} onChange={updateAddress("notes")} maxLength={500} rows={2} onFocus={focus("deliveryAddress.notes")} onBlur={blur} style={{ ...inputStyle("deliveryAddress.notes"), resize: 'vertical' }} />
               {fieldErr("deliveryAddress.notes")}
+            </label>
+
+            <label style={labelStyle}>
+              {t("deliveryAreaRequired")}
+              <select ref={assignFieldRef("deliveryArea")} value={form.deliveryArea} onChange={updateField("deliveryArea")} required onFocus={focus("deliveryArea")} onBlur={blur} style={inputStyle("deliveryArea")}>
+                <option value="" disabled>{t("deliveryAreaPlaceholder")}</option>
+                {areas.map((area) => (
+                  <option key={area.key} value={area.key}>
+                    {deliveryAreaOptionLabel(area, lang, t)}
+                    {area.key === localAreaKey ? " ★" : ""}
+                  </option>
+                ))}
+              </select>
+              <span style={{ fontSize: '12px', color: colors.textMuted, display: 'block', whiteSpace: 'pre-line', marginTop: '4px' }}>
+                {t("deliveryAreaHelper", {
+                  localMin: rules.localFreeDeliveryMin,
+                  localFee: rules.localDeliveryFee,
+                  outsideMin: rules.outsideFreeDeliveryMin,
+                  outsideFee: rules.outsideDeliveryFee
+                })}
+              </span>
+              {fieldErr("deliveryArea")}
             </label>
           </div>
 
-          {/* Delivery area */}
-          <label style={labelStyle}>
-            {t("deliveryAreaRequired")}
-            <select ref={assignFieldRef("deliveryArea")} value={form.deliveryArea} onChange={updateField("deliveryArea")} required onFocus={focus("deliveryArea")} onBlur={blur} style={inputStyle("deliveryArea")}>
-              <option value="" disabled>{t("deliveryAreaPlaceholder")}</option>
-              {areas.map((area) => (
-                <option key={area.key} value={area.key}>
-                  {deliveryAreaOptionLabel(area, lang, t)}
-                  {area.key === localAreaKey ? " ★" : ""}
-                </option>
-              ))}
-            </select>
-            <span style={{ fontSize: '12px', color: colors.textMuted, display: 'block', whiteSpace: 'pre-line', marginTop: '4px' }}>
-              {t("deliveryAreaHelper", {
-                localMin: rules.localFreeDeliveryMin,
-                localFee: rules.localDeliveryFee,
-                outsideMin: rules.outsideFreeDeliveryMin,
-                outsideFee: rules.outsideDeliveryFee
-              })}
-            </span>
-            {fieldErr("deliveryArea")}
-          </label>
-
-          {/* Preorder section */}
           {hasPreorderItems && (
-            <div style={{ ...sectionStyle, border: `1px solid ${colors.warningBorder}`, background: colors.warningSurface }}>
-              <h3 style={{ ...sectionTitleStyle, color: colors.warning }}>{t("preorderNotice")}</h3>
-              <p style={{ margin: 0, fontSize: '14px', color: colors.warning }}>{t("preorderHelper", { hours: minAdvanceHours })}</p>
+            <div style={{ ...cardSectionStyle, border: `1px solid ${colors.warningBorder}`, background: colors.warningSurface }}>
+              <h3 style={{ ...sectionTitleStyle, fontSize: '17px', lineHeight: '28px', color: colors.warning }}>{t("preorderNotice")}</h3>
+              <p style={{ margin: 0, fontSize: '14px', color: colors.warning, lineHeight: 1.5 }}>{t("preorderHelper", { hours: minAdvanceHours })}</p>
               <label style={labelStyle}>
                 {t("preorderDateRequired")}
                 <input ref={assignFieldRef("preferredDeliveryAt")} type="datetime-local" value={form.preferredDeliveryAt} onChange={updateField("preferredDeliveryAt")} min={minDateTimeLocal(minAdvanceHours)} required onFocus={focus("preferredDeliveryAt")} onBlur={blur} style={inputStyle("preferredDeliveryAt")} />
@@ -674,50 +758,87 @@ const CheckoutPage = () => {
             </div>
           )}
 
-          {/* Phone */}
-          <label style={labelStyle}>
-            {t("phoneRequired")}
-            <input ref={assignFieldRef("customerPhone")} type="tel" inputMode="tel" autoComplete="tel-national" value={form.customerPhone} onChange={updateField("customerPhone")} maxLength={22} onFocus={focus("phone")} onBlur={blur} style={inputStyle("customerPhone")} />
-            {fieldErr("customerPhone")}
-          </label>
+          <div
+            style={{
+              ...cardSectionStyle,
+              display: 'grid',
+              gridTemplateColumns: isNarrow ? 'minmax(0, 1fr)' : 'repeat(2, minmax(0, 1fr))',
+              gap: '16px',
+            }}
+          >
+            <label style={{ ...labelStyle, minWidth: 0 }}>
+              {t("phoneRequired")}
+              <input ref={assignFieldRef("customerPhone")} type="tel" inputMode="tel" autoComplete="tel-national" value={form.customerPhone} onChange={updateField("customerPhone")} maxLength={22} onFocus={focus("customerPhone")} onBlur={blur} style={inputStyle("customerPhone")} />
+              {fieldErr("customerPhone")}
+            </label>
+            <label style={{ ...labelStyle, minWidth: 0 }}>
+              {t("orderNotes")}
+              <textarea ref={assignFieldRef("notes")} value={form.notes} onChange={updateField("notes")} maxLength={1000} rows={isNarrow ? 3 : 4} onFocus={focus("notes")} onBlur={blur} style={{ ...inputStyle("notes"), resize: 'vertical', minHeight: isNarrow ? undefined : '120px' }} />
+              {fieldErr("notes")}
+            </label>
+          </div>
 
-          {/* Order notes */}
-          <label style={labelStyle}>
-            {t("orderNotes")}
-            <textarea ref={assignFieldRef("notes")} value={form.notes} onChange={updateField("notes")} maxLength={1000} rows={3} onFocus={focus("notes")} onBlur={blur} style={{ ...inputStyle("notes"), resize: 'vertical' }} />
-            {fieldErr("notes")}
-          </label>
-
-          {/* Payment method */}
-          <div ref={assignFieldRef("paymentMethod")}>
-          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-            <legend style={{ fontSize: '14px', fontWeight: 500, color: colors.textSecondary, marginBottom: '10px', display: 'block' }}>
-              {t("paymentMethodRequired")}
-            </legend>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {PAYMENT_METHODS.map((method) => (
-                <label
-                  key={method.value}
-                  style={{
-                    display: 'flex', gap: '10px', alignItems: 'center',
-                    padding: '10px 14px', borderRadius: '8px', cursor: 'pointer',
-                    border: `1.5px solid ${form.paymentMethod === method.value ? colors.primary : colors.border}`,
-                    background: form.paymentMethod === method.value ? colors.primarySurface : colors.surface,
-                    fontSize: '14px', fontWeight: 500, color: colors.textPrimary,
-                    transition: 'border-color 0.15s, background 0.15s',
-                  }}
-                >
-                  <input type="radio" name="paymentMethod" value={method.value} checked={form.paymentMethod === method.value} onChange={updateField("paymentMethod")} />
-                  {t(`paymentMethods.${method.value}`)}
-                </label>
-              ))}
-            </div>
-            {fieldErr("paymentMethod")}
-          </fieldset>
+          <div ref={assignFieldRef("paymentMethod")} style={cardSectionStyle}>
+            <fieldset style={{ border: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <legend style={{ fontSize: '16px', lineHeight: '24px', fontWeight: 600, color: colors.textPrimary, marginBottom: '4px', padding: 0 }}>
+                {t("paymentMethodRequired")}
+              </legend>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: isNarrow
+                    ? 'minmax(0, 1fr)'
+                    : 'repeat(auto-fit, minmax(160px, 1fr))',
+                  gap: '12px',
+                }}
+              >
+                {PAYMENT_METHODS.map((method) => {
+                  const selected = form.paymentMethod === method.value;
+                  return (
+                    <label
+                      key={method.value}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: '12px',
+                        minHeight: '64px',
+                        boxSizing: 'border-box',
+                        padding: '12px 16px',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        border: `1.5px solid ${selected ? colors.primary : colors.border}`,
+                        background: selected ? colors.primarySurface : colors.surface,
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: colors.textPrimary,
+                        transition: 'border-color 0.15s, background 0.15s, box-shadow 0.15s',
+                        boxShadow: selected ? '0 0 0 1px rgba(30,107,60,0.08)' : 'none',
+                        minWidth: 0,
+                      }}
+                    >
+                      <CheckoutPaymentMethodGraphic method={method.value} />
+                      <span style={{ flex: 1, minWidth: 0, lineHeight: 1.35, textAlign: 'start' }}>
+                        {t(`paymentMethods.${method.value}`)}
+                      </span>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value={method.value}
+                        checked={selected}
+                        onChange={updateField("paymentMethod")}
+                        style={{ flexShrink: 0, width: '18px', height: '18px', accentColor: colors.primary }}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+              {fieldErr("paymentMethod")}
+            </fieldset>
           </div>
 
           {form.paymentMethod === "bank_transfer" && (
-            <div ref={assignFieldRef("bankTransferProof")}>
+            <div ref={assignFieldRef("bankTransferProof")} style={cardSectionStyle}>
               <label style={labelStyle}>
                 {t("bankTransferProofLabel")}
                 <input
@@ -776,7 +897,7 @@ const CheckoutPage = () => {
 
         {/* Order summary aside */}
         <aside style={{
-          background: colors.surfaceRaised,
+          background: colors.surface,
           border: `1px solid ${colors.border}`,
           borderRadius: '14px',
           padding: '24px',
@@ -785,73 +906,115 @@ const CheckoutPage = () => {
           minWidth: 0,
           width: '100%',
           boxSizing: 'border-box',
+          boxShadow: shadowSm,
         }}>
-          <h3 style={{ margin: '0 0 16px', fontSize: '17px', fontWeight: 600, color: colors.textPrimary }}>
+          <h3 style={{ margin: '0 0 20px', fontSize: '18px', lineHeight: '28px', fontWeight: 600, color: colors.textPrimary }}>
             {t("orderSummary")}
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {preview.items.map((item) => (
-              <div key={item.product} style={{ padding: '10px 0', borderBottom: `1px solid ${colors.border}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '14px' }}>
-                  <span style={{ color: colors.textPrimary }}>
-                    {getLocalizedProductName({ name: item.nameLocales ?? item.name }, lang)}
-                    {item.purchaseMode === "amount" && item.requestedAmountIls != null ? (
-                      <>
-                        {" · "}
-                        {item.unit === "kg" || item.unit === "gram" ? (
-                          t("cart:purchaseByAmountLineDetail", {
-                            unitPrice: formatPrice(item.unitPrice, lang),
-                            unitLabel: t(`home:units.${item.unit}`),
-                            weight: formatApproxWeightQuantity(item.quantity, item.unit)
-                          })
-                        ) : (
-                          t("cart:purchaseByAmountNote", {
-                            amount: formatPrice(item.requestedAmountIls, lang)
-                          })
-                        )}
-                      </>
-                    ) : (
-                      <> × {formatQtyDisplay(item.quantity)}</>
-                    )}
-                    {item.isPreorderOnly ? " ⏱" : ""}
-                    {item.wrap && (
-                      <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', background: colors.successSurface, color: colors.success, border: `1px solid ${colors.successBorder}` }}>
-                        {t("wrapBadge")}
-                      </span>
-                    )}
-                  </span>
-                  <span style={{ fontWeight: 600, color: colors.textPrimary, flexShrink: 0 }}>
-                    {formatPrice(item.lineTotal, lang)}
-                  </span>
-                </div>
-                {item.wrap && Number(item.wrapFee) > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '12px', color: colors.success, marginTop: '4px' }}>
-                    <span>↳ {t("wrapFees")}</span>
-                    <span>+{formatPrice(item.wrapFee, lang)}</span>
+            {preview.items.map((item) => {
+              const thumbUrl = checkoutLineImageUrl(item);
+              const displayName = getLocalizedProductName({ name: item.nameLocales ?? item.name }, lang);
+              const isAmountLine = item.purchaseMode === "amount" && item.requestedAmountIls != null;
+              const detailLine = isAmountLine ? (
+                item.unit === "kg" || item.unit === "gram" ? (
+                  t("cart:purchaseByAmountLineDetail", {
+                    unitPrice: formatPrice(item.unitPrice, lang),
+                    unitLabel: t(`home:units.${item.unit}`),
+                    weight: formatApproxWeightQuantity(item.quantity, item.unit)
+                  })
+                ) : (
+                  t("cart:purchaseByAmountNote", {
+                    amount: formatPrice(item.requestedAmountIls, lang)
+                  })
+                )
+              ) : (
+                <>
+                  {t("cart:quantity")} {formatQtyDisplay(item.quantity)} · {formatPrice(item.unitPrice, lang)}
+                </>
+              );
+              return (
+                <div
+                  key={item.product}
+                  style={{
+                    padding: '14px 0',
+                    borderBottom: `1px solid ${colors.border}`,
+                    display: 'flex',
+                    gap: '12px',
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '10px',
+                      background: colors.surfaceRaised,
+                      border: `1px solid ${colors.border}`,
+                      flexShrink: 0,
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {thumbUrl ? (
+                      <img
+                        src={thumbUrl}
+                        alt=""
+                        draggable={false}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                    ) : null}
                   </div>
-                )}
-              </div>
-            ))}
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, lineHeight: 1.4, textAlign: 'start', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                        {displayName}
+                        {item.isPreorderOnly ? " ⏱" : ""}
+                        {item.wrap && (
+                          <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', fontWeight: 600, background: colors.successSurface, color: colors.success, border: `1px solid ${colors.successBorder}`, verticalAlign: 'middle' }}>
+                            {t("wrapBadge")}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '14px', fontWeight: 700, color: colors.textPrimary, flexShrink: 0, textAlign: 'end' }}>
+                        {formatPrice(item.lineTotal, lang)}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '13px', color: colors.textSecondary, lineHeight: 1.45, textAlign: 'start' }}>
+                      {detailLine}
+                    </div>
+                    {item.wrap && Number(item.wrapFee) > 0 && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '12px', color: colors.success, marginTop: '2px' }}>
+                        <span>↳ {t("wrapFees")}</span>
+                        <span>+{formatPrice(item.wrapFee, lang)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.textSecondary }}>
+          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.textSecondary, gap: '12px' }}>
               <span>{t("subtotal")}</span>
-              <span>{formatPrice(subtotal, lang)}</span>
+              <span style={{ fontWeight: 500, color: colors.textPrimary }}>{formatPrice(subtotal, lang)}</span>
             </div>
             {wrapTotal > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.success }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.success, gap: '12px' }}>
                 <span>{t("wrapFees")}</span>
-                <span>{formatPrice(wrapTotal, lang)}</span>
+                <span style={{ fontWeight: 500 }}>{formatPrice(wrapTotal, lang)}</span>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.textSecondary }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.textSecondary, gap: '12px' }}>
               <span>{t("deliveryFee")}</span>
-              <span>{formatPrice(deliveryFeeEstimate, lang)}</span>
+              <span style={{ fontWeight: 500, color: colors.textPrimary }}>{formatPrice(deliveryFeeEstimate, lang)}</span>
             </div>
-            <span style={{ fontSize: '11px', color: colors.textMuted }}>{t("feeEstimateNote")}</span>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700, color: colors.textPrimary, paddingTop: '10px', borderTop: `1px solid ${colors.border}`, marginTop: '4px' }}>
+            <span style={{ fontSize: '11px', color: colors.textMuted, lineHeight: 1.4 }}>{t("feeEstimateNote")}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700, color: colors.textPrimary, paddingTop: '12px', borderTop: `1px solid ${colors.border}`, marginTop: '8px', gap: '12px' }}>
               <span>{t("total")}</span>
               <span>{formatChargedTotal(payableTotal, lang)}</span>
             </div>

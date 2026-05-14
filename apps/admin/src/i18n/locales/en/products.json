@@ -49,6 +49,19 @@
     "stock": {
       "in": "In Stock",
       "out": "Out of Stock"
+    },
+    "view": {
+      "gallery": "Gallery",
+      "table": "Table",
+      "toggleAria": "Product list layout"
+    },
+    "drawer": {
+      "title": "Product details",
+      "close": "Close",
+      "closeAria": "Close product details"
+    },
+    "card": {
+      "openDetailsAria": "View details for {{name}}"
     }
   },
   "form": {

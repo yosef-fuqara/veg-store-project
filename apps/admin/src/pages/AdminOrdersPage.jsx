@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getAdminOrders } from "../services/orderService";
 import { formatAdminOrderStatusLabel, formatAdminPaymentStatusLabel } from "../utils/adminOrderStatusLabel";
+import { useAdminLanguage } from "../i18n/useAdminLanguage";
 
 const colors = {
   primary:      '#1e6b3c',
@@ -75,8 +76,24 @@ const interactiveBtn = {
   transition: 'background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s',
 };
 
+/** LTR: anchor id left, actions right. RTL: actions on the inline-start (right) side. */
+const ORDER_TABLE_COLS_LTR = ["orderId", "customer", "date", "total", "payment", "status", "actions"];
+const ORDER_TABLE_COLS_RTL = ["actions", "status", "payment", "total", "date", "customer", "orderId"];
+
+const ORDER_COL_HEADER_KEY = {
+  orderId: "orders:list.tableHeaders.orderNumber",
+  customer: "orders:list.tableHeaders.customer",
+  date: "orders:list.tableHeaders.date",
+  total: "orders:list.tableHeaders.total",
+  payment: "orders:list.tableHeaders.payment",
+  status: "orders:list.tableHeaders.status",
+  actions: "orders:list.tableHeaders.actions"
+};
+
 const AdminOrdersPage = () => {
   const { t } = useTranslation(["orders", "common"]);
+  const { isRtl } = useAdminLanguage();
+  const orderTableCols = isRtl ? ORDER_TABLE_COLS_RTL : ORDER_TABLE_COLS_LTR;
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -159,7 +176,7 @@ const AdminOrdersPage = () => {
         .admin-orders-dd-item:focus-visible { outline: 2px solid ${colors.primary}; outline-offset: -2px; }
       `}</style>
 
-      {/* Page header */}
+      {/* Page header — order children so title sits at reading-start under both LTR and RTL */}
       <div style={{
         display: 'flex',
         flexWrap: 'wrap',
@@ -168,44 +185,89 @@ const AdminOrdersPage = () => {
         gap: '16px',
         marginBottom: '32px',
       }}>
-        <button
-          type="button"
-          className="admin-orders-refresh"
-          onClick={load}
-          disabled={loading}
-          aria-label={loading ? t('orders:list.refreshingAria') : t('orders:list.refreshAria')}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 18px',
-            borderRadius: '10px',
-            border: `1px solid ${colors.border}`,
-            background: colors.surface,
-            color: colors.textPrimary,
-            fontSize: '13px',
-            fontWeight: 500,
-            cursor: loading ? 'not-allowed' : 'pointer',
-            opacity: loading ? 0.7 : 1,
-            ...interactiveBtn,
-          }}
-          onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = colors.bg; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={loading ? { animation: 'adminOrdersSpin 0.9s linear infinite' } : undefined}>
-            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-          </svg>
-          {loading ? t('orders:list.refreshing') : t('orders:list.refresh')}
-        </button>
-        <div style={{ textAlign: 'end', flex: '1 1 200px', minWidth: 0 }}>
-          <h1 style={{ margin: 0, fontSize: '36px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.5px' }}>
-            {t('orders:list.pageTitle')}
-          </h1>
-          <p style={{ margin: '8px 0 0', fontSize: '14px', color: colors.textMuted, lineHeight: 1.5 }}>
-            {t('orders:list.pageSubtitle')}
-          </p>
-        </div>
+        {isRtl ? (
+          <>
+            <div style={{ textAlign: 'start', flex: '1 1 200px', minWidth: 0 }}>
+              <h1 style={{ margin: 0, fontSize: '36px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.5px' }}>
+                {t('orders:list.pageTitle')}
+              </h1>
+              <p style={{ margin: '8px 0 0', fontSize: '14px', color: colors.textMuted, lineHeight: 1.5 }}>
+                {t('orders:list.pageSubtitle')}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="admin-orders-refresh"
+              onClick={load}
+              disabled={loading}
+              aria-label={loading ? t('orders:list.refreshingAria') : t('orders:list.refreshAria')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 18px',
+                borderRadius: '10px',
+                border: `1px solid ${colors.border}`,
+                background: colors.surface,
+                color: colors.textPrimary,
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+                ...interactiveBtn,
+              }}
+              onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = colors.bg; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={loading ? { animation: 'adminOrdersSpin 0.9s linear infinite' } : undefined}>
+                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+              {loading ? t('orders:list.refreshing') : t('orders:list.refresh')}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="admin-orders-refresh"
+              onClick={load}
+              disabled={loading}
+              aria-label={loading ? t('orders:list.refreshingAria') : t('orders:list.refreshAria')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 18px',
+                borderRadius: '10px',
+                border: `1px solid ${colors.border}`,
+                background: colors.surface,
+                color: colors.textPrimary,
+                fontSize: '13px',
+                fontWeight: 500,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+                ...interactiveBtn,
+              }}
+              onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = colors.bg; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={loading ? { animation: 'adminOrdersSpin 0.9s linear infinite' } : undefined}>
+                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+              {loading ? t('orders:list.refreshing') : t('orders:list.refresh')}
+            </button>
+            <div style={{ textAlign: 'end', flex: '1 1 200px', minWidth: 0 }}>
+              <h1 style={{ margin: 0, fontSize: '36px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.5px' }}>
+                {t('orders:list.pageTitle')}
+              </h1>
+              <p style={{ margin: '8px 0 0', fontSize: '14px', color: colors.textMuted, lineHeight: 1.5 }}>
+                {t('orders:list.pageSubtitle')}
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Error */}
@@ -393,29 +455,24 @@ const AdminOrdersPage = () => {
               maxWidth: '100%',
             }}
           >
-            <table style={{ width: '100%', minWidth: '920px', borderCollapse: 'collapse' }}>
+            <table dir={isRtl ? "rtl" : "ltr"} style={{ width: '100%', minWidth: '920px', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  {[
-                    t('orders:list.tableHeaders.actions'),
-                    t('orders:list.tableHeaders.status'),
-                    t('orders:list.tableHeaders.payment'),
-                    t('orders:list.tableHeaders.total'),
-                    t('orders:list.tableHeaders.date'),
-                    t('orders:list.tableHeaders.customer'),
-                    t('orders:list.tableHeaders.orderNumber')
-                  ].map((h) => (
-                    <th key={h} style={{
-                      padding: '12px 16px',
-                      textAlign: 'start',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      color: colors.textSecondary,
-                      background: colors.bg,
-                      borderBottom: `1px solid ${colors.border}`,
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {h}
+                  {orderTableCols.map((col) => (
+                    <th
+                      key={col}
+                      style={{
+                        padding: '12px 16px',
+                        textAlign: 'start',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: colors.textSecondary,
+                        background: colors.bg,
+                        borderBottom: `1px solid ${colors.border}`,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t(ORDER_COL_HEADER_KEY[col])}
                     </th>
                   ))}
                 </tr>
@@ -432,95 +489,112 @@ const AdminOrdersPage = () => {
                     onMouseEnter={() => setHoverRowId(order._id)}
                     onMouseLeave={() => setHoverRowId('')}
                   >
-
-                    {/* Actions */}
-                    <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
-                      <Link
-                        to={`/orders/${order._id}`}
-                        className="admin-orders-view"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '6px 14px',
-                          borderRadius: '10px',
-                          border: `1px solid ${colors.border}`,
-                          background: colors.surface,
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          color: colors.textPrimary,
-                          textDecoration: 'none',
-                          whiteSpace: 'nowrap',
-                          ...interactiveBtn,
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; e.currentTarget.style.borderColor = colors.primary; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; e.currentTarget.style.borderColor = colors.border; }}
-                      >
-                        {t('orders:list.view')}
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="9 18 15 12 9 6"/>
-                        </svg>
-                      </Link>
-                    </td>
-
-                    {/* Order Status */}
-                    <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
-                      <Pill value={order.orderStatus} palette={ORDER_STATUS_STYLES} />
-                    </td>
-
-                    {/* Payment */}
-                    <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
-                      <Pill value={order.paymentStatus} palette={PAYMENT_STATUS_STYLES} kind="payment" />
-                    </td>
-
-                    {/* Total */}
-                    <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, fontVariantNumeric: 'tabular-nums' }}>
-                        {formatCurrency(order.total)}
-                      </span>
-                    </td>
-
-                    {/* Date */}
-                    <td style={{ padding: '12px 16px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                      <span style={{ fontSize: '13px', color: colors.textSecondary }}>
-                        {formatDate(order.createdAt)}
-                      </span>
-                    </td>
-
-                    {/* Customer */}
-                    <td style={{ padding: '12px 16px', maxWidth: '200px', verticalAlign: 'middle' }}>
-                      <span style={{ fontSize: '13px', color: colors.textPrimary, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={customerText(order)}>
-                        {customerText(order)}
-                      </span>
-                    </td>
-
-                    {/* Order # */}
-                    <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <Link
-                          to={`/orders/${order._id}`}
-                          style={{
-                            fontSize: '13px',
-                            fontWeight: 600,
-                            color: colors.primary,
-                            textDecoration: 'none',
-                            fontFamily: 'ui-monospace, monospace',
-                            borderRadius: '6px',
-                            padding: '2px 4px',
-                            transition: 'background 0.12s, color 0.12s',
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; e.currentTarget.style.color = colors.primaryHover; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = colors.primary; }}
-                        >
-                          #{shortId(order._id)}
-                        </Link>
-                        {order.hasPreorderItems && (
-                          <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '9999px', background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', fontSize: '10px', fontWeight: 600 }}>
-                            {t('orders:list.preorder')}
-                          </span>
-                        )}
-                      </div>
-                    </td>
+                    {orderTableCols.map((col) => {
+                      if (col === 'actions') {
+                        return (
+                          <td key={col} style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                            <Link
+                              to={`/orders/${order._id}`}
+                              className="admin-orders-view"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 14px',
+                                borderRadius: '10px',
+                                border: `1px solid ${colors.border}`,
+                                background: colors.surface,
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                color: colors.textPrimary,
+                                textDecoration: 'none',
+                                whiteSpace: 'nowrap',
+                                ...interactiveBtn,
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; e.currentTarget.style.borderColor = colors.primary; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; e.currentTarget.style.borderColor = colors.border; }}
+                            >
+                              {t('orders:list.view')}
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isRtl ? 'scaleX(-1)' : undefined }} aria-hidden>
+                                <polyline points="9 18 15 12 9 6"/>
+                              </svg>
+                            </Link>
+                          </td>
+                        );
+                      }
+                      if (col === 'status') {
+                        return (
+                          <td key={col} style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                            <Pill value={order.orderStatus} palette={ORDER_STATUS_STYLES} />
+                          </td>
+                        );
+                      }
+                      if (col === 'payment') {
+                        return (
+                          <td key={col} style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                            <Pill value={order.paymentStatus} palette={PAYMENT_STATUS_STYLES} kind="payment" />
+                          </td>
+                        );
+                      }
+                      if (col === 'total') {
+                        return (
+                          <td key={col} style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                            <span style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, fontVariantNumeric: 'tabular-nums' }}>
+                              {formatCurrency(order.total)}
+                            </span>
+                          </td>
+                        );
+                      }
+                      if (col === 'date') {
+                        return (
+                          <td key={col} style={{ padding: '12px 16px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontSize: '13px', color: colors.textSecondary }}>
+                              {formatDate(order.createdAt)}
+                            </span>
+                          </td>
+                        );
+                      }
+                      if (col === 'customer') {
+                        return (
+                          <td key={col} style={{ padding: '12px 16px', maxWidth: '200px', verticalAlign: 'middle' }}>
+                            <span style={{ fontSize: '13px', color: colors.textPrimary, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={customerText(order)}>
+                              {customerText(order)}
+                            </span>
+                          </td>
+                        );
+                      }
+                      if (col === 'orderId') {
+                        return (
+                          <td key={col} style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <Link
+                                to={`/orders/${order._id}`}
+                                style={{
+                                  fontSize: '13px',
+                                  fontWeight: 600,
+                                  color: colors.primary,
+                                  textDecoration: 'none',
+                                  fontFamily: 'ui-monospace, monospace',
+                                  borderRadius: '6px',
+                                  padding: '2px 4px',
+                                  transition: 'background 0.12s, color 0.12s',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; e.currentTarget.style.color = colors.primaryHover; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = colors.primary; }}
+                              >
+                                #{shortId(order._id)}
+                              </Link>
+                              {order.hasPreorderItems && (
+                                <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '9999px', background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', fontSize: '10px', fontWeight: 600 }}>
+                                  {t('orders:list.preorder')}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                        );
+                      }
+                      return null;
+                    })}
                   </tr>
                 ))}
               </tbody>

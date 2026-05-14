@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Clock, Lock, Store, X } from "lucide-react";
+import { Clock, Lock, Store } from "lucide-react";
 import { buildStoreClosedScheduleLine, pickLocalized } from "../utils/storeClosedScheduleLine";
 
 const colors = {
@@ -12,9 +12,7 @@ const colors = {
   surface: "#ffffff",
   border: "#e8e3dc",
   textPrimary: "#1c1917",
-  textSecondary: "#57534e",
-  textMuted: "#a8a29e",
-  textInverse: "#ffffff"
+  textMuted: "#a8a29e"
 };
 
 export default function StoreClosedEntryModal({ open, onDismiss, settings }) {
@@ -26,20 +24,15 @@ export default function StoreClosedEntryModal({ open, onDismiss, settings }) {
 
   useEffect(() => {
     if (!open) return undefined;
-    const onKey = (e) => {
-      if (e.key === "Escape") onDismiss();
-    };
-    window.addEventListener("keydown", onKey);
     const prevBody = document.body.style.overflow;
     const prevHtml = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
     return () => {
-      window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevBody;
       document.documentElement.style.overflow = prevHtml;
     };
-  }, [open, onDismiss]);
+  }, [open]);
 
   if (typeof document === "undefined") return null;
 
@@ -67,9 +60,6 @@ export default function StoreClosedEntryModal({ open, onDismiss, settings }) {
             boxSizing: "border-box",
             overflow: "hidden"
           }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) onDismiss();
-          }}
         >
           <motion.div
             role="dialog"
@@ -79,7 +69,6 @@ export default function StoreClosedEntryModal({ open, onDismiss, settings }) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ type: "spring", stiffness: 320, damping: 28 }}
-            onClick={(e) => e.stopPropagation()}
             style={{
               position: "relative",
               width: "100%",
@@ -94,30 +83,6 @@ export default function StoreClosedEntryModal({ open, onDismiss, settings }) {
               boxSizing: "border-box"
             }}
           >
-            <button
-              type="button"
-              onClick={onDismiss}
-              aria-label={t("closeModalAria")}
-              style={{
-                position: "absolute",
-                top: 12,
-                insetInlineEnd: 12,
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                border: "none",
-                background: colors.primarySurface,
-                color: colors.textSecondary,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "background 0.15s, color 0.15s"
-              }}
-            >
-              <X size={20} strokeWidth={2.2} aria-hidden />
-            </button>
-
             <motion.div
               aria-hidden
               initial={{ scale: 0.92, opacity: 0.35 }}

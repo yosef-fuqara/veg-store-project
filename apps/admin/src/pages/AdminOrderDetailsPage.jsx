@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Package } from "lucide-react";
 import { useToast } from "../features/toast/ToastContext";
 import {
   getAdminOrderById,
@@ -78,6 +79,79 @@ const formatDate = (value) => {
   return new Date(value).toLocaleString('en-IL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
+const ORDER_ITEM_THUMB_PX = 52;
+
+/** @param {unknown} item */
+const resolveOrderItemImageUrl = (item) => {
+  if (!item || typeof item !== "object") return "";
+  const direct = /** @type {{ imageUrl?: unknown }} */ (item).imageUrl;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+  const p = /** @type {{ product?: unknown }} */ (item).product;
+  if (p && typeof p === "object" && !Array.isArray(p)) {
+    const nested = /** @type {{ imageUrl?: unknown }} */ (p).imageUrl;
+    if (typeof nested === "string" && nested.trim()) return nested.trim();
+  }
+  return "";
+};
+
+/** Stable row key when `product` is an ObjectId string or populated `{ _id, imageUrl }`. */
+const orderItemRowKey = (item, lang, idx) => {
+  if (!item || typeof item !== "object") return `item-${idx}`;
+  const p = /** @type {{ product?: unknown }} */ (item).product;
+  if (typeof p === "string" && p.trim()) return `${p.trim()}-${idx}`;
+  if (p && typeof p === "object" && !Array.isArray(p)) {
+    const id = /** @type {{ _id?: unknown }} */ (p)._id;
+    if (id != null && id !== "") return `${String(id)}-${idx}`;
+  }
+  const raw = /** @type {{ name?: unknown; nameLocales?: unknown }} */ (item);
+  return `${getLocalizedText(raw.nameLocales ?? raw.name, lang)}-${idx}`;
+};
+
+const OrderItemThumbnail = ({ src, noImageLabel }) => {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+  const showImg = Boolean(src) && !failed;
+  const boxStyle = {
+    width: ORDER_ITEM_THUMB_PX,
+    height: ORDER_ITEM_THUMB_PX,
+    flexShrink: 0,
+    borderRadius: "10px",
+    border: `1px solid ${colors.borderLight}`,
+    background: colors.bg,
+    overflow: "hidden",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxSizing: "border-box",
+  };
+  if (showImg) {
+    return (
+      <div style={boxStyle}>
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+      </div>
+    );
+  }
+  return (
+    <div style={boxStyle} role="img" aria-label={noImageLabel}>
+      <Package size={22} strokeWidth={1.75} color={colors.textMuted} aria-hidden />
+    </div>
+  );
+};
+
 const Pill = ({ value, palette, kind = "order" }) => {
   const s = palette[value] || { bg: '#f8fafc', color: '#475569', border: '#e2e8f0' };
   const label = kind === "payment" ? formatAdminPaymentStatusLabel(value) : formatAdminOrderStatusLabel(value);
@@ -129,7 +203,7 @@ const AdminOrderDetailsPage = () => {
   const { id } = useParams();
   const { showToast } = useToast();
   const { t } = useTranslation(["orders", "common"]);
-  const { lang } = useAdminLanguage();
+  const { lang, isRtl } = useAdminLanguage();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -250,7 +324,7 @@ const AdminOrderDetailsPage = () => {
   return (
     <div style={{ maxWidth: '840px' }}>
       {/* Page header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px', flexDirection: isRtl ? 'row-reverse' : 'row', gap: '12px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.3px' }}>
             {t("orders:details.pageTitle")}
@@ -259,7 +333,7 @@ const AdminOrderDetailsPage = () => {
             #{String(order._id).slice(-8).toUpperCase()}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
           <button
             type="button"
             onClick={load}
@@ -276,7 +350,7 @@ const AdminOrderDetailsPage = () => {
             to="/orders"
             style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '8px 14px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: colors.surface, color: colors.textPrimary, fontSize: '13px', fontWeight: 500, textDecoration: 'none' }}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isRtl ? 'scaleX(-1)' : undefined }} aria-hidden>
               <polyline points="15 18 9 12 15 6"/>
             </svg>
             {t("orders:details.allOrders")}
@@ -324,7 +398,8 @@ const AdminOrderDetailsPage = () => {
         {/* Items */}
         <Card>
           <CardTitle>{t("orders:details.cards.items")}</CardTitle>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div style={{ width: "100%", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table dir={isRtl ? "rtl" : "ltr"} style={{ width: '100%', borderCollapse: 'collapse', minWidth: '280px' }}>
             <thead>
               <tr>
                 {[
@@ -340,24 +415,34 @@ const AdminOrderDetailsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {(order.items || []).map((item, idx) => (
-                <tr key={`${item.product || getLocalizedText(item.name, lang)}-${idx}`} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
-                  <td style={{ padding: '10px 10px', fontSize: '14px', color: colors.textPrimary }}>
-                    <span>{getLocalizedText(item.name, lang)}</span>
-                    {item.isPreorderOnly && (
-                      <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', fontWeight: 600, background: colors.warningBg, color: colors.warning, border: `1px solid ${colors.warningBorder}` }}>
-                        {t("orders:details.itemBadges.preorder")}
-                      </span>
-                    )}
-                    {item.wrap && (
-                      <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', fontWeight: 600, background: colors.successBg, color: colors.success, border: `1px solid ${colors.successBorder}` }}>
-                        {Number(item.wrapFee) > 0
-                          ? t("orders:details.itemBadges.wrapWithFee", { fee: formatCurrency(item.wrapFee) })
-                          : t("orders:details.itemBadges.wrap")}
-                      </span>
-                    )}
+              {(order.items || []).map((item, idx) => {
+                const lineImageUrl = resolveOrderItemImageUrl(item);
+                return (
+                <tr key={orderItemRowKey(item, lang, idx)} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
+                  <td style={{ padding: '8px 10px', fontSize: '14px', color: colors.textPrimary, verticalAlign: 'top' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', minWidth: 0 }}>
+                      <OrderItemThumbnail
+                        src={lineImageUrl}
+                        noImageLabel={t("orders:details.itemsTable.noImage")}
+                      />
+                      <div style={{ minWidth: 0, flex: 1, lineHeight: 1.35 }}>
+                        <span>{getLocalizedText(/** @type {{ name?: unknown; nameLocales?: unknown }} */ (item).nameLocales ?? item.name, lang)}</span>
+                        {item.isPreorderOnly && (
+                          <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', fontWeight: 600, background: colors.warningBg, color: colors.warning, border: `1px solid ${colors.warningBorder}` }}>
+                            {t("orders:details.itemBadges.preorder")}
+                          </span>
+                        )}
+                        {item.wrap && (
+                          <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', fontWeight: 600, background: colors.successBg, color: colors.success, border: `1px solid ${colors.successBorder}` }}>
+                            {Number(item.wrapFee) > 0
+                              ? t("orders:details.itemBadges.wrapWithFee", { fee: formatCurrency(item.wrapFee) })
+                              : t("orders:details.itemBadges.wrap")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </td>
-                  <td style={{ padding: '10px 10px', fontSize: '13px', color: colors.textSecondary }}>
+                  <td style={{ padding: '8px 10px', fontSize: '13px', color: colors.textSecondary, verticalAlign: 'top' }}>
                     <div>{item.quantity} {item.unit}</div>
                     {item.purchaseMode === 'amount' && item.requestedAmountIls != null && (
                       <div style={{ fontSize: '11px', color: colors.textMuted, marginTop: '4px' }}>
@@ -365,10 +450,10 @@ const AdminOrderDetailsPage = () => {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: '10px 10px', fontSize: '13px', color: colors.textSecondary }}>
+                  <td style={{ padding: '8px 10px', fontSize: '13px', color: colors.textSecondary, verticalAlign: 'top' }}>
                     {formatCurrency(item.price)}
                   </td>
-                  <td style={{ padding: '10px 10px', fontSize: '14px', fontWeight: 600, color: colors.textPrimary }}>
+                  <td style={{ padding: '8px 10px', fontSize: '14px', fontWeight: 600, color: colors.textPrimary, verticalAlign: 'top' }}>
                     {formatCurrency(
                       typeof item.lineTotal === 'number'
                         ? item.lineTotal
@@ -376,9 +461,11 @@ const AdminOrderDetailsPage = () => {
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
+          </div>
 
           {/* Totals */}
           <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '280px', marginInlineStart: 'auto' }}>

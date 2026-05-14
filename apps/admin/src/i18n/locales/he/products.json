@@ -49,6 +49,19 @@
     "stock": {
       "in": "במלאי",
       "out": "אזל מהמלאי"
+    },
+    "view": {
+      "gallery": "גלריה",
+      "table": "טבלה",
+      "toggleAria": "תצוגת רשימת מוצרים"
+    },
+    "drawer": {
+      "title": "פרטי מוצר",
+      "close": "סגור",
+      "closeAria": "סגור פרטי מוצר"
+    },
+    "card": {
+      "openDetailsAria": "הצג פרטים עבור {{name}}"
     }
   },
   "form": {
