@@ -60,6 +60,22 @@ describe("Orders", () => {
     expect(cart.body.data.cart.items.length).toBe(0);
   });
 
+  it("admin can create order from storefront checkout (bit)", async () => {
+    const admin = await createAdminUser();
+    const token = await loginAndGetAccessToken(admin.email, DEFAULT_PASSWORD);
+    const product = await createProduct({ price: 15 });
+    await seedCart(token, String(product._id));
+
+    const res = await request(getApp())
+      .post(apiUrl("/orders"))
+      .set("Authorization", `Bearer ${token}`)
+      .send({ ...baseOrderPayload, paymentMethod: "bit" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.order.paymentMethod).toBe("bit");
+    expect(res.body.data.order.paymentStatus).toBe("pending_payment");
+  });
+
   it("normalizes +972 customerPhone on create", async () => {
     const user = await createCustomerUser();
     const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);

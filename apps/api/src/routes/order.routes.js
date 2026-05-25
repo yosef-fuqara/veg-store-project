@@ -59,21 +59,26 @@ router.patch(
   adminUpdatePaymentStatus
 );
 
+const requireStorefrontOrderActor = requireRole(
+  USER_ROLES.CUSTOMER,
+  USER_ROLES.ADMIN
+);
+
 router.post(
   "/",
   requireAuth,
-  requireRole(USER_ROLES.CUSTOMER),
+  requireStorefrontOrderActor,
   upload.single("bankTransferProof"),
   handleUploadErrors,
   parseOrderCreateBody,
   validate(createOrderSchema),
   createOrder
 );
-router.get("/", requireAuth, requireRole(USER_ROLES.CUSTOMER), listMyOrders);
+router.get("/", requireAuth, requireStorefrontOrderActor, listMyOrders);
 router.get(
   "/:id",
   requireAuth,
-  requireRole(USER_ROLES.CUSTOMER),
+  requireStorefrontOrderActor,
   validate(orderIdParamSchema, "params"),
   getMyOrder
 );

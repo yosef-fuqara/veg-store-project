@@ -40,7 +40,7 @@ async function main() {
 
     const adminRes = await notifyAdminOfNewOrder(SAMPLE_ORDER_ADMIN(), SAMPLE_USER_ADMIN());
     printResult("admin-new-order", "notifyAdminOfNewOrder", adminRes || {});
-    if (adminRes?.reason === "disabled") {
+    if (!adminRes?.ok && adminRes?.reason) {
       console.log(
         `${pkg} If you expected admin WhatsApp: set ADMIN_WHATSAPP_PHONE or WHATSAPP_ADMIN_PHONE, WHATSAPP_NOTIFICATIONS_ENABLED=true, and WHATSAPP_PROVIDER (e.g. log). Existing env values are preserved (same rules as dotenv).`
       );

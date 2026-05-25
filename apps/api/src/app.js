@@ -21,7 +21,12 @@ const limiter = rateLimit({
   max: env.rateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.originalUrl.includes("/payments/webhook")
+  skip: (req) => {
+    if (req.originalUrl.includes("/payments/webhook")) return true;
+    // Local dev (HMR, StrictMode, multiple tabs) can exceed 200/15min quickly.
+    if (env.nodeEnv !== "production") return true;
+    return false;
+  },
 });
 
 app.use(helmet());

@@ -3,6 +3,12 @@ process.env.JWT_ACCESS_SECRET = "test_jwt_access_secret_min_32_chars_x";
 process.env.JWT_REFRESH_SECRET = "test_jwt_refresh_secret_min_32_chars_y";
 process.env.PAYMENT_WEBHOOK_SECRET = "test_webhook_secret_value";
 process.env.PAYMENT_PROVIDER = "placeholder";
+// Default WhatsApp off in Jest so a developer .env does not trigger real/log sends during unrelated tests.
+process.env.WHATSAPP_NOTIFICATIONS_ENABLED = "false";
+process.env.WHATSAPP_ENABLED = "false";
+process.env.WHATSAPP_PROVIDER = "";
+process.env.ADMIN_WHATSAPP_PHONE = "";
+process.env.WHATSAPP_ADMIN_PHONE = "";
 
 jest.mock("../src/services/image-upload.service", () => ({
   uploadBufferToCloudinary: jest.fn().mockResolvedValue({

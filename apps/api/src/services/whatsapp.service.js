@@ -5,6 +5,69 @@ const { normalizeIsraeliMobile } = require("../utils/israeliMobilePhone");
 const truthy = (value) =>
   typeof value === "string" && ["1", "true", "yes", "on"].includes(value.toLowerCase());
 
+/** Last 4 digits only — safe for logs. */
+function maskPhoneForLog(digitsOrRaw) {
+  const d = String(digitsOrRaw || "").replace(/\D/g, "");
+  if (!d.length) {
+    return "(empty)";
+  }
+  if (d.length < 4) {
+    return "****";
+  }
+  return `***${d.slice(-4)}`;
+}
+
+function getProviderCredentialGaps() {
+  const provider = String(env.whatsappProvider || "").toLowerCase();
+  if (!provider) {
+    return ["provider_unset"];
+  }
+  if (provider === "meta_cloud") {
+    const gaps = [];
+    if (!env.whatsappApiToken) {
+      gaps.push("api_token");
+    }
+    if (!env.whatsappPhoneNumberId) {
+      gaps.push("phone_number_id");
+    }
+    return gaps;
+  }
+  if (provider === "twilio") {
+    const gaps = [];
+    if (!env.whatsappTwilioAccountSid) {
+      gaps.push("account_sid");
+    }
+    if (!env.whatsappApiToken) {
+      gaps.push("auth_token");
+    }
+    if (!env.whatsappTwilioFrom) {
+      gaps.push("from_number");
+    }
+    return gaps;
+  }
+  if (provider === "log") {
+    return [];
+  }
+  return ["unknown_provider"];
+}
+
+function describeWhatsAppSkipReason() {
+  if (!truthy(env.whatsappNotificationsEnabled)) {
+    return "notifications_flag_off";
+  }
+  const gaps = getProviderCredentialGaps();
+  if (gaps.length) {
+    return `provider_not_ready:${gaps.join(",")}`;
+  }
+  if (!env.adminWhatsappPhone) {
+    return "admin_phone_unset";
+  }
+  if (!toWaApiDigits(env.adminWhatsappPhone)) {
+    return "admin_phone_invalid";
+  }
+  return null;
+}
+
 /**
  * Provider + feature flag; does not require admin destination (used for customer messages).
  */
@@ -79,13 +142,34 @@ function toWaApiDigits(input) {
   return digitsOnly.length ? digitsOnly : null;
 }
 
+const formatDeliveryAddressLine = (deliveryAddress) => {
+  const addr = deliveryAddress || {};
+  const parts = [
+    addr.street,
+    addr.building,
+    addr.apartment,
+    addr.label,
+    addr.notes
+  ].filter(Boolean);
+  const city = addr.city;
+  if (city && parts.length) {
+    return `${parts.join(", ")}, ${city}`;
+  }
+  if (city) {
+    return city;
+  }
+  return parts.length ? parts.join(", ") : "";
+};
+
 const buildOrderMessage = (order, user) => {
   const orderId = String(order?._id || "");
   const customerName = user?.name || order?.customerName || "-";
   const customerPhone = order?.customerPhone || user?.phone || "-";
   const area = resolveDeliveryAreaLabel(order?.deliveryArea, order?.deliveryAddress?.city, "he");
+  const addressLine = formatDeliveryAddressLine(order?.deliveryAddress);
   const total = typeof order?.total === "number" ? order.total : 0;
   const paymentMethod = order?.paymentMethod || "-";
+  const orderStatus = order?.orderStatus || "-";
   const adminBaseUrl = env.adminBaseUrl;
   const adminLink = adminBaseUrl ? `${adminBaseUrl.replace(/\/$/, "")}/orders/${orderId}` : "";
 
@@ -95,8 +179,10 @@ const buildOrderMessage = (order, user) => {
     `Customer: ${customerName}`,
     `Phone: ${customerPhone}`,
     `Delivery area: ${area}`,
+    ...(addressLine ? [`Address: ${addressLine}`] : []),
     `Total: ${total} ILS`,
-    `Payment: ${paymentMethod}`
+    `Payment: ${paymentMethod}`,
+    `Status: ${orderStatus}`
   ];
   const itemLines = (order?.items || [])
     .slice(0, 4)
@@ -155,9 +241,10 @@ const sendViaMetaCloud = async ({ to, message }) => {
     },
     body: JSON.stringify(payload)
   });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Meta WhatsApp Cloud API error ${res.status}: ${text}`);
+  if (!res?.ok) {
+    const text = res ? await res.text().catch(() => "") : "";
+    const status = res?.status ?? "no_response";
+    throw new Error(`Meta WhatsApp Cloud API error ${status}: ${text}`);
   }
 };
 
@@ -188,9 +275,10 @@ const sendViaTwilio = async ({ toWaDigits, message }) => {
     },
     body: params.toString()
   });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Twilio API error ${res.status}: ${text}`);
+  if (!res?.ok) {
+    const text = res ? await res.text().catch(() => "") : "";
+    const status = res?.status ?? "no_response";
+    throw new Error(`Twilio API error ${status}: ${text}`);
   }
 };
 
@@ -199,16 +287,22 @@ async function dispatchWhatsAppText({ toWaDigits, message }) {
   if (!toWaDigits || !message) {
     throw new Error("WhatsApp send requires destination and message");
   }
+  // eslint-disable-next-line no-console
+  console.info(
+    `[whatsapp] dispatch provider=${provider || "(unset)"} to=${maskPhoneForLog(toWaDigits)}`
+  );
   if (provider === "meta_cloud") {
     await sendViaMetaCloud({ to: toWaDigits, message });
   } else if (provider === "twilio") {
     await sendViaTwilio({ toWaDigits, message });
   } else if (provider === "log") {
     // eslint-disable-next-line no-console
-    console.info("[whatsapp] log provider; to:", toWaDigits, "message:", message);
+    console.info("[whatsapp] log provider message preview:", message.split("\n")[0]);
   } else {
     throw new Error(`Unknown WhatsApp provider "${provider}"`);
   }
+  // eslint-disable-next-line no-console
+  console.info(`[whatsapp] dispatch success provider=${provider} to=${maskPhoneForLog(toWaDigits)}`);
 }
 
 /**
@@ -251,29 +345,68 @@ async function sendTransactionalWhatsAppToCustomer({ customerPhone, message }) {
  * notifications are misconfigured or the provider is down.
  */
 const notifyAdminOfNewOrder = async (order, user) => {
+  const orderId = String(order?._id || "");
   try {
-    if (!isWhatsAppEnabled()) {
+    // eslint-disable-next-line no-console
+    console.info(`[whatsapp] admin new-order notification start orderId=${orderId}`);
+
+    const skipReason = describeWhatsAppSkipReason();
+    if (skipReason) {
       // eslint-disable-next-line no-console
-      console.info("[whatsapp] notifications disabled or not configured; skipping");
-      return { ok: false, reason: "disabled" };
+      console.info(
+        `[whatsapp] admin notification skipped orderId=${orderId} reason=${skipReason} provider=${String(env.whatsappProvider || "").toLowerCase() || "(unset)"}`
+      );
+      return { ok: false, reason: skipReason };
     }
 
     const toWaDigits = toWaApiDigits(env.adminWhatsappPhone);
     if (!toWaDigits) {
       // eslint-disable-next-line no-console
-      console.warn("[whatsapp] admin phone could not be normalized; skipping");
+      console.warn(
+        `[whatsapp] admin phone could not be normalized orderId=${orderId} masked=${maskPhoneForLog(env.adminWhatsappPhone)}`
+      );
       return { ok: false, reason: "bad_admin_phone" };
     }
 
     const message = buildOrderMessage(order, user);
+    // eslint-disable-next-line no-console
+    console.info(
+      `[whatsapp] sending admin new-order orderId=${orderId} provider=${String(env.whatsappProvider || "").toLowerCase()} adminTo=${maskPhoneForLog(toWaDigits)}`
+    );
     await dispatchWhatsAppText({ toWaDigits, message });
+    // eslint-disable-next-line no-console
+    console.info(`[whatsapp] admin new-order sent orderId=${orderId}`);
     return { ok: true };
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.warn("[whatsapp] failed to send admin notification:", err?.message);
+    console.warn(
+      `[whatsapp] admin new-order failed orderId=${orderId}:`,
+      err?.message
+    );
     return { ok: false, error: err?.message };
   }
 };
+
+function logWhatsAppStartupDiagnostics() {
+  const provider = String(env.whatsappProvider || "").toLowerCase() || "(unset)";
+  const skipReason = describeWhatsAppSkipReason();
+  const adminDigits = env.adminWhatsappPhone ? toWaApiDigits(env.adminWhatsappPhone) : null;
+  // eslint-disable-next-line no-console
+  console.info(
+    "[whatsapp] startup:",
+    JSON.stringify({
+      notificationsFlag: truthy(env.whatsappNotificationsEnabled),
+      provider,
+      providerReady: isWhatsAppProviderReady(),
+      adminPhoneConfigured: Boolean(env.adminWhatsappPhone),
+      adminPhoneNormalized: Boolean(adminDigits),
+      adminPhoneMasked: adminDigits ? maskPhoneForLog(adminDigits) : null,
+      adminNotificationsEnabled: isWhatsAppEnabled(),
+      skipReason: skipReason || null,
+      credentialGaps: getProviderCredentialGaps()
+    })
+  );
+}
 
 module.exports = {
   notifyAdminOfNewOrder,
@@ -284,5 +417,8 @@ module.exports = {
   toWaApiDigits,
   toTwilioWhatsAppParty,
   sendTransactionalWhatsApp,
-  sendTransactionalWhatsAppToCustomer
+  sendTransactionalWhatsAppToCustomer,
+  logWhatsAppStartupDiagnostics,
+  maskPhoneForLog,
+  describeWhatsAppSkipReason
 };

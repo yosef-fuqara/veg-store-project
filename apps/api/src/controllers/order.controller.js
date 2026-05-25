@@ -145,6 +145,8 @@ const createOrder = async (req, res, next) => {
     cart.items = [];
     await cart.save();
 
+    // eslint-disable-next-line no-console
+    console.info(`[order] created id=${order._id} total=${order.total} payment=${order.paymentMethod}`);
     notifyOrderCreated(order, req.user);
 
     if (req.body.paymentMethod === PAYMENT_METHOD.BANK_TRANSFER) {

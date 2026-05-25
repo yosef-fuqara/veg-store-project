@@ -12,6 +12,7 @@ const inferApiCode = (err, statusCode) => {
   if (statusCode === StatusCodes.TOO_MANY_REQUESTS) return "RATE_LIMIT_EXCEEDED";
   if (statusCode === StatusCodes.UNAUTHORIZED) {
     const msg = (err.message || "").toLowerCase();
+    if (msg.includes("invalid email or password")) return "INVALID_CREDENTIALS";
     if (msg.includes("invalid") || msg.includes("expired")) return "TOKEN_INVALID";
     return "UNAUTHENTICATED";
   }

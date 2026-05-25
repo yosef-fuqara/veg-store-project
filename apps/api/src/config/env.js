@@ -41,7 +41,11 @@ const env = {
   whatsappNotificationsEnabled:
     process.env.WHATSAPP_NOTIFICATIONS_ENABLED || process.env.WHATSAPP_ENABLED || "false",
   whatsappProvider: process.env.WHATSAPP_PROVIDER || "",
-  whatsappApiToken: process.env.WHATSAPP_API_TOKEN || process.env.TWILIO_AUTH_TOKEN || "",
+  whatsappApiToken:
+    process.env.WHATSAPP_API_TOKEN ||
+    process.env.WHATSAPP_ACCESS_TOKEN ||
+    process.env.TWILIO_AUTH_TOKEN ||
+    "",
   whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || "",
   whatsappTwilioAccountSid:
     process.env.WHATSAPP_TWILIO_ACCOUNT_SID || process.env.TWILIO_ACCOUNT_SID || "",

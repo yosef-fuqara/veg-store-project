@@ -35,6 +35,11 @@ describe("WhatsApp admin notification", () => {
   });
 
   it("disabled: order succeeds and no provider call is made", async () => {
+    process.env.WHATSAPP_NOTIFICATIONS_ENABLED = "false";
+    process.env.WHATSAPP_ENABLED = "false";
+    delete process.env.WHATSAPP_PROVIDER;
+    delete process.env.ADMIN_WHATSAPP_PHONE;
+
     const fetchMock = jest.fn();
     global.fetch = fetchMock;
 
@@ -60,8 +65,10 @@ describe("WhatsApp admin notification", () => {
           _id: "order_123",
           customerPhone: "0509999999",
           deliveryArea: "nazareth",
+          deliveryAddress: { street: "HaGalil", building: "5", city: "Nazareth" },
           total: 270,
           paymentMethod: "credit_card",
+          orderStatus: "new",
           hasPreorderItems: true,
           items: [{ name: "Tomatoes", quantity: 2, unit: "kg" }]
         },
@@ -72,8 +79,10 @@ describe("WhatsApp admin notification", () => {
       expect(msg).toMatch(/Yossi/);
       expect(msg).toMatch(/0509999999/);
       expect(msg).toMatch(/נצרת/);
+      expect(msg).toMatch(/HaGalil/);
       expect(msg).toMatch(/270/);
       expect(msg).toMatch(/credit_card/);
+      expect(msg).toMatch(/Status: new/);
       expect(msg).toMatch(/preorder/i);
       expect(msg).toMatch(/Tomatoes/);
     });
