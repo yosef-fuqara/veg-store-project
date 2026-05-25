@@ -19,6 +19,7 @@ import {
 import {
   STOREFRONT_STICKY_HEADER_SCROLL_MARGIN,
   scrollToCategorySection,
+  scrollToCategorySectionWhenReady,
   scrollToElementById,
 } from "../utils/storefrontNavScroll";
 import { getProductNameSearchHaystack } from "../utils/localizedProduct";
@@ -60,7 +61,7 @@ const shadow = {
   primary: '0 4px 14px rgba(30,107,60,0.30)',
 };
 
-// ─── Breakpoint ───────────────────────────────────────────────────────────────
+// ─── Breakpoints ──────────────────────────────────────────────────────────────
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== 'undefined' && window.innerWidth < 768
@@ -71,6 +72,27 @@ const useIsMobile = () => {
     return () => window.removeEventListener('resize', check);
   }, []);
   return isMobile;
+};
+
+/** Product grid: 2 cols phone, 3 cols small tablet, desktop auto-fill unchanged */
+const useProductGridLayout = () => {
+  const compute = () => {
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    if (w < 640) {
+      return { columns: 'repeat(2, minmax(0, 1fr))', gap: '10px', compact: true };
+    }
+    if (w < 768) {
+      return { columns: 'repeat(3, minmax(0, 1fr))', gap: '8px', compact: true };
+    }
+    return { columns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px', compact: false };
+  };
+  const [layout, setLayout] = useState(compute);
+  useEffect(() => {
+    const check = () => setLayout(compute());
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return layout;
 };
 
 // ─── Marquee monoline icons (white, stroke-only) ──────────────────────────────
@@ -1007,10 +1029,10 @@ const MarqueeBar = ({ lang }) => {
 };
 
 // ─── Skeleton card ────────────────────────────────────────────────────────────
-const CardSkeleton = () => (
+const CardSkeleton = ({ compact = false }) => (
   <div style={{
     background: colors.surface,
-    borderRadius: '14px',
+    borderRadius: compact ? '10px' : '14px',
     border: `1px solid ${colors.border}`,
     overflow: 'hidden',
     boxShadow: shadow.sm,
@@ -1018,10 +1040,13 @@ const CardSkeleton = () => (
     <motion.div
       animate={{ opacity: [0.4, 0.8, 0.4] }}
       transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
-      style={{ aspectRatio: '4/3', background: colors.border }}
+      style={{ aspectRatio: compact ? '1' : '4/3', background: colors.border }}
     />
-    <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      {[['40%', '12px', 0], ['68%', '18px', 0.08], ['48%', '22px', 0.14], ['100%', '36px', 0.2]].map(([w, h, delay], i) => (
+    <div style={{ padding: compact ? '8px' : '14px 16px', display: 'flex', flexDirection: 'column', gap: compact ? '6px' : '10px' }}>
+      {(compact
+        ? [['80%', '10px', 0], ['55%', '12px', 0.08], ['100%', '24px', 0.14]]
+        : [['40%', '12px', 0], ['68%', '18px', 0.08], ['48%', '22px', 0.14], ['100%', '36px', 0.2]]
+      ).map(([w, h, delay], i) => (
         <motion.div
           key={i}
           animate={{ opacity: [0.4, 0.8, 0.4] }}
@@ -1047,6 +1072,7 @@ const HomePage = () => {
   const { canOrderNow } = useStoreSettings();
   const lang = (i18n.language || 'he').split('-')[0];
   const isMobile = useIsMobile();
+  const productGrid = useProductGridLayout();
   const [searchParams, setSearchParams] = useSearchParams();
   const catParam = searchParams.get('cat');
   const categoryIdParamRaw = searchParams.get('categoryId');
@@ -1056,21 +1082,12 @@ const HomePage = () => {
   const productIdParam =
     productIdParamRaw && OBJECT_ID_RE.test(productIdParamRaw) ? productIdParamRaw : null;
 
-  const activeCategoryId =
-    !categoryIdParam &&
-    catParam &&
-    CATEGORY_NAV_IDS.includes(/** @type {typeof CATEGORY_NAV_IDS[number]} */ (catParam))
-      ? catParam
-      : null;
-
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState(/** @type {unknown[]} */ ([]));
   const [categoriesRequestOk, setCategoriesRequestOk] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [productSearchQuery, setProductSearchQuery] = useState('');
-  const prevCategoryIdParamRef = useRef(/** @type {string | null} */ (null));
-  const prevUrlCategoryRef = useRef(/** @type {string | null} */ (null));
 
   const categoryResolution = useMemo(
     () => buildNavCategoryResolution(categories, categoriesRequestOk),
@@ -1134,15 +1151,6 @@ const HomePage = () => {
     }
   }, [productIdParamRaw, productIdParam, setSearchParams]);
 
-  useEffect(() => {
-    if (categoryIdParam && prevCategoryIdParamRef.current !== categoryIdParam) {
-      requestAnimationFrame(() => {
-        document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-    }
-    prevCategoryIdParamRef.current = categoryIdParam;
-  }, [categoryIdParam]);
-
   const catalogProducts = useMemo(() => {
     let list = products;
     if (categoryIdParam) {
@@ -1168,10 +1176,21 @@ const HomePage = () => {
     return buckets;
   }, [catalogProducts, categoryResolution]);
 
-  const renderedSectionNavIds = useMemo(
-    () => CATEGORY_NAV_IDS.filter((id) => (productsByNavSection[id] ?? []).length > 0),
-    [productsByNavSection]
-  );
+  const renderedSectionNavIds = useMemo(() => {
+    const withProducts = CATEGORY_NAV_IDS.filter(
+      (id) => (productsByNavSection[id] ?? []).length > 0
+    );
+    if (
+      catParam &&
+      CATEGORY_NAV_IDS.includes(/** @type {typeof CATEGORY_NAV_IDS[number]} */ (catParam)) &&
+      !withProducts.includes(catParam)
+    ) {
+      return [...withProducts, catParam].sort(
+        (a, b) => CATEGORY_NAV_IDS.indexOf(a) - CATEGORY_NAV_IDS.indexOf(b)
+      );
+    }
+    return withProducts;
+  }, [productsByNavSection, catParam]);
 
   const sectionDomIds = useMemo(
     () => renderedSectionNavIds.map((id) => `category-${id}`),
@@ -1188,26 +1207,11 @@ const HomePage = () => {
     return spySectionDomId.slice('category-'.length);
   }, [spySectionDomId]);
 
-  useEffect(() => {
-    if (loading) return;
-    const prev = prevUrlCategoryRef.current;
-    if (activeCategoryId) {
-      const run = () => {
-        const el = document.getElementById(`category-${activeCategoryId}`);
-        if (el) scrollToCategorySection(activeCategoryId);
-      };
-      requestAnimationFrame(() => requestAnimationFrame(run));
-      prevUrlCategoryRef.current = activeCategoryId;
-      return;
-    }
-    if (prev != null) {
-      requestAnimationFrame(() => scrollToElementById('products-catalog-top'));
-    }
-    prevUrlCategoryRef.current = activeCategoryId;
-  }, [loading, activeCategoryId]);
+  const lastDeepLinkedCatRef = useRef(/** @type {string | null} */ (null));
 
   const handleCategorySelect = useCallback((id) => {
     setProductSearchQuery('');
+    const isDeselect = catParam === id;
     setSearchParams((sp) => {
       const next = new URLSearchParams(sp);
       next.delete('categoryId');
@@ -1220,10 +1224,22 @@ const HomePage = () => {
       }
       return next;
     }, { replace: true });
-  }, [setSearchParams]);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (isDeselect) {
+          lastDeepLinkedCatRef.current = null;
+          scrollToElementById('products-catalog-top');
+        } else {
+          lastDeepLinkedCatRef.current = id;
+          scrollToCategorySection(id);
+        }
+      });
+    });
+  }, [setSearchParams, catParam]);
 
   const handleShowAllCategories = useCallback(() => {
     setProductSearchQuery('');
+    lastDeepLinkedCatRef.current = null;
     setSearchParams((sp) => {
       const next = new URLSearchParams(sp);
       next.delete('cat');
@@ -1233,6 +1249,25 @@ const HomePage = () => {
     }, { replace: true });
     requestAnimationFrame(() => scrollToElementById('products-catalog-top'));
   }, [setSearchParams]);
+
+  useEffect(() => {
+    if (loading) return undefined;
+    if (!catParam || !CATEGORY_NAV_IDS.includes(/** @type {typeof CATEGORY_NAV_IDS[number]} */ (catParam))) {
+      lastDeepLinkedCatRef.current = null;
+      return undefined;
+    }
+    if (lastDeepLinkedCatRef.current === catParam) return undefined;
+
+    let cancelled = false;
+    scrollToCategorySectionWhenReady(catParam, {
+      onDone: (found) => {
+        if (!cancelled && found) lastDeepLinkedCatRef.current = catParam;
+      },
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, catParam, renderedSectionNavIds]);
 
   useEffect(() => {
     if (loading || !productIdParam) return undefined;
@@ -1269,7 +1304,7 @@ const HomePage = () => {
           scrollMarginTop: STOREFRONT_STICKY_HEADER_SCROLL_MARGIN,
         }}
       >
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '0 12px' : '0 24px' }}>
 
           {/* Section header */}
           <motion.div
@@ -1440,8 +1475,16 @@ const HomePage = () => {
                 style={{ scrollMarginTop: STOREFRONT_STICKY_HEADER_SCROLL_MARGIN }}
               >
                 {loading ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
-                    {Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: productGrid.columns,
+                      gap: productGrid.gap,
+                    }}
+                  >
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <CardSkeleton key={i} compact={productGrid.compact} />
+                    ))}
                   </div>
                 ) : products.length === 0 && !error ? (
                   <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:empty')}</p>
@@ -1474,26 +1517,38 @@ const HomePage = () => {
                       >
                         {t(`home:categories.${navId}`)}
                       </h3>
-                      <motion.div
-                        variants={listVariants}
-                        initial="initial"
-                        animate="animate"
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                          gap: '20px',
-                        }}
-                      >
-                        {(productsByNavSection[navId] ?? []).map((product) => (
-                          <motion.div
-                            key={product._id}
-                            id={product._id ? `product-${product._id}` : undefined}
-                            variants={itemVariants}
-                          >
-                            <ProductCard product={product} lang={lang} orderingDisabled={!canOrderNow} />
-                          </motion.div>
-                        ))}
-                      </motion.div>
+                      {(productsByNavSection[navId] ?? []).length === 0 ? (
+                        <p style={{ color: colors.textMuted, fontSize: '15px', margin: 0 }}>
+                          {t('home:categories.filterEmpty')}
+                        </p>
+                      ) : (
+                        <motion.div
+                          variants={listVariants}
+                          initial="initial"
+                          animate="animate"
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: productGrid.columns,
+                            gap: productGrid.gap,
+                          }}
+                        >
+                          {(productsByNavSection[navId] ?? []).map((product) => (
+                            <motion.div
+                              key={product._id}
+                              id={product._id ? `product-${product._id}` : undefined}
+                              variants={itemVariants}
+                              style={{ minWidth: 0 }}
+                            >
+                              <ProductCard
+                                product={product}
+                                lang={lang}
+                                orderingDisabled={!canOrderNow}
+                                compact={productGrid.compact}
+                              />
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      )}
                     </section>
                   ))
                 )}
