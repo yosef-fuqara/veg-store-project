@@ -54,6 +54,19 @@ const cardVariants = {
   }
 };
 
+const cardVariantsCompact = {
+  rest: { y: 0, boxShadow: shadow.sm },
+  hover: { y: 0, boxShadow: shadow.sm }
+};
+
+const titleClampStyle = {
+  display: "-webkit-box",
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: "vertical",
+  overflow: "hidden",
+  wordBreak: "break-word"
+};
+
 const imgVariants = {
   rest: { scale: 1 },
   hover: { scale: 1.06 }
@@ -76,7 +89,7 @@ function isProductUnavailable(product) {
   return product.stockStatus !== "in_stock";
 }
 
-const ProductCard = ({ product, lang, orderingDisabled = false }) => {
+const ProductCard = ({ product, lang, orderingDisabled = false, compact = false }) => {
   const { t } = useTranslation(["home", "storeClosed"]);
   const { addItem, cart } = useCart();
   const { notifyProductAddedToCart } = useCartVisualFeedback();
@@ -169,13 +182,15 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
       title={title}
       style={{
         flex: 1,
-        padding: "6px 8px",
-        borderRadius: "8px",
+        minWidth: 0,
+        padding: compact ? "4px 5px" : "6px 8px",
+        borderRadius: compact ? "6px" : "8px",
         border: active ? `1px solid ${colors.primary}` : `1px solid ${colors.border}`,
         background: active ? "#eef7f1" : colors.surface,
         color: active ? colors.primary : colors.textSecondary,
-        fontSize: "12px",
+        fontSize: compact ? "10px" : "12px",
         fontWeight: 600,
+        lineHeight: 1.2,
         cursor: disabled ? "not-allowed" : "pointer",
         fontFamily: "inherit",
         opacity: disabled ? 0.5 : 1
@@ -240,43 +255,50 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
     ((canHoverFinePointer && hoverDescriptionOpen) ||
       (!canHoverFinePointer && touchDescriptionOpen));
 
-  const categoryLabelEl = categoryName ? (
-    <span
-      style={{
-        fontSize: "10px",
-        fontWeight: 600,
-        letterSpacing: "1.2px",
-        textTransform: "uppercase",
-        color: colors.textMuted
-      }}
-    >
-      {categoryName}
-    </span>
-  ) : null;
+  const categoryLabelEl =
+    categoryName && !compact ? (
+      <span
+        style={{
+          fontSize: "10px",
+          fontWeight: 600,
+          letterSpacing: "1.2px",
+          textTransform: "uppercase",
+          color: colors.textMuted
+        }}
+      >
+        {categoryName}
+      </span>
+    ) : null;
 
   const titleEl = (
     <h3
       style={{
         margin: 0,
-        fontSize: "16px",
-        fontWeight: 700,
+        fontSize: compact ? "11px" : "16px",
+        fontWeight: compact ? 600 : 700,
         color: colors.textPrimary,
-        lineHeight: 1.3
+        lineHeight: compact ? 1.25 : 1.3,
+        ...(compact ? titleClampStyle : {})
       }}
     >
       {name || "—"}
     </h3>
   );
 
+  const cardRadius = compact ? "10px" : "14px";
+  const contentPadBottom = compact ? "6px 8px 8px" : "14px 16px 16px";
+  const contentPadTopOnly = compact ? "6px 8px 0" : "14px 16px 0";
+  const contentGapMid = compact ? "3px 8px 0" : "5px 16px 0";
+
   const imageArea = (
     <div
       style={{
         position: "relative",
-        aspectRatio: "4/3",
+        aspectRatio: compact ? "1" : "4/3",
         flexShrink: 0,
         overflow: "hidden",
-        borderTopLeftRadius: "14px",
-        borderTopRightRadius: "14px"
+        borderTopLeftRadius: cardRadius,
+        borderTopRightRadius: cardRadius
       }}
     >
       <motion.div
@@ -306,7 +328,7 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "40px"
+              fontSize: compact ? "22px" : "40px"
             }}
           >
             🥬
@@ -337,16 +359,16 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
               alignItems: "center",
               justifyContent: "center",
               pointerEvents: "none",
-              padding: "12px"
+              padding: compact ? "4px" : "12px"
             }}
           >
             <span
               style={{
-                padding: "6px 14px",
+                padding: compact ? "3px 6px" : "6px 14px",
                 borderRadius: "9999px",
                 background: "rgba(255,255,255,0.94)",
                 color: colors.textPrimary,
-                fontSize: "12px",
+                fontSize: compact ? "8px" : "12px",
                 fontWeight: 700,
                 letterSpacing: "0.02em",
                 textAlign: "center",
@@ -361,7 +383,7 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
         </>
       )}
 
-      {isFeatured && (
+      {isFeatured && !compact && (
         <span
           style={{
             position: "absolute",
@@ -387,18 +409,19 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
         <span
           style={{
             position: "absolute",
-            top: "10px",
-            insetInlineEnd: "10px",
+            top: compact ? "4px" : "10px",
+            insetInlineEnd: compact ? "4px" : "10px",
             zIndex: 2,
-            padding: "3px 10px",
+            padding: compact ? "2px 5px" : "3px 10px",
             borderRadius: "9999px",
             background: colors.errorSurface,
             border: `1px solid ${colors.errorBorder}`,
             color: colors.error,
-            fontSize: "10px",
+            fontSize: compact ? "7px" : "10px",
             fontWeight: 700,
-            letterSpacing: "0.8px",
-            textTransform: "uppercase"
+            letterSpacing: compact ? "0.4px" : "0.8px",
+            textTransform: "uppercase",
+            lineHeight: 1.2
           }}
         >
           {t("saleBadge")}
@@ -448,19 +471,20 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
   return (
     <motion.article
       initial="rest"
-      whileHover="hover"
-      whileTap={{ scale: 0.985 }}
-      variants={cardVariants}
+      whileHover={compact ? undefined : "hover"}
+      whileTap={{ scale: compact ? 0.98 : 0.985 }}
+      variants={compact ? cardVariantsCompact : cardVariants}
       transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
       style={{
         background: colors.surface,
-        borderRadius: "14px",
+        borderRadius: cardRadius,
         border: `1px solid ${colors.border}`,
-        overflow: "visible",
+        overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        willChange: "transform",
-        height: "100%"
+        willChange: compact ? "auto" : "transform",
+        height: "100%",
+        minWidth: 0
       }}
     >
       {hasStoreDescription ? (
@@ -493,10 +517,10 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
           {imageArea}
           <div
             style={{
-              padding: "14px 16px 0",
+              padding: contentPadTopOnly,
               display: "flex",
               flexDirection: "column",
-              gap: "5px"
+              gap: compact ? "3px" : "5px"
             }}
           >
             {categoryLabelEl}
@@ -509,13 +533,14 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
 
       <div
         style={{
-          padding: hasStoreDescription ? "5px 16px 16px" : "14px 16px 16px",
+          padding: hasStoreDescription ? contentGapMid : contentPadBottom,
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          gap: "5px",
-          borderBottomLeftRadius: "14px",
-          borderBottomRightRadius: "14px"
+          gap: compact ? "3px" : "5px",
+          borderBottomLeftRadius: cardRadius,
+          borderBottomRightRadius: cardRadius,
+          minWidth: 0
         }}
       >
         {!hasStoreDescription && (
@@ -525,7 +550,7 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
           </>
         )}
 
-        {isPreorder && (
+        {isPreorder && !compact && (
           <span
             title={t("preorderHint", { hours: minAdvHours })}
             style={{
@@ -545,12 +570,27 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
           </span>
         )}
 
-        <div style={{ marginTop: "4px" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "7px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "21px", fontWeight: 700, color: colors.primary, lineHeight: 1 }}>
+        <div style={{ marginTop: compact ? "2px" : "4px", minWidth: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: compact ? "4px" : "7px",
+              flexWrap: "wrap",
+              minWidth: 0
+            }}
+          >
+            <span
+              style={{
+                fontSize: compact ? "12px" : "21px",
+                fontWeight: 700,
+                color: colors.primary,
+                lineHeight: 1
+              }}
+            >
               {formatPrice(displayPrice, lang)}
             </span>
-            {hasSale && (
+            {hasSale && !compact && (
               <span
                 style={{ fontSize: "13px", color: colors.textMuted, textDecoration: "line-through" }}
               >
@@ -558,7 +598,7 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
               </span>
             )}
           </div>
-          {unitLabel && (
+          {unitLabel && !compact && (
             <div style={{ fontSize: "11px", color: colors.textMuted, marginTop: "2px" }}>
               / {unitLabel}
             </div>
@@ -568,7 +608,7 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
         <div style={{ flex: 1 }} />
 
         {allowByAmount && inStock && !!id && (
-          <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
+          <div style={{ display: "flex", gap: compact ? "4px" : "6px", marginTop: compact ? "4px" : "8px" }}>
             {tabBtn(
               buyMode === "quantity",
               () => setBuyMode("quantity"),
@@ -595,8 +635,15 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
         )}
 
         {allowByAmount && buyMode === "quantity" && inStock && !!id && (
-          <div style={{ marginTop: "8px" }}>
-            <label style={{ fontSize: "11px", color: colors.textMuted, display: "block", marginBottom: "4px" }}>
+          <div style={{ marginTop: compact ? "4px" : "8px" }}>
+            <label
+              style={{
+                fontSize: compact ? "9px" : "11px",
+                color: colors.textMuted,
+                display: "block",
+                marginBottom: compact ? "2px" : "4px"
+              }}
+            >
               {t("quantityLabel")}
             </label>
             <input
@@ -610,18 +657,25 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
               style={{
                 width: "100%",
                 boxSizing: "border-box",
-                padding: "8px 10px",
-                borderRadius: "8px",
+                padding: compact ? "6px 8px" : "8px 10px",
+                borderRadius: compact ? "6px" : "8px",
                 border: `1px solid ${colors.border}`,
-                fontSize: "14px"
+                fontSize: compact ? "12px" : "14px"
               }}
             />
           </div>
         )}
 
         {allowByAmount && buyMode === "amount" && inStock && !!id && (
-          <div style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "8px" }}>
-            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              marginTop: compact ? "4px" : "8px",
+              display: "flex",
+              flexDirection: "column",
+              gap: compact ? "4px" : "8px"
+            }}
+          >
+            <div style={{ display: "flex", gap: compact ? "4px" : "6px", flexWrap: "wrap" }}>
               {[10, 20, 50].map((chip) => (
                 <button
                   key={chip}
@@ -629,11 +683,11 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
                   disabled={orderingDisabled}
                   onClick={() => !orderingDisabled && setAmountInput(String(chip))}
                   style={{
-                    padding: "6px 12px",
+                    padding: compact ? "4px 8px" : "6px 12px",
                     borderRadius: "9999px",
                     border: `1px solid ${colors.border}`,
                     background: colors.surface,
-                    fontSize: "12px",
+                    fontSize: compact ? "10px" : "12px",
                     fontWeight: 600,
                     cursor: orderingDisabled ? "not-allowed" : "pointer",
                     opacity: orderingDisabled ? 0.55 : 1
@@ -654,14 +708,20 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
               style={{
                 width: "100%",
                 boxSizing: "border-box",
-                padding: "8px 10px",
-                borderRadius: "8px",
+                padding: compact ? "6px 8px" : "8px 10px",
+                borderRadius: compact ? "6px" : "8px",
                 border: `1px solid ${colors.border}`,
-                fontSize: "14px"
+                fontSize: compact ? "12px" : "14px"
               }}
             />
             {estimatedQtyStr && unitLabel && (
-              <div style={{ fontSize: "12px", color: colors.textSecondary, lineHeight: 1.4 }}>
+              <div
+                style={{
+                  fontSize: compact ? "10px" : "12px",
+                  color: colors.textSecondary,
+                  lineHeight: 1.3
+                }}
+              >
                 {t("estimatedQtyApprox", { qty: estimatedQtyStr, unit: unitLabel })}
               </div>
             )}
@@ -673,41 +733,44 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
             display: "flex",
             flexDirection: "column",
             alignItems: "stretch",
-            marginTop: "10px",
-            gap: 6
+            marginTop: compact ? "6px" : "10px",
+            gap: compact ? 4 : 6
           }}
         >
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "8px"
+              flexDirection: compact ? "column" : "row",
+              justifyContent: compact ? "stretch" : "space-between",
+              alignItems: compact ? "stretch" : "center",
+              gap: compact ? "6px" : "8px"
             }}
           >
-          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-            <span
-              style={{
-                width: "6px",
-                height: "6px",
-                borderRadius: "50%",
-                flexShrink: 0,
-                background: inStock ? colors.success : colors.error,
-                boxShadow: inStock
-                  ? "0 0 0 3px rgba(22,101,52,0.12)"
-                  : "0 0 0 3px rgba(153,27,27,0.12)"
-              }}
-            />
-            <span
-              style={{
-                fontSize: "12px",
-                fontWeight: 500,
-                color: inStock ? colors.success : colors.error
-              }}
-            >
-              {inStock ? t("inStock") : t("outOfStock")}
-            </span>
-          </div>
+          {!compact && (
+            <div style={{ display: "flex", alignItems: "center", gap: "5px", minWidth: 0 }}>
+              <span
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  flexShrink: 0,
+                  background: inStock ? colors.success : colors.error,
+                  boxShadow: inStock
+                    ? "0 0 0 3px rgba(22,101,52,0.12)"
+                    : "0 0 0 3px rgba(153,27,27,0.12)"
+                }}
+              />
+              <span
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: inStock ? colors.success : colors.error
+                }}
+              >
+                {inStock ? t("inStock") : t("outOfStock")}
+              </span>
+            </div>
+          )}
 
           <motion.button
             ref={addButtonRef}
@@ -715,26 +778,37 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
             onClick={handleAdd}
             disabled={addDisabled}
             title={orderingDisabled ? t("cannotOrderNow", { ns: "storeClosed" }) : undefined}
+            aria-label={
+              inStock
+                ? allowByAmount && buyMode === "amount"
+                  ? t("addByAmount")
+                  : t("addToCart")
+                : t("outOfStock")
+            }
             aria-disabled={addDisabled}
             aria-busy={adding}
-            whileHover={!addDisabled ? { scale: 1.05, background: colors.primaryHover } : {}}
+            whileHover={!addDisabled && !compact ? { scale: 1.05, background: colors.primaryHover } : {}}
             whileTap={!addDisabled ? { scale: 0.93 } : {}}
             transition={{ duration: 0.12 }}
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: "5px",
-              padding: "8px 15px",
-              borderRadius: "9999px",
+              justifyContent: "center",
+              gap: compact ? "4px" : "5px",
+              padding: compact ? "7px 10px" : "8px 15px",
+              width: compact ? "100%" : "auto",
+              minHeight: compact ? "32px" : "auto",
+              borderRadius: compact ? "8px" : "9999px",
               border: "none",
               background: !addDisabled ? colors.primary : colors.border,
               color: !addDisabled ? colors.textInverse : colors.textMuted,
-              fontSize: "13px",
+              fontSize: compact ? "11px" : "13px",
               fontWeight: 600,
               cursor: !addDisabled ? "pointer" : "not-allowed",
               boxShadow: !addDisabled ? shadow.primary : "none",
               whiteSpace: "nowrap",
               flexShrink: 0,
+              marginInlineStart: compact ? 0 : "auto",
               opacity: inStock && !!id ? 1 : 0.92,
               transition: "background 0.2s ease, color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease"
             }}
@@ -746,12 +820,11 @@ const ProductCard = ({ product, lang, orderingDisabled = false }) => {
                 transition={{ repeat: Infinity, duration: 0.65, ease: "linear" }}
                 style={{ display: "inline-flex", lineHeight: 0 }}
               >
-                <Loader2 size={15} strokeWidth={2.5} />
+                <Loader2 size={compact ? 12 : 15} strokeWidth={2.5} />
               </motion.span>
-            ) : (
-              inStock &&
-              !!id && <span style={{ fontSize: "14px", lineHeight: 1 }}>+</span>
-            )}
+            ) : inStock && !!id ? (
+              <span style={{ fontSize: compact ? "14px" : "14px", lineHeight: 1 }}>+</span>
+            ) : null}
             {inStock
               ? allowByAmount && buyMode === "amount"
                 ? t("addByAmount")

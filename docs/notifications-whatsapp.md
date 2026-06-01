@@ -114,7 +114,7 @@ See **`apps/api/.env.example`** for placeholders. Summary:
 
 **Meta Cloud (alternative provider):**
 
-- `WHATSAPP_API_TOKEN`
+- `WHATSAPP_API_TOKEN` (alias: **`WHATSAPP_ACCESS_TOKEN`**)
 - `WHATSAPP_PHONE_NUMBER_ID`
 
 **Twilio:**

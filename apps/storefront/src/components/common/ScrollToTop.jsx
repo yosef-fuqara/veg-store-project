@@ -1,17 +1,27 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import {
+  STOREFRONT_BUSINESS_HOURS_ID,
+  STOREFRONT_CATEGORY_QUERY_KEY,
+} from "../../utils/storefrontNavScroll";
 
 /**
  * Smooth scroll to top when the route pathname changes.
- * Search/hash-only updates (e.g. `?cat=` filters on the home page) get a new history `key`
- * on replace; depending on `key` would scroll to the top and leave the products area.
+ * Skip when landing on the homepage with `?cat=` — HomePage scrolls to that category section.
  */
 const ScrollToTop = () => {
-  const { pathname } = useLocation();
+  const { pathname, search, hash } = useLocation();
 
   useEffect(() => {
+    if (pathname === "/" && new URLSearchParams(search).get(STOREFRONT_CATEGORY_QUERY_KEY)) {
+      return;
+    }
+    const hashId = hash.replace(/^#/, "");
+    if (hashId === STOREFRONT_BUSINESS_HOURS_ID) {
+      return;
+    }
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-  }, [pathname]);
+  }, [pathname, search, hash]);
 
   return null;
 };

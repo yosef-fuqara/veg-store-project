@@ -2,17 +2,22 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Clock, Lock, Store } from "lucide-react";
+import { Clock, Store } from "lucide-react";
 import { buildStoreClosedScheduleLine, pickLocalized } from "../utils/storeClosedScheduleLine";
+
+const displayFontFamily = "'Rubik', 'Segoe UI', system-ui, sans-serif";
 
 const colors = {
   primary: "#1e6b3c",
-  primarySurface: "#eef7f1",
-  primaryBorder: "#a3cfb4",
+  primaryHover: "#185a33",
+  primarySoft: "#e8f4ec",
+  primarySoftRing: "#c5e0d0",
   surface: "#ffffff",
-  border: "#e8e3dc",
+  border: "#ebe6df",
   textPrimary: "#1c1917",
-  textMuted: "#a8a29e"
+  textSecondary: "#57534e",
+  textMuted: "#78716c",
+  textInverse: "#ffffff"
 };
 
 export default function StoreClosedEntryModal({ open, onDismiss, settings }) {
@@ -20,6 +25,7 @@ export default function StoreClosedEntryModal({ open, onDismiss, settings }) {
   const lang = String(i18n.language || "he").split("-")[0].toLowerCase();
 
   const title = pickLocalized(settings?.closedTitle, lang) || t("fallbackTitle");
+  const subtitle = t("entrySubtitle");
   const scheduleLine = buildStoreClosedScheduleLine(settings, lang, t);
 
   useEffect(() => {
@@ -53,10 +59,11 @@ export default function StoreClosedEntryModal({ open, onDismiss, settings }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))",
-            background: "rgba(28, 25, 23, 0.52)",
-            backdropFilter: "blur(5px)",
-            WebkitBackdropFilter: "blur(5px)",
+            padding:
+              "max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left))",
+            background: "rgba(28, 25, 23, 0.45)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
             boxSizing: "border-box",
             overflow: "hidden"
           }}
@@ -65,36 +72,35 @@ export default function StoreClosedEntryModal({ open, onDismiss, settings }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="store-closed-entry-title"
-            initial={{ opacity: 0, scale: 0.94, y: 12 }}
+            aria-describedby="store-closed-entry-subtitle"
+            dir="auto"
+            initial={{ opacity: 0, scale: 0.96, y: 14 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            transition={{ type: "spring", stiffness: 320, damping: 28 }}
+            exit={{ opacity: 0, scale: 0.97, y: 10 }}
+            transition={{ type: "spring", stiffness: 340, damping: 30 }}
             style={{
               position: "relative",
               width: "100%",
-              maxWidth: "min(92vw, 640px)",
+              maxWidth: "min(92vw, 400px)",
               minWidth: 0,
               overflow: "hidden",
-              borderRadius: 20,
+              borderRadius: 24,
               background: colors.surface,
               border: `1px solid ${colors.border}`,
-              boxShadow: "0 24px 64px rgba(28,25,23,0.18), 0 8px 20px rgba(28,25,23,0.08)",
-              padding: "32px 22px 28px",
+              boxShadow:
+                "0 28px 72px rgba(28, 25, 23, 0.14), 0 10px 24px rgba(28, 25, 23, 0.06), 0 0 0 1px rgba(255,255,255,0.6) inset",
+              padding: "36px 28px 28px",
               boxSizing: "border-box"
             }}
           >
-            <motion.div
+            <div
               aria-hidden
-              initial={{ scale: 0.92, opacity: 0.35 }}
-              animate={{ scale: 1, opacity: 0.5 }}
-              transition={{ duration: 2.2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
               style={{
                 position: "absolute",
-                inset: "-35%",
+                inset: 0,
                 background:
-                  "radial-gradient(circle at 30% 18%, rgba(30,107,60,0.14) 0%, transparent 42%), radial-gradient(circle at 78% 82%, rgba(30,107,60,0.09) 0%, transparent 38%)",
-                pointerEvents: "none",
-                borderRadius: 20
+                  "radial-gradient(ellipse 80% 55% at 50% 0%, rgba(30,107,60,0.08) 0%, transparent 70%)",
+                pointerEvents: "none"
               }}
             />
 
@@ -102,85 +108,105 @@ export default function StoreClosedEntryModal({ open, onDismiss, settings }) {
               style={{
                 position: "relative",
                 zIndex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
                 textAlign: "center",
-                paddingTop: 4,
-                maxWidth: "100%",
-                overflow: "hidden"
+                maxWidth: "100%"
               }}
             >
               <motion.div
-                initial={{ scale: 0.88, rotate: -5 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 280, damping: 20, delay: 0.04 }}
                 style={{
-                  width: 72,
-                  height: 72,
-                  margin: "0 auto 16px",
-                  borderRadius: "50%",
-                  background: colors.primarySurface,
-                  border: `2px solid ${colors.primaryBorder}`,
+                  position: "relative",
+                  width: 80,
+                  height: 80,
+                  marginBottom: 24,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: colors.primary
+                  flexShrink: 0
                 }}
               >
-                <Store size={34} strokeWidth={2} aria-hidden />
+                <span
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "50%",
+                    background: colors.primarySoft,
+                    boxShadow: `0 0 0 1px ${colors.primarySoftRing}`
+                  }}
+                />
+                <Store
+                  size={36}
+                  strokeWidth={1.75}
+                  color={colors.primary}
+                  aria-hidden
+                  style={{ position: "relative", zIndex: 1 }}
+                />
               </motion.div>
 
-              <div
+              <h1
+                id="store-closed-entry-title"
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  marginBottom: 10,
-                  flexWrap: "wrap",
-                  paddingInline: 8
+                  margin: 0,
+                  maxWidth: "100%",
+                  fontFamily: displayFontFamily,
+                  fontSize: "clamp(1.375rem, 5vw, 1.5rem)",
+                  fontWeight: 800,
+                  letterSpacing: "-0.025em",
+                  color: colors.textPrimary,
+                  lineHeight: 1.3,
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word"
                 }}
               >
-                <Lock size={18} strokeWidth={2.2} color={colors.textMuted} aria-hidden />
-                <h1
-                  id="store-closed-entry-title"
-                  style={{
-                    margin: 0,
-                    maxWidth: "100%",
-                    fontSize: 24,
-                    fontWeight: 800,
-                    letterSpacing: "-0.02em",
-                    color: colors.textPrimary,
-                    lineHeight: 1.25,
-                    overflowWrap: "anywhere",
-                    wordBreak: "break-word"
-                  }}
-                >
-                  {title}
-                </h1>
-              </div>
+                {title}
+              </h1>
+
+              <p
+                id="store-closed-entry-subtitle"
+                style={{
+                  margin: "14px 0 0",
+                  maxWidth: "32ch",
+                  fontSize: "0.9375rem",
+                  fontWeight: 400,
+                  lineHeight: 1.65,
+                  color: colors.textSecondary,
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word"
+                }}
+              >
+                {subtitle}
+              </p>
 
               {scheduleLine ? (
                 <div
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
+                    justifyContent: "center",
                     gap: 8,
                     maxWidth: "100%",
+                    marginTop: 20,
                     padding: "10px 14px",
-                    borderRadius: 12,
-                    background: colors.primarySurface,
-                    border: `1px solid ${colors.primaryBorder}`,
+                    borderRadius: 14,
+                    background: colors.primarySoft,
+                    border: `1px solid ${colors.primarySoftRing}`,
                     color: colors.primary,
-                    fontSize: 14,
+                    fontSize: "0.8125rem",
                     fontWeight: 600,
-                    marginBottom: 16,
+                    lineHeight: 1.45,
                     boxSizing: "border-box",
                     flexWrap: "wrap",
-                    justifyContent: "center",
                     overflowWrap: "anywhere",
                     wordBreak: "break-word"
                   }}
                 >
-                  <Clock size={17} strokeWidth={2} aria-hidden />
+                  <Clock size={16} strokeWidth={2} aria-hidden style={{ flexShrink: 0 }} />
                   <span>{scheduleLine}</span>
                 </div>
               ) : null}
@@ -188,22 +214,34 @@ export default function StoreClosedEntryModal({ open, onDismiss, settings }) {
               <motion.button
                 type="button"
                 onClick={onDismiss}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.12 }}
+                whileHover={{
+                  backgroundColor: colors.primaryHover,
+                  boxShadow: "0 6px 20px rgba(30, 107, 60, 0.28)"
+                }}
+                whileTap={{ scale: 0.97, backgroundColor: colors.primaryHover }}
+                transition={{ duration: 0.15 }}
                 style={{
-                  display: "block",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   width: "100%",
-                  marginTop: 4,
-                  padding: "12px 18px",
-                  borderRadius: 12,
-                  border: `1.5px solid ${colors.primaryBorder}`,
-                  background: colors.primarySurface,
-                  color: colors.primary,
-                  fontSize: 15,
+                  marginTop: scheduleLine ? 24 : 28,
+                  minHeight: 48,
+                  padding: "14px 20px",
+                  borderRadius: 16,
+                  border: "none",
+                  background: colors.primary,
+                  color: colors.textInverse,
+                  fontFamily: displayFontFamily,
+                  fontSize: "1rem",
                   fontWeight: 700,
+                  letterSpacing: "0.02em",
+                  lineHeight: 1.25,
+                  textAlign: "center",
                   cursor: "pointer",
-                  fontFamily: "inherit"
+                  boxShadow: "0 4px 14px rgba(30, 107, 60, 0.22)",
+                  WebkitTapHighlightColor: "transparent",
+                  touchAction: "manipulation"
                 }}
               >
                 {t("continueBrowsing")}

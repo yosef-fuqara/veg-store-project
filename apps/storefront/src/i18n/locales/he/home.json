@@ -46,6 +46,9 @@
   },
   "categories": {
     "navAria": "ניווט לפי קטגוריה",
+    "drawerTitle": "קטגוריות",
+    "openDrawerAria": "פתיחת קטגוריות",
+    "closeDrawerAria": "סגירת קטגוריות",
     "showAll": "כל המוצרים",
     "fruits": "פירות",
     "vegetables": "ירקות",

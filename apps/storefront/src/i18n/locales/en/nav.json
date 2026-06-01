@@ -12,5 +12,11 @@
   "brandName": "Abu Al-Anas",
   "brandTagline": "Fruits & Vegetables",
   "storeHoursLabel": "Hours of operation",
-  "navigateToStoreTooltip": "Navigate to Store"
+  "storeHoursModalFallbackBody": "Sun–Sat 08:00–22:00",
+  "businessHoursAria": "Business hours",
+  "businessHoursModalClose": "Close",
+  "navigateToStoreTooltip": "Navigate to Store",
+  "scrollNavGroup": "Page scroll",
+  "scrollToTop": "Scroll to top",
+  "scrollToBottom": "Scroll to bottom"
 }

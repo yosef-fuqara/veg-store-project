@@ -1,11 +1,12 @@
 {
   "fallbackTitle": "المتجر مغلق مؤقتًا",
+  "entrySubtitle": "لا يمكن تنفيذ الطلبات حاليًا. يسعدنا رؤيتك قريبًا.",
   "reopenOn": "سنعود بتاريخ:",
   "whatsappCta": "تواصل عبر واتساب",
   "cannotOrderNow": "لا يمكن إتمام الطلب حاليًا",
   "checkoutBlockedTitle": "المتجر مغلق مؤقتًا",
   "checkoutBlockedHint": "لا يمكن إتمام الطلب أثناء إغلاق المتجر. نرحب بمساعدتك عبر واتساب.",
   "backHome": "العودة إلى الصفحة الرئيسية",
-  "continueBrowsing": "متابعة التصفح",
+  "continueBrowsing": "المتابعة لتصفح الموقع",
   "closeModalAria": "إغلاق الرسالة"
 }

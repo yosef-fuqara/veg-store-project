@@ -12,6 +12,7 @@ import {
   getActiveAdminLanguage
 } from "../utils/localizedDisplayName";
 import { useAdminLanguage } from "../i18n/useAdminLanguage";
+import { adminListLinkState, useListStatusFilter } from "../hooks/useListStatusFilter";
 
 const colors = {
   primary:      '#1e6b3c',
@@ -95,6 +96,103 @@ const categoryLabel = (product) => {
   return categoryRaw !== '' && categoryRaw != null ? pickLocalizedName(categoryRaw) : '';
 };
 
+const iconPlus = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+);
+
+const iconList = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 7h16M4 12h16M4 17h10"/>
+  </svg>
+);
+
+const iconListAdd = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M4 7h16M4 12h16M4 17h10"/>
+    <line x1="16" y1="15" x2="22" y2="15"/>
+    <line x1="19" y1="12" x2="19" y2="18"/>
+  </svg>
+);
+
+const ProductActionLinks = ({ t }) => (
+  <>
+    <Link
+      to="/products/new"
+      className="admin-products-add admin-products-action-btn admin-products-action-btn--primary"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        padding: '10px 20px',
+        borderRadius: '12px',
+        background: colors.primary,
+        color: colors.textInverse,
+        fontSize: '14px',
+        fontWeight: 600,
+        textDecoration: 'none',
+        boxShadow: '0 4px 14px rgba(30,107,60,0.30)',
+        ...interactiveBtn,
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = colors.primaryHover; e.currentTarget.style.boxShadow = '0 4px 12px rgba(22,84,48,0.32)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = colors.primary; e.currentTarget.style.boxShadow = '0 4px 14px rgba(30,107,60,0.30)'; }}
+    >
+      {iconPlus}
+      {t('products:list.addProduct')}
+    </Link>
+    <Link
+      to="/categories"
+      className="admin-products-add-category admin-products-action-btn admin-products-action-btn--secondary"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        padding: '10px 18px',
+        borderRadius: '12px',
+        border: `1.5px solid ${colors.primary}`,
+        background: colors.surface,
+        color: colors.primary,
+        fontSize: '14px',
+        fontWeight: 600,
+        textDecoration: 'none',
+        ...interactiveBtn,
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
+    >
+      {iconList}
+      {t('products:list.manageCategories')}
+    </Link>
+    <Link
+      to="/categories/new"
+      className="admin-products-add-category admin-products-action-btn admin-products-action-btn--secondary"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        padding: '10px 18px',
+        borderRadius: '12px',
+        border: `1.5px solid ${colors.primary}`,
+        background: colors.surface,
+        color: colors.primary,
+        fontSize: '14px',
+        fontWeight: 600,
+        textDecoration: 'none',
+        ...interactiveBtn,
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
+    >
+      {iconListAdd}
+      {t('products:list.addCategory')}
+    </Link>
+  </>
+);
+
 const AdminProductsPage = () => {
   const { t } = useTranslation(["products", "common"]);
   const { isRtl } = useAdminLanguage();
@@ -104,8 +202,9 @@ const AdminProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState('');
+  const { statusFilter, setStatusFilter, listSearch } = useListStatusFilter(FILTER_OPTIONS);
+  const editLinkState = adminListLinkState(listSearch);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [filterOpen, setFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState(/** @type {'gallery' | 'table'} */ ('gallery'));
@@ -280,6 +379,22 @@ const AdminProductsPage = () => {
     transition: 'border-color 0.15s, box-shadow 0.15s',
   };
 
+  const openProductMenuFromButton = (e, product) => {
+    e.stopPropagation();
+    const pid = String(product._id);
+    if (menuId === pid) {
+      closeProductMenu();
+      return;
+    }
+    const r = e.currentTarget.getBoundingClientRect();
+    const menuWidth = 200;
+    const left = isRtl
+      ? Math.max(8, r.right - menuWidth)
+      : Math.max(8, Math.min(r.left, window.innerWidth - menuWidth - 8));
+    setMenuPos({ top: r.bottom + 4, left });
+    setMenuId(pid);
+  };
+
   const renderPriceBlock = (product, { compact } = { compact: false }) => {
     const price = typeof product.price === 'number' ? product.price : null;
     const salePrice = typeof product.salePrice === 'number' ? product.salePrice : null;
@@ -308,8 +423,85 @@ const AdminProductsPage = () => {
     );
   };
 
+  const renderMobileProductCards = (products) => (
+    <div className="admin-products-mobile-list" aria-label={t('products:list.pageTitle')}>
+      {products.map((product) => {
+        const name = pickLocalizedProductName(product);
+        const state = getProductState(product);
+        const stateStyle = STATUS_STYLES[state] || STATUS_STYLES.inactive;
+        const inStock = product.stockStatus === 'in_stock';
+        const category = categoryLabel(product);
+        const isBusy = busyId === product._id;
+
+        return (
+          <article key={product._id} className="admin-products-mobile-card">
+            <div className="admin-products-mobile-card__top">
+              {product.imageUrl ? (
+                <img src={product.imageUrl} alt="" className="admin-products-mobile-card__img" />
+              ) : (
+                <div className="admin-products-mobile-card__img-placeholder" aria-hidden>🥬</div>
+              )}
+              <div className="admin-products-mobile-card__body">
+                <div className="admin-products-mobile-card__name">{name}</div>
+                {category ? (
+                  <div style={{ marginTop: '6px' }}>
+                    <Pill bg={colors.bg} color={colors.textSecondary} border={colors.border}>
+                      <span style={{ display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', verticalAlign: 'bottom' }}>
+                        {category}
+                      </span>
+                    </Pill>
+                  </div>
+                ) : null}
+                <div className="admin-products-mobile-card__price">
+                  {renderPriceBlock(product, { compact: true })}
+                </div>
+                <div className="admin-products-mobile-card__meta">
+                  <Pill bg={stateStyle.bg} color={stateStyle.color} border={stateStyle.border}>
+                    {t(`products:list.status.${state}`)}
+                  </Pill>
+                  <Pill
+                    bg={inStock ? '#dcfce7' : '#fef2f2'}
+                    color={inStock ? '#166534' : '#991b1b'}
+                    border={inStock ? '#bbf7d0' : '#fecaca'}
+                  >
+                    {inStock ? t('products:list.stock.in') : t('products:list.stock.out')}
+                  </Pill>
+                </div>
+              </div>
+            </div>
+            <div className="admin-products-mobile-card__actions">
+              <Link
+                to={`/products/${product._id}/edit`}
+                state={editLinkState}
+                className="admin-products-mobile-card__edit"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                {t('products:list.menu.edit')}
+              </Link>
+              <button
+                type="button"
+                className="admin-products-mobile-card__menu admin-products-menu"
+                disabled={isBusy}
+                aria-expanded={menuId === String(product._id)}
+                aria-haspopup="true"
+                aria-label={isBusy ? t('products:list.workingAria') : t('products:list.actionsMenuAria', { name })}
+                onClick={(e) => openProductMenuFromButton(e, product)}
+              >
+                {isBusy ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ animation: 'adminProductsSpin 0.9s linear infinite', display: 'block' }}>
+                    <path d="M21 12a9 9 0 1 1-6.22-8.56"/>
+                  </svg>
+                ) : '⋮'}
+              </button>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div style={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
+    <div className="admin-products-page" style={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'hidden' }}>
       <style>{`
         @keyframes adminProductsSkeletonPulse {
           0%, 100% { opacity: 0.4; }
@@ -334,14 +526,256 @@ const AdminProductsPage = () => {
         .admin-products-dd-item:hover { background: ${colors.bg}; }
         .admin-products-dd-item:focus-visible { outline: 2px solid ${colors.primary}; outline-offset: -2px; }
         .admin-products-dd-item-danger:hover { background: ${colors.errorBg}; }
+        .admin-products-page-header {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 16px;
+          margin-bottom: 32px;
+        }
+        .admin-products-hero__title {
+          margin: 0;
+          font-size: 36px;
+          font-weight: 800;
+          color: ${colors.textPrimary};
+          letter-spacing: -0.5px;
+          line-height: 1.15;
+        }
+        .admin-products-hero__subtitle {
+          margin: 8px 0 0;
+          font-size: 14px;
+          color: ${colors.textMuted};
+          line-height: 1.5;
+        }
+        .admin-products-actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 10px;
+        }
+        .admin-products-toolbar {
+          padding: 16px 20px;
+          border-bottom: 1px solid ${colors.borderLight};
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          align-items: center;
+        }
+        .admin-products-toolbar__search {
+          flex: 1 1 200px;
+          min-width: 0;
+          position: relative;
+        }
+        .admin-products-toolbar__filter {
+          position: relative;
+          flex-shrink: 0;
+        }
+        .admin-products-toolbar__view {
+          flex-shrink: 0;
+        }
+        .admin-products-view-toggle {
+          display: inline-flex;
+          border-radius: 10px;
+          border: 1px solid ${colors.border};
+          overflow: hidden;
+        }
+        .admin-products-filter-chip {
+          display: none;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin: 0 16px 12px;
+          padding: 10px 14px;
+          border-radius: 10px;
+          background: ${colors.bg};
+          border: 1px solid ${colors.border};
+          font-size: 13px;
+          color: ${colors.textSecondary};
+        }
+        .admin-products-filter-chip.is-visible { display: flex; }
+        .admin-products-filter-chip__label { font-weight: 600; color: ${colors.primary}; }
+        .admin-products-filter-chip__clear {
+          border: none;
+          background: transparent;
+          color: ${colors.textMuted};
+          cursor: pointer;
+          font-size: 18px;
+          line-height: 1;
+          padding: 2px 6px;
+          border-radius: 6px;
+        }
         .admin-products-gallery {
           display: grid;
           gap: 16px;
           padding: 16px 20px 8px;
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+        .admin-products-mobile-list {
+          display: none;
+          flex-direction: column;
+          gap: 12px;
+          padding: 12px 14px 8px;
+        }
+        .admin-products-mobile-card {
+          background: ${colors.surface};
+          border: 1px solid ${colors.border};
+          border-radius: 16px;
+          padding: 14px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+          min-width: 0;
+        }
+        .admin-products-mobile-card__top {
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+          min-width: 0;
+        }
+        .admin-products-mobile-card__img {
+          width: 72px;
+          height: 72px;
+          border-radius: 12px;
+          object-fit: cover;
+          flex-shrink: 0;
+          border: 1px solid ${colors.border};
+        }
+        .admin-products-mobile-card__img-placeholder {
+          width: 72px;
+          height: 72px;
+          border-radius: 12px;
+          background: #eef7f1;
+          border: 1px solid ${colors.borderLight};
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28px;
+          flex-shrink: 0;
+        }
+        .admin-products-mobile-card__body {
+          flex: 1;
+          min-width: 0;
+        }
+        .admin-products-mobile-card__name {
+          font-size: 15px;
+          font-weight: 700;
+          color: ${colors.textPrimary};
+          line-height: 1.35;
+          word-break: break-word;
+        }
+        .admin-products-mobile-card__meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: 8px;
+          align-items: center;
+        }
+        .admin-products-mobile-card__price {
+          margin-top: 8px;
+        }
+        .admin-products-mobile-card__actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 14px;
+          padding-top: 12px;
+          border-top: 1px solid ${colors.borderLight};
+        }
+        .admin-products-mobile-card__edit {
+          flex: 1;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          min-height: 44px;
+          padding: 10px 14px;
+          border-radius: 12px;
+          border: 1.5px solid ${colors.primary};
+          background: ${colors.surface};
+          color: ${colors.primary};
+          font-size: 13px;
+          font-weight: 600;
+          text-decoration: none;
+        }
+        .admin-products-mobile-card__menu {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 44px;
+          min-height: 44px;
+          border-radius: 12px;
+          border: 1px solid ${colors.border};
+          background: ${colors.bg};
+          color: ${colors.textSecondary};
+          cursor: pointer;
+          font-size: 20px;
+          line-height: 1;
+        }
+        .admin-products-table-desktop { display: block; }
+        .admin-products-page { overflow-x: hidden; }
+        @media (max-width: 767px) {
+          .admin-products-page-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 20px;
+            margin-bottom: 24px;
+          }
+          .admin-products-hero {
+            flex: none !important;
+            width: 100%;
+            text-align: center !important;
+            order: 1;
+          }
+          .admin-products-hero__title { font-size: 26px; }
+          .admin-products-hero__subtitle { font-size: 13px; }
+          .admin-products-actions {
+            order: 2;
+            flex-direction: column;
+            width: 100%;
+            gap: 10px;
+            padding: 16px;
+            border-radius: 16px;
+            background: ${colors.surface};
+            border: 1px solid ${colors.border};
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            box-sizing: border-box;
+          }
+          .admin-products-action-btn {
+            width: 100%;
+            min-height: 44px;
+            box-sizing: border-box;
+          }
+          .admin-products-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 14px 14px 10px;
+            gap: 10px;
+          }
+          .admin-products-toolbar__search { flex: none; width: 100%; order: 1; }
+          .admin-products-toolbar__filter { width: 100%; order: 2; }
+          .admin-products-toolbar__filter .admin-products-filter-btn {
+            width: 100%;
+            justify-content: center;
+            box-sizing: border-box;
+          }
+          .admin-products-toolbar__view { width: 100%; order: 3; }
+          .admin-products-view-toggle { width: 100%; }
+          .admin-products-view-toggle .admin-products-view-opt { flex: 1; }
+          .admin-products-filter-chip.is-visible { margin: 0 14px 12px; }
+          .admin-products-gallery {
+            grid-template-columns: 1fr;
+            padding: 12px 14px 8px;
+            gap: 12px;
+          }
+          .admin-products-table-desktop { display: none !important; }
+          .admin-products-mobile-list { display: flex; }
+        }
+        @media (min-width: 640px) and (max-width: 767px) {
+          .admin-products-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
         @media (min-width: 640px) {
           .admin-products-gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        @media (min-width: 768px) {
+          .admin-products-mobile-list { display: none !important; }
         }
         @media (min-width: 1024px) {
           .admin-products-gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -352,195 +786,20 @@ const AdminProductsPage = () => {
       `}</style>
 
       {/* Page header */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        gap: '16px',
-        marginBottom: '32px',
-      }}>
-        {isRtl ? (
-          <>
-            <div style={{ textAlign: 'start', flex: '1 1 200px', minWidth: 0 }}>
-              <h1 style={{ margin: 0, fontSize: '36px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.5px' }}>
-                {t('products:list.pageTitle')}
-              </h1>
-              <p style={{ margin: '8px 0 0', fontSize: '14px', color: colors.textMuted, lineHeight: 1.5 }}>
-                {t('products:list.pageSubtitle')}
-              </p>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
-              <Link
-                to="/products/new"
-                className="admin-products-add"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 20px',
-                  borderRadius: '10px',
-                  background: colors.primary,
-                  color: colors.textInverse,
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  boxShadow: '0 4px 14px rgba(30,107,60,0.30)',
-                  ...interactiveBtn,
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = colors.primaryHover; e.currentTarget.style.boxShadow = '0 4px 12px rgba(22,84,48,0.32)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = colors.primary; e.currentTarget.style.boxShadow = '0 4px 14px rgba(30,107,60,0.30)'; }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                {t('products:list.addProduct')}
-              </Link>
-              <Link
-                to="/categories"
-                className="admin-products-add-category"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 18px',
-                  borderRadius: '10px',
-                  border: `1.5px solid ${colors.border}`,
-                  background: colors.surface,
-                  color: colors.textPrimary,
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  ...interactiveBtn,
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M4 7h16M4 12h16M4 17h10"/>
-                </svg>
-                {t('products:list.manageCategories')}
-              </Link>
-              <Link
-                to="/categories/new"
-                className="admin-products-add-category"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 18px',
-                  borderRadius: '10px',
-                  border: `1.5px solid ${colors.primary}`,
-                  background: colors.surface,
-                  color: colors.primary,
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  ...interactiveBtn,
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M4 7h16M4 12h16M4 17h10"/>
-                  <line x1="16" y1="15" x2="22" y2="15"/>
-                  <line x1="19" y1="12" x2="19" y2="18"/>
-                </svg>
-                {t('products:list.addCategory')}
-              </Link>
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
-              <Link
-                to="/products/new"
-                className="admin-products-add"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 20px',
-                  borderRadius: '10px',
-                  background: colors.primary,
-                  color: colors.textInverse,
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  boxShadow: '0 4px 14px rgba(30,107,60,0.30)',
-                  ...interactiveBtn,
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = colors.primaryHover; e.currentTarget.style.boxShadow = '0 4px 12px rgba(22,84,48,0.32)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = colors.primary; e.currentTarget.style.boxShadow = '0 4px 14px rgba(30,107,60,0.30)'; }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                {t('products:list.addProduct')}
-              </Link>
-              <Link
-                to="/categories"
-                className="admin-products-add-category"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 18px',
-                  borderRadius: '10px',
-                  border: `1.5px solid ${colors.border}`,
-                  background: colors.surface,
-                  color: colors.textPrimary,
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  ...interactiveBtn,
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M4 7h16M4 12h16M4 17h10"/>
-                </svg>
-                {t('products:list.manageCategories')}
-              </Link>
-              <Link
-                to="/categories/new"
-                className="admin-products-add-category"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 18px',
-                  borderRadius: '10px',
-                  border: `1.5px solid ${colors.primary}`,
-                  background: colors.surface,
-                  color: colors.primary,
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  textDecoration: 'none',
-                  ...interactiveBtn,
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = colors.bg; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = colors.surface; }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M4 7h16M4 12h16M4 17h10"/>
-                  <line x1="16" y1="15" x2="22" y2="15"/>
-                  <line x1="19" y1="12" x2="19" y2="18"/>
-                </svg>
-                {t('products:list.addCategory')}
-              </Link>
-            </div>
-            <div style={{ textAlign: 'end', flex: '1 1 200px', minWidth: 0 }}>
-              <h1 style={{ margin: 0, fontSize: '36px', fontWeight: 800, color: colors.textPrimary, letterSpacing: '-0.5px' }}>
-                {t('products:list.pageTitle')}
-              </h1>
-              <p style={{ margin: '8px 0 0', fontSize: '14px', color: colors.textMuted, lineHeight: 1.5 }}>
-                {t('products:list.pageSubtitle')}
-              </p>
-            </div>
-          </>
-        )}
+      <div
+        className="admin-products-page-header"
+        style={{ flexDirection: isRtl ? 'row' : 'row-reverse' }}
+      >
+        <div
+          className="admin-products-hero"
+          style={{ textAlign: isRtl ? 'start' : 'end', flex: '1 1 200px', minWidth: 0 }}
+        >
+          <h1 className="admin-products-hero__title">{t('products:list.pageTitle')}</h1>
+          <p className="admin-products-hero__subtitle">{t('products:list.pageSubtitle')}</p>
+        </div>
+        <div className="admin-products-actions">
+          <ProductActionLinks t={t} />
+        </div>
       </div>
 
       {/* Error */}
@@ -557,16 +816,9 @@ const AdminProductsPage = () => {
       <div style={{ background: colors.surface, borderRadius: '14px', border: `1px solid ${colors.border}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)', maxWidth: '100%' }}>
 
         {/* Toolbar */}
-        <div style={{
-          padding: '16px 20px',
-          borderBottom: `1px solid ${colors.borderLight}`,
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '12px',
-          alignItems: 'center',
-        }}>
+        <div className="admin-products-toolbar">
           {/* Filter */}
-          <div style={{ position: 'relative', flexShrink: 0 }} ref={filterRef}>
+          <div className="admin-products-toolbar__filter" ref={filterRef}>
             <button
               type="button"
               className="admin-products-filter-btn"
@@ -641,16 +893,11 @@ const AdminProductsPage = () => {
 
           {/* View toggle */}
           <div
+            className="admin-products-toolbar__view"
             role="group"
             aria-label={t('products:list.view.toggleAria')}
-            style={{
-              display: 'inline-flex',
-              borderRadius: '10px',
-              border: `1px solid ${colors.border}`,
-              overflow: 'hidden',
-              flexShrink: 0,
-            }}
           >
+            <div className="admin-products-view-toggle">
             {(['gallery', 'table']).map((mode) => (
               <button
                 key={mode}
@@ -672,10 +919,11 @@ const AdminProductsPage = () => {
                 {mode === 'gallery' ? t('products:list.view.gallery') : t('products:list.view.table')}
               </button>
             ))}
+            </div>
           </div>
 
           {/* Search */}
-          <div style={{ flex: '1 1 200px', minWidth: 0, position: 'relative' }}>
+          <div className="admin-products-toolbar__search">
             <span style={{ position: 'absolute', insetInlineStart: '12px', top: '50%', transform: 'translateY(-50%)', color: colors.textMuted, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -691,6 +939,23 @@ const AdminProductsPage = () => {
               style={searchInputStyle}
             />
           </div>
+        </div>
+
+        <div className={`admin-products-filter-chip${statusFilter !== 'all' ? ' is-visible' : ''}`}>
+          <span>
+            {t('common:filter')}:{' '}
+            <span className="admin-products-filter-chip__label">
+              {statusFilter === 'all' ? t('common:allStatuses') : t(`products:list.status.${statusFilter}`)}
+            </span>
+          </span>
+          <button
+            type="button"
+            className="admin-products-filter-chip__clear"
+            aria-label={t('common:allStatuses')}
+            onClick={() => setStatusFilter('all')}
+          >
+            ×
+          </button>
         </div>
 
         {/* Content */}
@@ -721,35 +986,50 @@ const AdminProductsPage = () => {
               </div>
             </div>
           ) : (
-            <div style={{ padding: '8px 0 16px' }} aria-busy="true" aria-live="polite">
-              <div style={{ padding: '12px 20px 8px', fontSize: '12px', fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                {t('common:loadingDots')}
+            <>
+              <div className="admin-products-mobile-list" aria-busy="true" aria-hidden="true">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="admin-products-mobile-card">
+                    <div className="admin-products-mobile-card__top">
+                      <div className="admin-products-skel" style={{ width: 72, height: 72, borderRadius: 12, background: colors.borderLight, flexShrink: 0 }} />
+                      <div style={{ flex: 1 }}>
+                        <div className="admin-products-skel" style={{ height: 14, width: '70%', background: colors.borderLight, borderRadius: 6, marginBottom: 8 }} />
+                        <div className="admin-products-skel" style={{ height: 12, width: '45%', background: colors.borderLight, borderRadius: 6 }} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
-                <table style={{ width: '100%', minWidth: '720px', borderCollapse: 'collapse' }}>
-                  <tbody>
-                    {Array.from({ length: 6 }).map((_, r) => (
-                      <tr key={r} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
-                        {Array.from({ length: 7 }).map((__, c) => (
-                          <td key={c} style={{ padding: '14px 16px' }}>
-                            <div
-                              className="admin-products-skel"
-                              style={{
-                                height: c === 6 ? 40 : 14,
-                                width: c === 6 ? 40 : c === 0 ? '32%' : '72%',
-                                maxWidth: '100%',
-                                background: colors.borderLight,
-                                borderRadius: '6px',
-                              }}
-                            />
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div style={{ padding: '8px 0 16px' }} className="admin-products-table-desktop" aria-busy="true" aria-live="polite">
+                <div style={{ padding: '12px 20px 8px', fontSize: '12px', fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  {t('common:loadingDots')}
+                </div>
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%' }}>
+                  <table style={{ width: '100%', minWidth: '720px', borderCollapse: 'collapse' }}>
+                    <tbody>
+                      {Array.from({ length: 6 }).map((_, r) => (
+                        <tr key={r} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
+                          {Array.from({ length: 7 }).map((__, c) => (
+                            <td key={c} style={{ padding: '14px 16px' }}>
+                              <div
+                                className="admin-products-skel"
+                                style={{
+                                  height: c === 6 ? 40 : 14,
+                                  width: c === 6 ? 40 : c === 0 ? '32%' : '72%',
+                                  maxWidth: '100%',
+                                  background: colors.borderLight,
+                                  borderRadius: '6px',
+                                }}
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+            </>
           )
         ) : paged.length === 0 ? (
           <div style={{ padding: '64px 24px', textAlign: 'center', color: colors.textMuted }}>
@@ -914,13 +1194,16 @@ const AdminProductsPage = () => {
             })}
           </div>
         ) : (
-          <div
-            style={{
-              overflowX: 'auto',
-              WebkitOverflowScrolling: 'touch',
-              maxWidth: '100%',
-            }}
-          >
+          <>
+            {renderMobileProductCards(paged)}
+            <div
+              className="admin-products-table-desktop"
+              style={{
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                maxWidth: '100%',
+              }}
+            >
             <table dir={isRtl ? 'rtl' : 'ltr'} style={{ width: '100%', minWidth: '880px', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
@@ -974,21 +1257,7 @@ const AdminProductsPage = () => {
                               <button
                                 type="button"
                                 className="admin-products-menu"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const pid = String(product._id);
-                                  if (menuId === pid) {
-                                    closeProductMenu();
-                                    return;
-                                  }
-                                  const r = e.currentTarget.getBoundingClientRect();
-                                  const menuWidth = 200;
-                                  const left = isRtl
-                                    ? Math.max(8, r.right - menuWidth)
-                                    : Math.max(8, Math.min(r.left, window.innerWidth - menuWidth - 8));
-                                  setMenuPos({ top: r.bottom + 4, left });
-                                  setMenuId(pid);
-                                }}
+                                onClick={(e) => openProductMenuFromButton(e, product)}
                                 disabled={isBusy}
                                 aria-expanded={menuId === String(product._id)}
                                 aria-haspopup="true"
@@ -1135,7 +1404,8 @@ const AdminProductsPage = () => {
                 })}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         )}
 
         {/* Pagination */}
@@ -1245,6 +1515,7 @@ const AdminProductsPage = () => {
                 )}
                 <Link
                   to={`/products/${menuProduct._id}/edit`}
+                  state={editLinkState}
                   onClick={closeProductMenu}
                   role="menuitem"
                   style={{
@@ -1505,6 +1776,7 @@ const AdminProductsPage = () => {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <Link
                               to={`/products/${p._id}/edit`}
+                              state={editLinkState}
                               onClick={closeDrawer}
                               style={{
                                 display: 'flex',

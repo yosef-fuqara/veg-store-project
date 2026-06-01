@@ -1,17 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "../i18n/LanguageSwitcher";
-
-/** Full URL to the public storefront home (separate app from admin). */
-function getStorefrontHomeUrl() {
-  const raw = import.meta.env.VITE_STOREFRONT_URL;
-  const base =
-    typeof raw === "string" && raw.trim()
-      ? raw.trim().replace(/\/+$/, "")
-      : "http://localhost:5173";
-  return `${base}/`;
-}
+import { getStorefrontHomeUrl } from "../utils/storefrontUrl";
 
 const colors = {
   primary:     '#1e6b3c',
@@ -27,8 +18,15 @@ const colors = {
 const UnauthorizedPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation("auth");
+  const storefrontHomeUrl = useMemo(() => getStorefrontHomeUrl(), []);
   const [btnHovered, setBtnHovered] = useState(false);
   const [linkHovered, setLinkHovered] = useState(false);
+
+  const handleBackToStorefront = () => {
+    if (!storefrontHomeUrl) return;
+    // Full navigation to the storefront app (not admin "/" → /products → /unauthorized).
+    window.location.assign(storefrontHomeUrl);
+  };
 
   return (
     <div style={{
@@ -104,9 +102,10 @@ const UnauthorizedPage = () => {
             {t('unauthorized.tryAdminLogin')}
           </button>
 
-          <a
-            href={getStorefrontHomeUrl()}
-            rel="noopener noreferrer"
+          <button
+            type="button"
+            onClick={handleBackToStorefront}
+            disabled={!storefrontHomeUrl}
             onMouseEnter={() => setLinkHovered(true)}
             onMouseLeave={() => setLinkHovered(false)}
             style={{
@@ -119,11 +118,18 @@ const UnauthorizedPage = () => {
               justifyContent: 'center',
               gap: '6px',
               transition: 'color 0.15s',
+              background: 'none',
+              border: 'none',
+              cursor: storefrontHomeUrl ? 'pointer' : 'not-allowed',
+              fontFamily: 'inherit',
+              padding: 0,
+              width: '100%',
+              opacity: storefrontHomeUrl ? 1 : 0.5,
             }}
           >
             {t('unauthorized.backToStorefront')}
-            <span style={{ fontSize: '16px' }}>←</span>
-          </a>
+            <span style={{ fontSize: '16px' }} aria-hidden>←</span>
+          </button>
         </div>
       </div>
     </div>

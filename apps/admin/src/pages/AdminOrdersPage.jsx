@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { getAdminOrders } from "../services/orderService";
 import { formatAdminOrderStatusLabel, formatAdminPaymentStatusLabel } from "../utils/adminOrderStatusLabel";
 import { useAdminLanguage } from "../i18n/useAdminLanguage";
+import { adminListLinkState, useListStatusFilter } from "../hooks/useListStatusFilter";
 
 const colors = {
   primary:      '#1e6b3c',
@@ -94,10 +95,11 @@ const AdminOrdersPage = () => {
   const { t } = useTranslation(["orders", "common"]);
   const { isRtl } = useAdminLanguage();
   const orderTableCols = isRtl ? ORDER_TABLE_COLS_RTL : ORDER_TABLE_COLS_LTR;
+  const { statusFilter, setStatusFilter, listSearch } = useListStatusFilter(ORDER_STATUS_OPTIONS);
+  const detailLinkState = adminListLinkState(listSearch);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
   const [hoverRowId, setHoverRowId] = useState('');
@@ -495,6 +497,7 @@ const AdminOrdersPage = () => {
                           <td key={col} style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
                             <Link
                               to={`/orders/${order._id}`}
+                              state={detailLinkState}
                               className="admin-orders-view"
                               style={{
                                 display: 'inline-flex',
@@ -569,6 +572,7 @@ const AdminOrdersPage = () => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                               <Link
                                 to={`/orders/${order._id}`}
+                                state={detailLinkState}
                                 style={{
                                   fontSize: '13px',
                                   fontWeight: 600,

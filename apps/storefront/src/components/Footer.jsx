@@ -5,8 +5,10 @@ import { Link } from "react-router-dom";
 import AbuAlAnasLogo from "./common/Logo";
 import DeveloperBrandMark from "./DeveloperBrandMark";
 import { CATEGORY_NAV_IDS } from "../utils/categoryFilter";
+import { STOREFRONT_CATEGORY_QUERY_KEY } from "../utils/storefrontNavScroll";
 import { STORE_CONTACT_PHONES } from "../config/storeContactPhones";
 import { FooterStoreNavigation } from "./StoreNavigation";
+import BusinessHoursSection from "./BusinessHoursSection";
 
 const colors = {
   primary: "#1e6b3c",
@@ -179,6 +181,7 @@ const Footer = () => {
               ))}
             </div>
             <FooterStoreNavigation />
+            <BusinessHoursSection />
           </div>
         </div>
 
@@ -211,7 +214,7 @@ const Footer = () => {
             {CATEGORY_NAV_IDS.map((id) => (
               <li key={id}>
                 <Link
-                  to={{ pathname: "/", search: `?cat=${id}` }}
+                  to={{ pathname: "/", search: `?${STOREFRONT_CATEGORY_QUERY_KEY}=${id}` }}
                   style={{
                     fontSize: "13px",
                     fontWeight: 500,

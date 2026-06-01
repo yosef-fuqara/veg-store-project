@@ -4,7 +4,9 @@ import { ArrowDown, Search } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ProductCard from "../components/ProductCard";
-import { CategoryBarMobile, CategorySidebar } from "../components/CategoryNav";
+import { CategorySidebar } from "../components/CategoryNav";
+import { MobileCategoryDrawer } from "../components/MobileCategoryDrawer";
+import { StickyMobileProductSearch } from "../components/StickyMobileProductSearch";
 import { useCart } from "../features/cart/CartContext";
 import { useStoreSettings } from "../features/store/StoreSettingsContext";
 import * as productService from "../services/productService";
@@ -17,6 +19,7 @@ import {
   resolveProductStorefrontNavSlot,
 } from "../utils/storefrontCategoryMapping";
 import {
+  STOREFRONT_MOBILE_PRODUCTS_STICKY_SCROLL_MARGIN,
   STOREFRONT_STICKY_HEADER_SCROLL_MARGIN,
   scrollToCategorySection,
   scrollToCategorySectionWhenReady,
@@ -1088,6 +1091,7 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
 
   const categoryResolution = useMemo(
     () => buildNavCategoryResolution(categories, categoriesRequestOk),
@@ -1207,6 +1211,20 @@ const HomePage = () => {
     return spySectionDomId.slice('category-'.length);
   }, [spySectionDomId]);
 
+  const categoryNavActiveId = useMemo(() => {
+    if (
+      catParam &&
+      CATEGORY_NAV_IDS.includes(/** @type {typeof CATEGORY_NAV_IDS[number]} */ (catParam))
+    ) {
+      return catParam;
+    }
+    return navVisualActiveId;
+  }, [catParam, navVisualActiveId]);
+
+  const productsSectionScrollMargin = isMobile
+    ? STOREFRONT_MOBILE_PRODUCTS_STICKY_SCROLL_MARGIN
+    : STOREFRONT_STICKY_HEADER_SCROLL_MARGIN;
+
   const lastDeepLinkedCatRef = useRef(/** @type {string | null} */ (null));
 
   const handleCategorySelect = useCallback((id) => {
@@ -1249,6 +1267,19 @@ const HomePage = () => {
     }, { replace: true });
     requestAnimationFrame(() => scrollToElementById('products-catalog-top'));
   }, [setSearchParams]);
+
+  const handleCategorySelectMobile = useCallback(
+    (id) => {
+      handleCategorySelect(id);
+      setCategoryDrawerOpen(false);
+    },
+    [handleCategorySelect]
+  );
+
+  const handleShowAllCategoriesMobile = useCallback(() => {
+    handleShowAllCategories();
+    setCategoryDrawerOpen(false);
+  }, [handleShowAllCategories]);
 
   useEffect(() => {
     if (loading) return undefined;
@@ -1347,70 +1378,81 @@ const HomePage = () => {
               }}>
                 {t('home:products.heading')}
               </h2>
-              <div
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  flex: isMobile ? 'none' : '1 1 240px',
-                  maxWidth: isMobile ? '100%' : '320px',
-                  minWidth: 0,
-                }}
-              >
-                <Search
-                  aria-hidden
-                  size={18}
-                  strokeWidth={2}
+              {!isMobile && (
+                <div
                   style={{
-                    position: 'absolute',
-                    insetInlineStart: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: colors.textMuted,
-                    pointerEvents: 'none',
-                  }}
-                />
-                <input
-                  type="search"
-                  value={productSearchQuery}
-                  onChange={(e) => setProductSearchQuery(e.target.value)}
-                  placeholder={t('home:products.searchPlaceholder')}
-                  aria-label={t('home:products.searchPlaceholder')}
-                  autoComplete="off"
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = colors.primaryBorder;
-                    e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.primarySurface}`;
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = colors.border;
-                    e.currentTarget.style.boxShadow = shadow.sm;
-                  }}
-                  style={{
+                    position: 'relative',
                     width: '100%',
-                    boxSizing: 'border-box',
-                    paddingBlock: '10px',
-                    paddingInlineStart: '40px',
-                    paddingInlineEnd: '14px',
-                    borderRadius: '10px',
-                    border: `1px solid ${colors.border}`,
-                    background: colors.surface,
-                    color: colors.textPrimary,
-                    fontSize: '15px',
-                    lineHeight: 1.4,
-                    boxShadow: shadow.sm,
-                    outline: 'none',
-                    textAlign: productSearchQuery ? 'start' : 'center',
+                    flex: '1 1 240px',
+                    maxWidth: '320px',
+                    minWidth: 0,
                   }}
-                />
-              </div>
+                >
+                  <Search
+                    aria-hidden
+                    size={18}
+                    strokeWidth={2}
+                    style={{
+                      position: 'absolute',
+                      insetInlineStart: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: colors.textMuted,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <input
+                    type="search"
+                    value={productSearchQuery}
+                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                    placeholder={t('home:products.searchPlaceholder')}
+                    aria-label={t('home:products.searchPlaceholder')}
+                    autoComplete="off"
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = colors.primaryBorder;
+                      e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.primarySurface}`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = colors.border;
+                      e.currentTarget.style.boxShadow = shadow.sm;
+                    }}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      paddingBlock: '10px',
+                      paddingInlineStart: '40px',
+                      paddingInlineEnd: '14px',
+                      borderRadius: '10px',
+                      border: `1px solid ${colors.border}`,
+                      background: colors.surface,
+                      color: colors.textPrimary,
+                      fontSize: '15px',
+                      lineHeight: 1.4,
+                      boxShadow: shadow.sm,
+                      outline: 'none',
+                      textAlign: productSearchQuery ? 'start' : 'center',
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </motion.div>
 
           {isMobile && (
-            <CategoryBarMobile
-              activeId={navVisualActiveId}
-              onSelect={handleCategorySelect}
-              onShowAll={handleShowAllCategories}
-            />
+            <>
+              <StickyMobileProductSearch
+                value={productSearchQuery}
+                onChange={setProductSearchQuery}
+                onOpenCategories={() => setCategoryDrawerOpen(true)}
+              />
+              <MobileCategoryDrawer
+                open={categoryDrawerOpen}
+                onClose={() => setCategoryDrawerOpen(false)}
+                activeId={categoryNavActiveId}
+                onSelect={handleCategorySelectMobile}
+                onShowAll={handleShowAllCategoriesMobile}
+              />
+            </>
           )}
 
           {/* Error banner */}
@@ -1472,7 +1514,7 @@ const HomePage = () => {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 id="products-catalog-top"
-                style={{ scrollMarginTop: STOREFRONT_STICKY_HEADER_SCROLL_MARGIN }}
+                style={{ scrollMarginTop: productsSectionScrollMargin }}
               >
                 {loading ? (
                   <div
@@ -1501,7 +1543,7 @@ const HomePage = () => {
                       id={`category-${navId}`}
                       aria-labelledby={`category-heading-${navId}`}
                       style={{
-                        scrollMarginTop: STOREFRONT_STICKY_HEADER_SCROLL_MARGIN,
+                        scrollMarginTop: productsSectionScrollMargin,
                         marginTop: idx === 0 ? 0 : 40,
                       }}
                     >

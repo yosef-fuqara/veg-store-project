@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { adminListBackTo } from "../hooks/useListStatusFilter";
 import { useTranslation } from "react-i18next";
 import { Package } from "lucide-react";
 import { useToast } from "../features/toast/ToastContext";
@@ -201,6 +202,11 @@ const selectStyle = {
 
 const AdminOrderDetailsPage = () => {
   const { id } = useParams();
+  const location = useLocation();
+  const ordersListTo = adminListBackTo(
+    "/orders",
+    typeof location.state?.listSearch === "string" ? location.state.listSearch : ""
+  );
   const { showToast } = useToast();
   const { t } = useTranslation(["orders", "common"]);
   const { lang, isRtl } = useAdminLanguage();
@@ -347,7 +353,7 @@ const AdminOrderDetailsPage = () => {
             {t("common:refresh")}
           </button>
           <Link
-            to="/orders"
+            to={ordersListTo}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '8px 14px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: colors.surface, color: colors.textPrimary, fontSize: '13px', fontWeight: 500, textDecoration: 'none' }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isRtl ? 'scaleX(-1)' : undefined }} aria-hidden>

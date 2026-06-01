@@ -48,7 +48,14 @@ const ICONS = {
   other: () => <Store {...navIconProps} />,
 };
 
-/** Matches `STOREFRONT_STICKY_HEADER_SCROLL_MARGIN` in storefrontNavScroll.js (nav + offset) */
+/** @param {string} id */
+export function getCategoryNavIcon(id) {
+  return ICONS[id] ?? ICONS.other;
+}
+
+export const categoryNavTheme = colors;
+
+/** Matches `STOREFRONT_STICKY_HEADER_SCROLL_MARGIN` in storefrontNavScroll.js (hours bar + nav) */
 const NAV_TOP_DESKTOP = '88px';
 
 function CategoryButton({
@@ -332,7 +339,9 @@ export function CategoryBarMobile({ activeId, onSelect, onShowAll }) {
     if (!root || activeId == null) return;
     const escaped = typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(activeId) : activeId;
     const item = root.querySelector(`[data-category-nav-item="${escaped}"]`);
-    item?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    if (!item) return;
+    const targetLeft = item.offsetLeft - (root.clientWidth - item.offsetWidth) / 2;
+    root.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
   }, [activeId]);
 
   return (

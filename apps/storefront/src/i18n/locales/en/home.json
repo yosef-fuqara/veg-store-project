@@ -46,6 +46,9 @@
   },
   "categories": {
     "navAria": "Browse by category",
+    "drawerTitle": "Categories",
+    "openDrawerAria": "Open categories",
+    "closeDrawerAria": "Close categories",
     "showAll": "All products",
     "fruits": "Fruits",
     "vegetables": "Vegetables",

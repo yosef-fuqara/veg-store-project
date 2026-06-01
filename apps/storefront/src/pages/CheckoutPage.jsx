@@ -24,8 +24,15 @@ import { formatQtyDisplay, formatApproxWeightQuantity } from "../utils/cartLineQ
 import { deliveryAreaOptionLabel } from "../utils/deliveryAreaDisplay";
 import { getLocalizedProductName } from "../utils/localizedProduct";
 import {
+  checkoutDraftHasDeliveryContent,
   clearOrderSuccessStorage,
+  clearSavedDeliveryDetails,
+  deliveryDetailsForPersistence,
+  hasSavedDeliveryDetails,
   loadCheckoutDraft,
+  loadSavedDeliveryDetails,
+  mergeSavedDeliveryIntoForm,
+  saveSavedDeliveryDetails,
   VEGSTORE_CHECKOUT_DRAFT_KEY
 } from "../utils/vegstorePersistence";
 import { isOutsideConfiguredBusinessHoursNow } from "../utils/businessHoursNotice";
@@ -196,6 +203,45 @@ const initialForm = {
   customRequest: ""
 };
 
+const resolveInitialCheckoutState = () => {
+  if (typeof window === "undefined") {
+    return {
+      form: initialForm,
+      saveForNextOrder: false,
+      showAutofilledBanner: false,
+      hasSavedOnDevice: false
+    };
+  }
+  const draft = loadCheckoutDraft();
+  const saved = loadSavedDeliveryDetails();
+  const hasSaved = hasSavedDeliveryDetails(saved);
+
+  if (checkoutDraftHasDeliveryContent(draft)) {
+    return {
+      form: mergeCheckoutDraft(draft),
+      saveForNextOrder: hasSaved,
+      showAutofilledBanner: false,
+      hasSavedOnDevice: hasSaved
+    };
+  }
+
+  if (hasSaved) {
+    return {
+      form: mergeSavedDeliveryIntoForm(saved, initialForm),
+      saveForNextOrder: true,
+      showAutofilledBanner: true,
+      hasSavedOnDevice: true
+    };
+  }
+
+  return {
+    form: initialForm,
+    saveForNextOrder: false,
+    showAutofilledBanner: false,
+    hasSavedOnDevice: false
+  };
+};
+
 const mergeCheckoutDraft = (draft) => {
   if (!draft || typeof draft !== "object") return initialForm;
   const addr =
@@ -295,9 +341,13 @@ const CheckoutPage = () => {
     outsideDeliveryFee: OUTSIDE_DELIVERY_FEE
   });
 
-  const [form, setForm] = useState(() =>
-    mergeCheckoutDraft(typeof window !== "undefined" ? loadCheckoutDraft() : null)
+  const [initialCheckout] = useState(resolveInitialCheckoutState);
+  const [form, setForm] = useState(() => initialCheckout.form);
+  const [saveForNextOrder, setSaveForNextOrder] = useState(() => initialCheckout.saveForNextOrder);
+  const [showAutofilledBanner, setShowAutofilledBanner] = useState(
+    () => initialCheckout.showAutofilledBanner
   );
+  const [hasSavedOnDevice, setHasSavedOnDevice] = useState(() => initialCheckout.hasSavedOnDevice);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -538,6 +588,10 @@ const CheckoutPage = () => {
             ? bankTransferProofFile
             : null
       });
+      if (saveForNextOrder) {
+        saveSavedDeliveryDetails(deliveryDetailsForPersistence(form));
+        setHasSavedOnDevice(true);
+      }
       clearOrderSuccessStorage();
       try {
         await refreshCart();
@@ -596,6 +650,13 @@ const CheckoutPage = () => {
   const handleBusinessHoursNoticeDismiss = () => {
     if (submitting) return;
     setBusinessHoursNoticeOpen(false);
+  };
+
+  const handleClearSavedDelivery = () => {
+    clearSavedDeliveryDetails();
+    setHasSavedOnDevice(false);
+    setSaveForNextOrder(false);
+    setShowAutofilledBanner(false);
   };
 
   if (!storeSettingsLoading && !canOrderNow && settings) {
@@ -739,6 +800,89 @@ const CheckoutPage = () => {
               </span>
               {fieldErr("deliveryArea")}
             </label>
+
+            {showAutofilledBanner && (
+              <p
+                role="status"
+                style={{
+                  margin: 0,
+                  padding: "10px 14px",
+                  borderRadius: "10px",
+                  fontSize: "13px",
+                  lineHeight: 1.45,
+                  color: colors.success,
+                  background: colors.successSurface,
+                  border: `1px solid ${colors.successBorder}`,
+                }}
+              >
+                {t("savedDetailsAutofilled")}
+              </p>
+            )}
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                paddingTop: "4px",
+              }}
+            >
+              <label
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  gap: "10px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: colors.textSecondary,
+                  margin: 0,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={saveForNextOrder}
+                  onChange={(e) => setSaveForNextOrder(e.target.checked)}
+                  style={{
+                    flexShrink: 0,
+                    width: "18px",
+                    height: "18px",
+                    marginTop: "2px",
+                    accentColor: colors.primary,
+                    cursor: "pointer",
+                  }}
+                />
+                <span style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                  <span style={{ color: colors.textPrimary, lineHeight: 1.4 }}>
+                    {t("saveDetailsForNextOrder")}
+                  </span>
+                  <span style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.4 }}>
+                    {t("saveDetailsDeviceHint")}
+                  </span>
+                </span>
+              </label>
+              {hasSavedOnDevice && (
+                <button
+                  type="button"
+                  onClick={handleClearSavedDelivery}
+                  style={{
+                    alignSelf: "flex-start",
+                    padding: 0,
+                    border: "none",
+                    background: "none",
+                    color: colors.primary,
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    textUnderlineOffset: "3px",
+                  }}
+                >
+                  {t("clearSavedDetails")}
+                </button>
+              )}
+            </div>
           </div>
 
           {hasPreorderItems && (

@@ -614,42 +614,32 @@ const MobileNavBackdrop = ({ open, onClose }) => {
 
 const MobileTopBar = ({ onOpenMenu, menuOpen, storefrontUrl }) => {
   const { t } = useTranslation(["nav", "common"]);
+  const iconBtn = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '40px',
+    height: '40px',
+    borderRadius: '10px',
+    border: `1px solid ${colors.border}`,
+    background: colors.bg,
+    flexShrink: 0,
+    WebkitTapHighlightColor: 'transparent',
+  };
   return (
-    <header
-      style={{
-        display: 'none',
-        alignItems: 'center',
-        gap: '12px',
-        padding: '12px 16px',
-        background: colors.surface,
-        borderBottom: `1px solid ${colors.border}`,
-        position: 'sticky',
-        top: 0,
-        zIndex: 40,
-        flexShrink: 0,
-      }}
-      className="admin-mobile-topbar"
-    >
+    <header className="admin-mobile-topbar">
       <button
         type="button"
+        className="admin-mobile-topbar__menu"
         onClick={onOpenMenu}
         aria-label={t("common:openMenu")}
         aria-expanded={menuOpen}
         aria-controls="admin-app-sidebar"
         style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '40px',
-          height: '40px',
-          borderRadius: '10px',
-          border: `1px solid ${colors.border}`,
-          background: colors.bg,
+          ...iconBtn,
           color: colors.textPrimary,
           cursor: 'pointer',
           padding: 0,
-          flexShrink: 0,
-          WebkitTapHighlightColor: 'transparent',
         }}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -658,37 +648,31 @@ const MobileTopBar = ({ onOpenMenu, menuOpen, storefrontUrl }) => {
           <line x1="4" y1="17" x2="20" y2="17" />
         </svg>
       </button>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+      <div className="admin-mobile-topbar__brand">
         <AbuAlAnasLogo size={32} aria-hidden />
-        <span style={{ fontSize: '14px', fontWeight: 700, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {t('nav:admin')}
-        </span>
+        <span className="admin-mobile-topbar__title">{t('nav:admin')}</span>
       </div>
-      {storefrontUrl ? (
-        <a
-          href={storefrontUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={t('nav:viewStore')}
-          title={t('nav:viewStore')}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            border: `1px solid ${colors.border}`,
-            background: colors.bg,
-            color: colors.primary,
-            flexShrink: 0,
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          {externalLinkIcon}
-        </a>
-      ) : null}
-      <LanguageSwitcher size="sm" />
+      <div className="admin-mobile-topbar__actions">
+        {storefrontUrl ? (
+          <a
+            href={storefrontUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={t('nav:viewStore')}
+            title={t('nav:viewStore')}
+            className="admin-mobile-topbar__store"
+            style={{
+              ...iconBtn,
+              color: colors.primary,
+            }}
+          >
+            {externalLinkIcon}
+          </a>
+        ) : null}
+        <div className="admin-mobile-topbar__lang">
+          <LanguageSwitcher size="sm" />
+        </div>
+      </div>
     </header>
   );
 };
@@ -769,6 +753,47 @@ const App = () => {
     <>
       <PageTransition isLoading={initialLoad} />
       <style>{`
+        .admin-mobile-topbar {
+          display: none;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 12px;
+          margin: -20px -16px 16px;
+          background: ${colors.surface};
+          border-bottom: 1px solid ${colors.border};
+          position: sticky;
+          top: 0;
+          z-index: 40;
+          flex-shrink: 0;
+          box-sizing: border-box;
+          width: calc(100% + 32px);
+          max-width: none;
+        }
+        .admin-mobile-topbar__brand {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 0;
+          flex: 1;
+        }
+        .admin-mobile-topbar__title {
+          font-size: 14px;
+          font-weight: 700;
+          color: ${colors.textPrimary};
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .admin-mobile-topbar__actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+        .admin-mobile-topbar__lang {
+          flex-shrink: 0;
+          max-width: 52px;
+        }
         @media ${MOBILE_MEDIA} {
           .admin-mobile-topbar { display: flex !important; }
         }

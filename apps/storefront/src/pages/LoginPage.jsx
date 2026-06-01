@@ -1,9 +1,16 @@
 import { useState } from "react";
+import { AlertCircle } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../features/auth/AuthContext";
 import { PasswordFieldWithToggle } from "../components/common/PasswordFieldWithToggle";
+import {
+  containsTechnicalCode,
+  isLoginCredentialsError,
+  logLoginErrorDetails,
+  stripTechnicalErrorCodes
+} from "../utils/loginError";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -16,9 +23,44 @@ const colors = {
   textInverse:    '#ffffff',
   textMuted:      '#a8a29e',
   bg:             '#faf8f5',
-  error:          '#991b1b',
-  errorSurface:   '#fef2f2',
-  errorBorder:    '#fecaca',
+  error:          '#9f1239',
+  errorSurface:   '#fff5f5',
+  errorBorder:    '#fecdd3',
+};
+
+function resolveLoginErrorMessage(err, t) {
+  if (isLoginCredentialsError(err)) {
+    return t('invalidCredentials');
+  }
+  const cleaned = stripTechnicalErrorCodes(err?.userMessage || '');
+  if (
+    !cleaned ||
+    containsTechnicalCode(cleaned) ||
+    /invalid email or password/i.test(cleaned)
+  ) {
+    return t('loginFailed');
+  }
+  return cleaned;
+}
+
+const loginErrorAlertStyle = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: '10px',
+  padding: '14px 16px',
+  borderRadius: '12px',
+  background: colors.errorSurface,
+  border: `1px solid ${colors.errorBorder}`,
+  color: colors.error,
+  fontSize: '14px',
+  lineHeight: 1.55,
+  textAlign: 'start',
+};
+
+const loginErrorTextStyle = {
+  flex: 1,
+  minWidth: 0,
+  margin: 0,
 };
 
 const inputBase = {
@@ -72,7 +114,8 @@ const LoginPage = () => {
       await login({ email, password });
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      setError(err.userMessage || t('loginFailed'));
+      logLoginErrorDetails(err);
+      setError(resolveLoginErrorMessage(err, t));
     } finally {
       setSubmitting(false);
     }
@@ -165,19 +208,14 @@ const LoginPage = () => {
                   transition={{ duration: 0.2 }}
                   style={{ overflow: 'hidden' }}
                 >
-                  <div
-                    role="alert"
-                    style={{
-                      padding: '12px 16px',
-                      borderRadius: '10px',
-                      background: colors.errorSurface,
-                      border: `1px solid ${colors.errorBorder}`,
-                      color: colors.error,
-                      fontSize: '13.5px',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {error}
+                  <div role="alert" style={loginErrorAlertStyle}>
+                    <AlertCircle
+                      size={18}
+                      strokeWidth={2}
+                      aria-hidden
+                      style={{ flexShrink: 0, marginTop: '2px' }}
+                    />
+                    <p style={loginErrorTextStyle}>{error}</p>
                   </div>
                 </motion.div>
               )}

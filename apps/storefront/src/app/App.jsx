@@ -2,7 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
-import { Phone } from "lucide-react";
+import { Clock, Phone } from "lucide-react";
+import { getModalHoursBody } from "../utils/storeHoursDisplay";
+import {
+  STOREFRONT_BUSINESS_HOURS_ID,
+  STOREFRONT_HEADER_POPOVER_Z,
+  STOREFRONT_NAV_HEIGHT,
+  scrollToBusinessHoursWhenReady,
+} from "../utils/storefrontNavScroll";
+import MobileHeaderPopover from "../components/MobileHeaderPopover";
 import PageTransition from "../components/common/PageTransition";
 import AbuAlAnasLogo from "../components/common/Logo";
 import { STORE_CONTACT_PHONES } from "../config/storeContactPhones";
@@ -12,6 +20,7 @@ import Footer from "../components/Footer";
 import PromotionPopup from "../components/PromotionPopup";
 import StoreClosedSection from "../components/StoreClosedSection";
 import StoreClosedEntryModal from "../components/StoreClosedEntryModal";
+import BusinessHoursModal from "../components/BusinessHoursModal";
 import RequireAuth from "../components/RequireAuth";
 import { useDir } from "../i18n/useDir";
 import { useAuth } from "../features/auth/AuthContext";
@@ -19,6 +28,7 @@ import { useStoreSettings } from "../features/store/StoreSettingsContext";
 import { useCartVisualFeedback } from "../features/cart/CartVisualFeedbackContext";
 import { useCartDrawer } from "../features/cart/CartDrawerContext";
 import { CartDrawerHost } from "../components/CartDrawer";
+import ScrollNavigation from "../components/ScrollNavigation";
 import CartPage from "../pages/CartPage";
 import CheckoutPage from "../pages/CheckoutPage";
 import HomePage from "../pages/HomePage";
@@ -49,7 +59,7 @@ const appRootStyle = {
   color: colors.textPrimary,
 };
 
-const NAV_HEIGHT = 64;
+const NAV_HEIGHT = STOREFRONT_NAV_HEIGHT;
 
 // ─── Breakpoint hook ─────────────────────────────────────────────────────────
 const useIsMobile = () => {
@@ -219,8 +229,10 @@ const NAV_PHONE_POPOVER_ID = 'nav-phone-contact-popover';
 
 /** Phone icon + popover with STORE_CONTACT_PHONES tel: links; closes on outside click, Escape, route change, or mobile menu open. */
 const NavPhonePopover = ({ t, dir, menuOpen }) => {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef(null);
+  const anchorRef = useRef(null);
+  const popoverRef = useRef(null);
   const location = useLocation();
 
   useEffect(() => setOpen(false), [location.pathname]);
@@ -229,26 +241,107 @@ const NavPhonePopover = ({ t, dir, menuOpen }) => {
   }, [menuOpen]);
 
   useEffect(() => {
-    if (!open) return;
+    if (isMobile || !open) return;
     const onPointerDown = (e) => {
-      const el = wrapRef.current;
+      const anchor = anchorRef.current;
+      const pop = popoverRef.current;
       const target = /** @type {Node | null} */ (e.target);
-      if (el && target && !el.contains(target)) setOpen(false);
+      if (
+        target &&
+        anchor &&
+        !anchor.contains(target) &&
+        !(pop && pop.contains(target))
+      ) {
+        setOpen(false);
+      }
     };
     const onKeyDown = (e) => {
       if (e.key === 'Escape') setOpen(false);
     };
     document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('touchstart', onPointerDown, { passive: true });
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('touchstart', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [open]);
+  }, [isMobile, open]);
 
   const label = t('home:footer.phoneLabel');
+  const panelBaseStyle = {
+    padding: '14px 16px',
+    background: colors.surface,
+    border: `1px solid ${colors.border}`,
+    borderRadius: 12,
+    boxShadow: shadow.lg,
+    boxSizing: 'border-box',
+  };
+  const desktopPanelStyle = {
+    position: 'absolute',
+    top: 'calc(100% + 8px)',
+    insetInlineEnd: 0,
+    minWidth: 220,
+    maxWidth: 'min(92vw, 280px)',
+    zIndex: STOREFRONT_HEADER_POPOVER_Z,
+  };
+  const phoneLinks = (
+    <>
+      <p
+        style={{
+          margin: '0 0 12px',
+          fontSize: 12,
+          fontWeight: 600,
+          color: colors.textSecondary,
+          letterSpacing: '0.02em',
+          lineHeight: 1.35,
+        }}
+      >
+        {label}
+      </p>
+      <ul
+        style={{
+          listStyle: 'none',
+          margin: 0,
+          padding: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}
+      >
+        {STORE_CONTACT_PHONES.map(({ display, tel }) => (
+          <li key={tel}>
+            <a
+              href={`tel:${tel}`}
+              onClick={() => setOpen(false)}
+              style={{
+                display: 'block',
+                fontSize: 15,
+                fontWeight: 600,
+                color: colors.primary,
+                textDecoration: 'none',
+                padding: '8px 10px',
+                marginInline: '-10px',
+                borderRadius: 8,
+                unicodeBidi: 'plaintext',
+                whiteSpace: 'normal',
+                overflowWrap: 'anywhere',
+                transition: 'background 0.12s, color 0.12s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = colors.primarySurface;
+                e.currentTarget.style.color = colors.primaryHover;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = colors.primary;
+              }}
+            >
+              {display}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
   const iconBtnStyle = (expanded) => ({
     width: '40px',
     height: '40px',
@@ -265,8 +358,9 @@ const NavPhonePopover = ({ t, dir, menuOpen }) => {
   });
 
   return (
-    <div ref={wrapRef} style={{ position: 'relative', flexShrink: 0 }}>
+    <div style={{ position: 'relative', flexShrink: 0 }}>
       <button
+        ref={anchorRef}
         type="button"
         aria-expanded={open}
         aria-haspopup="dialog"
@@ -277,89 +371,41 @@ const NavPhonePopover = ({ t, dir, menuOpen }) => {
       >
         <Phone size={20} strokeWidth={2} aria-hidden />
       </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            key="nav-phone-pop"
-            id={NAV_PHONE_POPOVER_ID}
-            role="dialog"
-            aria-label={label}
-            dir={dir}
-            initial={{ opacity: 0, y: -6, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.98 }}
-            transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
-            style={{
-              position: 'absolute',
-              top: 'calc(100% + 8px)',
-              insetInlineEnd: 0,
-              minWidth: 220,
-              maxWidth: 'min(92vw, 280px)',
-              padding: '14px 16px',
-              background: colors.surface,
-              border: `1px solid ${colors.border}`,
-              borderRadius: 12,
-              boxShadow: shadow.lg,
-              zIndex: 150,
-              boxSizing: 'border-box',
-            }}
-          >
-            <p
-              style={{
-                margin: '0 0 12px',
-                fontSize: 12,
-                fontWeight: 600,
-                color: colors.textSecondary,
-                letterSpacing: '0.02em',
-                lineHeight: 1.35,
-              }}
+      {isMobile ? (
+        <MobileHeaderPopover
+          anchorRef={anchorRef}
+          popoverRef={popoverRef}
+          open={open}
+          onClose={() => setOpen(false)}
+          id={NAV_PHONE_POPOVER_ID}
+          ariaLabel={label}
+          dir={dir}
+          desiredWidth={240}
+          panelStyle={panelBaseStyle}
+        >
+          {phoneLinks}
+        </MobileHeaderPopover>
+      ) : (
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              key="nav-phone-pop"
+              ref={popoverRef}
+              id={NAV_PHONE_POPOVER_ID}
+              role="dialog"
+              aria-label={label}
+              dir={dir}
+              initial={{ opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+              transition={{ duration: 0.18, ease: [0.25, 0.1, 0.25, 1] }}
+              style={{ ...desktopPanelStyle, ...panelBaseStyle }}
             >
-              {label}
-            </p>
-            <ul
-              style={{
-                listStyle: 'none',
-                margin: 0,
-                padding: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 10,
-              }}
-            >
-              {STORE_CONTACT_PHONES.map(({ display, tel }) => (
-                <li key={tel}>
-                  <a
-                    href={`tel:${tel}`}
-                    onClick={() => setOpen(false)}
-                    style={{
-                      display: 'block',
-                      fontSize: 15,
-                      fontWeight: 600,
-                      color: colors.primary,
-                      textDecoration: 'none',
-                      padding: '8px 10px',
-                      marginInline: '-10px',
-                      borderRadius: 8,
-                      unicodeBidi: 'plaintext',
-                      transition: 'background 0.12s, color 0.12s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = colors.primarySurface;
-                      e.currentTarget.style.color = colors.primaryHover;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = colors.primary;
-                    }}
-                  >
-                    {display}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {phoneLinks}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
     </div>
   );
 };
@@ -375,22 +421,20 @@ const AppNav = () => {
   const dir = lang === 'he' || lang === 'ar' ? 'rtl' : 'ltr';
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { settings: storeSettings, loading: storeSettingsLoading } = useStoreSettings();
+  const [isHoursOpen, setIsHoursOpen] = useState(false);
+  const hoursAnchorRef = useRef(null);
+  const { settings: storeSettings } = useStoreSettings();
 
-  const navStoreHoursCompact = useMemo(() => {
-    if (storeSettingsLoading || !storeSettings) return null;
-    const DEFAULT_OPEN = "09:00";
-    const DEFAULT_CLOSE = "21:00";
-    const open = String(storeSettings.operatingOpenLocal || "").trim();
-    const close = String(storeSettings.operatingCloseLocal || "").trim();
-    if (!open || !close || open === close) return null;
-    const isDefaultPair = open === DEFAULT_OPEN && close === DEFAULT_CLOSE;
-    const shouldShow = storeSettings.operatingHoursEnabled === true || !isDefaultPair;
-    if (!shouldShow) return null;
-    return `${open}\u2013${close}`;
-  }, [storeSettings, storeSettingsLoading]);
+  const modalHoursBody = useMemo(
+    () =>
+      getModalHoursBody(storeSettings, t('nav:storeHoursModalFallbackBody')),
+    [storeSettings, t, i18n.language]
+  );
 
-  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
+  useEffect(() => {
+    setMenuOpen(false);
+    setIsHoursOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
@@ -409,6 +453,11 @@ const AppNav = () => {
     }
   };
 
+  const handleBusinessHoursClick = () => {
+    setMenuOpen(false);
+    setIsHoursOpen((open) => !open);
+  };
+
   /** Home nav + logo: on the homepage, same-route clicks do not run ScrollToTop — scroll up explicitly. */
   const handleHomeNavClick = (e) => {
     if (location.pathname === '/') {
@@ -418,12 +467,28 @@ const AppNav = () => {
     setMenuOpen(false);
   };
 
+  const navIconBtnStyle = {
+    width: '40px',
+    height: '40px',
+    borderRadius: '10px',
+    border: 'none',
+    background: 'transparent',
+    color: colors.textPrimary,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'background 0.15s, color 0.15s',
+    flexShrink: 0,
+    padding: 0,
+  };
+
   return (
     <>
       <nav style={{
         display: 'flex',
         alignItems: 'center',
-        padding: '0 24px',
+        padding: isMobile ? '0 10px' : '0 24px',
         height: `${NAV_HEIGHT}px`,
         background: colors.surface,
         borderBottom: `1px solid ${colors.border}`,
@@ -431,7 +496,8 @@ const AppNav = () => {
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        gap: '8px',
+        gap: isMobile ? '4px' : '8px',
+        flexWrap: 'nowrap',
       }}>
 
         {/* Brand */}
@@ -448,7 +514,7 @@ const AppNav = () => {
           }}
           aria-label="Home"
         >
-          <AbuAlAnasLogo size={52} />
+          <AbuAlAnasLogo size={isMobile ? 44 : 52} />
           {!isMobile && (
             <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25, minWidth: 0 }}>
               <span style={{ fontSize: '14px', fontWeight: 700, color: colors.textPrimary, letterSpacing: '-0.2px' }}>
@@ -466,51 +532,38 @@ const AppNav = () => {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            flexShrink: 1,
+            gap: isMobile ? '2px' : '6px',
+            flexShrink: isMobile ? 0 : 1,
             minWidth: 0,
+            flexWrap: 'nowrap',
           }}
         >
           <NavPhonePopover t={t} dir={dir} menuOpen={menuOpen} />
-          {navStoreHoursCompact ? (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                minWidth: 0,
-                flexShrink: 1,
-                maxWidth: isMobile ? 200 : 320,
-              }}
-            >
-              <span
-                title={`${t('nav:storeHoursLabel')} ${navStoreHoursCompact}`}
-                style={{
-                  fontSize: isMobile ? 11 : 12,
-                  fontWeight: 600,
-                  color: colors.textSecondary,
-                  whiteSpace: 'nowrap',
-                  letterSpacing: '0.02em',
-                  lineHeight: 1.2,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  minWidth: 0,
-                  flex: '1 1 auto',
-                }}
-                aria-label={`${t('nav:storeHoursLabel')} ${navStoreHoursCompact}`}
-              >
-                {t('nav:storeHoursLabel')} {navStoreHoursCompact}
-              </span>
-              <HeaderStoreNavigation menuOpen={menuOpen} />
-            </span>
-          ) : null}
+          <button
+            ref={hoursAnchorRef}
+            type="button"
+            aria-expanded={isHoursOpen}
+            aria-haspopup="dialog"
+            aria-label={t('nav:businessHoursAria')}
+            title={t('nav:storeHoursLabel')}
+            onClick={handleBusinessHoursClick}
+            style={{
+              ...navIconBtnStyle,
+              background: isHoursOpen ? colors.primarySurface : navIconBtnStyle.background,
+              color: isHoursOpen ? colors.primary : navIconBtnStyle.color,
+            }}
+          >
+            <Clock size={20} strokeWidth={2} aria-hidden />
+          </button>
+          <HeaderStoreNavigation menuOpen={menuOpen} />
+          {isMobile && <LanguageSwitcher compact menuOpen={menuOpen} />}
         </div>
 
         <div style={{ flex: 1 }} />
 
         {isMobile ? (
           /* ── Mobile controls ──────────────────────────────── */
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
             <MobileCartIcon t={t} />
             <button
               type="button"
@@ -650,10 +703,6 @@ const AppNav = () => {
 
               <div style={{ height: '1px', background: colors.border, margin: '8px 0' }} />
 
-              <div style={{ padding: '4px 14px 8px' }}>
-                <LanguageSwitcher />
-              </div>
-
               {user ? (
                 <>
                   <div style={{ padding: '4px 14px', fontSize: '13px', color: colors.textMuted }}>
@@ -688,6 +737,64 @@ const AppNav = () => {
           </>
         )}
       </AnimatePresence>
+
+      {isMobile && modalHoursBody ? (
+        <MobileHeaderPopover
+          anchorRef={hoursAnchorRef}
+          open={isHoursOpen}
+          onClose={() => setIsHoursOpen(false)}
+          ariaLabel={t('nav:storeHoursLabel')}
+          dir={dir}
+          desiredWidth={320}
+          panelStyle={{
+            padding: '16px 18px',
+            background: colors.surface,
+            border: `1px solid ${colors.border}`,
+            borderRadius: 12,
+            boxShadow: shadow.lg,
+          }}
+        >
+          <p
+            style={{
+              margin: '0 0 10px',
+              fontSize: 12,
+              fontWeight: 700,
+              color: colors.textSecondary,
+              letterSpacing: '0.02em',
+              lineHeight: 1.35,
+            }}
+          >
+            {t('nav:storeHoursLabel')}
+          </p>
+          <p
+            style={{
+              margin: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 10,
+              width: '100%',
+              boxSizing: 'border-box',
+              padding: '12px 14px',
+              borderRadius: 10,
+              background: colors.primarySurface,
+              border: `1px solid ${colors.primaryBorder}`,
+              color: colors.primary,
+              fontSize: 15,
+              fontWeight: 600,
+              lineHeight: 1.4,
+            }}
+          >
+            <Clock size={18} strokeWidth={2} aria-hidden style={{ flexShrink: 0 }} />
+            <span>{modalHoursBody}</span>
+          </p>
+        </MobileHeaderPopover>
+      ) : (
+        <BusinessHoursModal
+          open={isHoursOpen}
+          onClose={() => setIsHoursOpen(false)}
+          hoursBody={modalHoursBody}
+        />
+      )}
     </>
   );
 };
@@ -696,6 +803,7 @@ const STORE_CLOSED_POPUP_SESSION = "vegstore.storeClosedEntryDismissed";
 
 const App = () => {
   useDir();
+  const location = useLocation();
   const { isStoreClosed, settings, loading: storeSettingsLoading } = useStoreSettings();
 
   const [storeClosedPopupDismissed, setStoreClosedPopupDismissed] = useState(() => {
@@ -726,6 +834,13 @@ const App = () => {
     return () => clearTimeout(t);
   }, []);
 
+  useEffect(() => {
+    const hashId = location.hash.replace(/^#/, "");
+    if (location.pathname !== "/" || hashId !== STOREFRONT_BUSINESS_HOURS_ID) return undefined;
+    scrollToBusinessHoursWhenReady();
+    return undefined;
+  }, [location.pathname, location.hash]);
+
   return (
     <div style={appRootStyle}>
       <PageTransition isLoading={initialLoad} />
@@ -754,6 +869,7 @@ const App = () => {
       <Footer />
       {!isStoreClosed ? <PromotionPopup /> : null}
       <CartDrawerHost />
+      <ScrollNavigation />
     </div>
   );
 };

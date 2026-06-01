@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
 import { MapPin, X } from "lucide-react";
+import MobileHeaderPopover from "./MobileHeaderPopover";
 import {
   FLOATING_NAV_OVERLAY_Z,
   dismissGlassChipStyle,
@@ -78,6 +79,19 @@ function useFloatingNavSheetLayout() {
   return useSheet;
 }
 
+/** Header map menu: anchored popover on viewports that match the app mobile nav breakpoint. */
+function useHeaderNavMobilePopover() {
+  const [useMobilePopover, setUseMobilePopover] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => setUseMobilePopover(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  return useMobilePopover;
+}
+
 function getAnchoredPanelPosition(placement, mode) {
   const edgeStyle =
     placement === "above"
@@ -116,6 +130,42 @@ function getAnchoredPanelPosition(placement, mode) {
     insetInlineEnd: "auto",
     transform: "none",
   };
+}
+
+const headerMapsPopoverPanelStyle = {
+  padding: "8px",
+  borderRadius: "12px",
+  boxSizing: "border-box",
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.72) 100%)",
+  border: `1px solid ${colors.border}`,
+  backdropFilter: "blur(20px) saturate(165%)",
+  WebkitBackdropFilter: "blur(20px) saturate(165%)",
+  boxShadow:
+    "0 12px 40px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.65)",
+};
+
+function NavMapsMenuBody({ onClose }) {
+  const { t } = useTranslation("home");
+  return (
+    <>
+      <p
+        style={{
+          margin: "0 0 6px",
+          paddingInline: "8px",
+          fontSize: "12px",
+          fontWeight: 700,
+          color: colors.textSecondary,
+          lineHeight: 1.35,
+          textAlign: "start",
+          wordBreak: "break-word",
+        }}
+      >
+        {t("footer.navigateToStore")}
+      </p>
+      <NavMapsLinks onPick={onClose} />
+    </>
+  );
 }
 
 function NavMapsLinks({ onPick }) {
@@ -193,21 +243,7 @@ function NavLinksPanel({ menuId, onClose, placement, horizontalMode }) {
           "0 12px 40px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.65)",
       }}
     >
-      <p
-        style={{
-          margin: "0 0 6px",
-          paddingInline: "8px",
-          fontSize: "12px",
-          fontWeight: 700,
-          color: colors.textSecondary,
-          lineHeight: 1.35,
-          textAlign: "start",
-          wordBreak: "break-word",
-        }}
-      >
-        {t("footer.navigateToStore")}
-      </p>
-      <NavMapsLinks onPick={close} />
+      <NavMapsMenuBody onClose={close} />
     </motion.div>
   );
 }
@@ -335,11 +371,13 @@ export function HeaderStoreNavigation({ menuOpen = false }) {
   const { t, i18n } = useTranslation(["nav", "home"]);
   const location = useLocation();
   const dir = i18n.dir();
-  const useSheet = useFloatingNavSheetLayout();
+  const useMobilePopover = useHeaderNavMobilePopover();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
+  const anchorRef = useRef(null);
+  const popoverRef = useRef(null);
   const menuId = useId();
-  useDismissOnOpen(open, setOpen, rootRef, useSheet);
+  useDismissOnOpen(open, setOpen, rootRef, useMobilePopover);
 
   useEffect(() => {
     setOpen(false);
@@ -352,47 +390,63 @@ export function HeaderStoreNavigation({ menuOpen = false }) {
   const title = t("nav:navigateToStoreTooltip");
 
   return (
-    <>
-      <div
-        ref={rootRef}
+    <div
+      ref={rootRef}
+      style={{
+        position: "relative",
+        flexShrink: 0,
+        zIndex: open && !useMobilePopover ? 160 : undefined,
+      }}
+    >
+      <motion.button
+        ref={anchorRef}
+        type="button"
+        aria-expanded={open}
+        aria-controls={menuId}
+        aria-haspopup="true"
+        aria-label={title}
+        title={title}
+        whileHover={{ scale: 1.04 }}
+        whileTap={{ scale: 0.96 }}
+        transition={{ duration: 0.12 }}
+        onClick={() => setOpen((v) => !v)}
         style={{
-          position: "relative",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "40px",
+          height: "40px",
+          padding: 0,
+          borderRadius: "10px",
+          border: "none",
+          background: open ? colors.primarySurface : "transparent",
+          color: open ? colors.primary : colors.textSecondary,
+          cursor: "pointer",
+          boxSizing: "border-box",
           flexShrink: 0,
-          zIndex: open ? 160 : undefined,
+          transition: "background 0.15s, color 0.15s",
         }}
       >
-        <motion.button
-          type="button"
-          aria-expanded={open}
-          aria-controls={menuId}
-          aria-haspopup="true"
-          aria-label={title}
-          title={title}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
-          transition={{ duration: 0.12 }}
-          onClick={() => setOpen((v) => !v)}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "30px",
-            height: "30px",
-            padding: 0,
-            borderRadius: "8px",
-            border: "none",
-            background: open ? colors.primarySurface : "transparent",
-            color: open ? colors.primary : colors.textSecondary,
-            cursor: "pointer",
-            boxSizing: "border-box",
-            transition: "background 0.15s, color 0.15s",
-          }}
-        >
-          <MapPin size={16} strokeWidth={2} aria-hidden />
-        </motion.button>
+        <MapPin size={20} strokeWidth={2} aria-hidden />
+      </motion.button>
 
+      {useMobilePopover ? (
+        <MobileHeaderPopover
+          anchorRef={anchorRef}
+          popoverRef={popoverRef}
+          open={open}
+          onClose={() => setOpen(false)}
+          id={menuId}
+          ariaLabel={t("home:footer.navigateMenuAria")}
+          dir={dir}
+          desiredWidth={260}
+          panelStyle={headerMapsPopoverPanelStyle}
+        >
+          <NavMapsMenuBody onClose={() => setOpen(false)} />
+        </MobileHeaderPopover>
+      ) : (
         <AnimatePresence>
-          {open && !useSheet ? (
+          {open ? (
             <NavLinksPanel
               menuId={menuId}
               onClose={() => setOpen(false)}
@@ -401,15 +455,8 @@ export function HeaderStoreNavigation({ menuOpen = false }) {
             />
           ) : null}
         </AnimatePresence>
-      </div>
-
-      <FloatingNavMobileSheet
-        menuId={menuId}
-        open={open && useSheet}
-        dir={dir}
-        onClose={() => setOpen(false)}
-      />
-    </>
+      )}
+    </div>
   );
 }
 

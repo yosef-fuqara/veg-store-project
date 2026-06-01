@@ -1,11 +1,12 @@
 {
   "fallbackTitle": "החנות סגורה זמנית",
+  "entrySubtitle": "כרגע לא ניתן לבצע הזמנות. נשמח לראותך שוב בקרוב.",
   "reopenOn": "נחזור בתאריך:",
   "whatsappCta": "צור קשר ב־WhatsApp",
   "cannotOrderNow": "אי אפשר לבצע הזמנה כרגע",
   "checkoutBlockedTitle": "החנות סגורה זמנית",
   "checkoutBlockedHint": "לא ניתן להשלים הזמנה כשהחנות סגורה. נשמח לעזור בוואטסאפ.",
   "backHome": "חזרה לדף הבית",
-  "continueBrowsing": "המשך לצפות באתר",
+  "continueBrowsing": "המשך לצפייה באתר",
   "closeModalAria": "סגירת הודעה"
 }

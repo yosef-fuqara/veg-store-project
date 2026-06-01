@@ -9,6 +9,26 @@ if (missing.length > 0) {
   throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
 }
 
+/** Comma-separated origins, e.g. `http://localhost:5173,http://10.0.0.101:5173` */
+function parseCorsOrigins(value, fallback) {
+  return String(value || fallback)
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+const corsOriginStoreList = parseCorsOrigins(
+  process.env.CORS_ORIGIN_STORE,
+  "http://localhost:5173"
+);
+const corsOriginAdminList = parseCorsOrigins(
+  process.env.CORS_ORIGIN_ADMIN,
+  "http://localhost:5174"
+);
+const corsAllowedOrigins = [
+  ...new Set([...corsOriginStoreList, ...corsOriginAdminList])
+];
+
 const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 5000),
@@ -18,13 +38,16 @@ const env = {
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
   jwtAccessTtl: process.env.JWT_ACCESS_TTL || "15m",
   jwtRefreshTtl: process.env.JWT_REFRESH_TTL || "7d",
-  corsOriginStore: process.env.CORS_ORIGIN_STORE || "http://localhost:5173",
-  corsOriginAdmin: process.env.CORS_ORIGIN_ADMIN || "http://localhost:5174",
+  corsOriginStoreList,
+  corsOriginAdminList,
+  corsAllowedOrigins,
+  corsOriginStore: corsOriginStoreList[0],
+  corsOriginAdmin: corsOriginAdminList[0],
   /** Base URL for storefront links in emails (password reset). Falls back to CORS_ORIGIN_STORE. */
   storefrontUrl: String(
     process.env.STOREFRONT_URL ||
       process.env.FRONTEND_URL ||
-      process.env.CORS_ORIGIN_STORE ||
+      corsOriginStoreList[0] ||
       "http://localhost:5173"
   ).replace(/\/+$/, ""),
   passwordResetTtlMs: Number(process.env.PASSWORD_RESET_TTL_MS || 30 * 60 * 1000),

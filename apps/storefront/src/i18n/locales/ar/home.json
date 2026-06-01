@@ -46,6 +46,9 @@
   },
   "categories": {
     "navAria": "تصفح حسب الفئة",
+    "drawerTitle": "الفئات",
+    "openDrawerAria": "فتح الفئات",
+    "closeDrawerAria": "إغلاق الفئات",
     "showAll": "جميع المنتجات",
     "fruits": "فواكه",
     "vegetables": "خضروات",

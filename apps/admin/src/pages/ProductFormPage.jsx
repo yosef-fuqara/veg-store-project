@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { adminListBackTo } from "../hooks/useListStatusFilter";
 import { useTranslation } from "react-i18next";
 import { getAdminCategories } from "../services/categoryService";
 import { getLocalizedText, pickLocalizedName } from "../utils/localizedDisplayName";
@@ -115,7 +116,12 @@ const Field = ({ label, hint, children }) => (
 
 const ProductFormPage = () => {
   const params = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
+  const productsListTo = adminListBackTo(
+    "/products",
+    typeof location.state?.listSearch === "string" ? location.state.listSearch : ""
+  );
   const { showToast } = useToast();
   const { t } = useTranslation(["products", "common"]);
   const productId = params.id;
@@ -285,7 +291,7 @@ const ProductFormPage = () => {
         showToast(t("products:form.toasts.created"));
       }
       setStoredAdminDraft(null);
-      navigate("/products", { replace: true });
+      navigate(productsListTo, { replace: true });
     } catch (err) {
       const message = err.userMessage || err.message || t("products:form.errors.saveFailed");
       setError(message);
@@ -368,7 +374,7 @@ const ProductFormPage = () => {
           </p>
         </div>
         <Link
-          to="/products"
+          to={productsListTo}
           className="product-form-back"
           style={{
             display: 'inline-flex',
@@ -717,7 +723,7 @@ const ProductFormPage = () => {
           <button
             type="button"
             className="product-form-cancel"
-            onClick={() => navigate("/products")}
+            onClick={() => navigate(productsListTo)}
             disabled={submitting}
             style={{
               padding: '12px 20px',

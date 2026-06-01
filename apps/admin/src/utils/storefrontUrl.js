@@ -14,3 +14,9 @@ export function getStorefrontUrl() {
   }
   return null;
 }
+
+/** Public storefront homepage (separate app from admin). */
+export function getStorefrontHomeUrl() {
+  const origin = getStorefrontUrl();
+  return origin ? `${origin}/` : null;
+}

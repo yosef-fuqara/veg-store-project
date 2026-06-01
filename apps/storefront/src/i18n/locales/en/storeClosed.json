@@ -1,11 +1,12 @@
 {
   "fallbackTitle": "Store temporarily closed",
+  "entrySubtitle": "Orders are currently unavailable. We’ll be happy to see you again soon.",
   "reopenOn": "We’ll be back on:",
   "whatsappCta": "Contact us on WhatsApp",
   "cannotOrderNow": "Orders are not available right now",
   "checkoutBlockedTitle": "Store temporarily closed",
   "checkoutBlockedHint": "You can’t complete an order while the store is closed. We’re happy to help on WhatsApp.",
   "backHome": "Back to home",
-  "continueBrowsing": "Continue browsing the site",
+  "continueBrowsing": "Continue browsing",
   "closeModalAria": "Close message"
 }

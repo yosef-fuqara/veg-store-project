@@ -12,7 +12,7 @@ const errorMiddleware = require("./middlewares/error.middleware");
 const app = express();
 
 const corsOptions = {
-  origin: [env.corsOriginStore, env.corsOriginAdmin],
+  origin: env.corsAllowedOrigins,
   credentials: true
 };
 

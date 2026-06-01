@@ -53,7 +53,7 @@ const PageTransition = ({ isLoading }) => {
             zIndex: 9999,
           }}
         >
-          <AnimatedLogo size={200} />
+          <AnimatedLogo />
         </motion.div>
       )}
     </AnimatePresence>

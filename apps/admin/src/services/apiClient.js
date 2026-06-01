@@ -55,7 +55,10 @@ apiClient.interceptors.response.use(
 
     const isFailedLogin =
       isAuthLoginPost(error.config) &&
-      (status === 401 || code === "UNAUTHENTICATED" || code === "TOKEN_INVALID");
+      (status === 401 ||
+        code === "UNAUTHENTICATED" ||
+        code === "TOKEN_INVALID" ||
+        code === "INVALID_CREDENTIALS");
 
     if (!isFailedLogin && (status === 401 || code === "UNAUTHENTICATED" || code === "TOKEN_INVALID")) {
       clearAuthSession({

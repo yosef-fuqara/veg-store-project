@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../features/auth/AuthContext";
@@ -7,6 +7,12 @@ import { USER_ROLES } from "../constants/roles";
 import { useToast } from "../features/toast/ToastContext";
 import AbuAlAnasLogo from "../components/common/Logo";
 import LanguageSwitcher from "../i18n/LanguageSwitcher";
+import {
+  containsTechnicalCode,
+  isLoginCredentialsError,
+  logLoginErrorDetails,
+  stripTechnicalErrorCodes
+} from "../utils/loginError";
 
 const colors = {
   primary:      '#1e6b3c',
@@ -18,20 +24,47 @@ const colors = {
   textSecondary:'#57534e',
   textMuted:    '#a8a29e',
   textInverse:  '#ffffff',
-  error:        '#991b1b',
-  errorBg:      '#fef2f2',
-  errorBorder:  '#fecaca',
+  error:        '#9f1239',
+  errorBg:      '#fff5f5',
+  errorBorder:  '#fecdd3',
 };
 
 const fontStack = "'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
 
-function isInvalidLoginCredentialsError(err) {
-  if (err?.response?.status !== 401) return false;
-  const fromApi = err.response?.data?.message;
-  if (typeof fromApi === "string" && /invalid email or password/i.test(fromApi)) return true;
-  const um = err.userMessage;
-  return typeof um === "string" && /invalid email or password/i.test(um);
+function resolveLoginErrorMessage(err, t) {
+  if (isLoginCredentialsError(err)) {
+    return t("auth:login.invalidCredentials");
+  }
+  const cleaned = stripTechnicalErrorCodes(err?.userMessage || "");
+  if (
+    !cleaned ||
+    containsTechnicalCode(cleaned) ||
+    /invalid email or password/i.test(cleaned)
+  ) {
+    return t("auth:login.loginFailed");
+  }
+  return cleaned;
 }
+
+const loginErrorAlertStyle = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "10px",
+  padding: "14px 16px",
+  borderRadius: "12px",
+  background: colors.errorBg,
+  border: `1px solid ${colors.errorBorder}`,
+  color: colors.error,
+  fontSize: "14px",
+  lineHeight: 1.55,
+  textAlign: "start",
+};
+
+const loginErrorTextStyle = {
+  flex: 1,
+  minWidth: 0,
+  margin: 0,
+};
 
 const inputBase = {
   width: '100%',
@@ -115,9 +148,8 @@ const LoginPage = () => {
       showToast(t("auth:login.signedInToast"));
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      const message = isInvalidLoginCredentialsError(err)
-        ? t("auth:login.invalidCredentials")
-        : err.userMessage || t("auth:login.loginFailed");
+      logLoginErrorDetails(err);
+      const message = resolveLoginErrorMessage(err, t);
       setError(message);
       showToast(message, "error");
     } finally {
@@ -245,8 +277,14 @@ const LoginPage = () => {
             </label>
 
             {error && (
-              <div role="alert" style={{ padding: '12px 16px', borderRadius: '10px', background: colors.errorBg, border: `1px solid ${colors.errorBorder}`, color: colors.error, fontSize: '14px', lineHeight: 1.5 }}>
-                {error}
+              <div role="alert" style={loginErrorAlertStyle}>
+                <AlertCircle
+                  size={18}
+                  strokeWidth={2}
+                  aria-hidden
+                  style={{ flexShrink: 0, marginTop: "2px" }}
+                />
+                <p style={loginErrorTextStyle}>{error}</p>
               </div>
             )}
 

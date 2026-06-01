@@ -1,165 +1,222 @@
-// Animation compressed to ~2.0s total so it fits the 2.2s display window.
-// Sequence: fruits + extra produce (0s) → circles (0.6s) → branches (0.85s) → leaves (1.2s) → text (1.55s → done ~2.0s)
-const AnimatedLogo = ({ size = 200 }) => {
+import { useEffect } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { LEAF_PATH, LOGO_COLORS } from './logoMark';
+
+/**
+ * Layered basket/produce loader (~2.5s). Rendered inside PageTransition overlay only.
+ * Optional onLoadingComplete — not used by PageTransition (timing stays external).
+ */
+export default function AnimatedLogo({ onLoadingComplete }) {
+  const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!onLoadingComplete) return undefined;
+    const timer = setTimeout(onLoadingComplete, 2600);
+    return () => clearTimeout(timer);
+  }, [onLoadingComplete]);
+
+  const basketDrop = shouldReduceMotion
+    ? { opacity: [0, 1], transition: { duration: 0.5 } }
+    : {
+        y: [-60, 0],
+        opacity: [0, 1],
+        transition: { type: 'spring', damping: 15, stiffness: 90 },
+      };
+
+  const glowEffect = {
+    opacity: [0, 0.4, 0.25],
+    scale: [0.8, 1.1, 1],
+    transition: { delay: 0.3, duration: 0.8, ease: 'easeOut' },
+  };
+
+  const producePop = shouldReduceMotion
+    ? { opacity: [0, 1], transition: { duration: 0.3 } }
+    : {
+        scale: [0, 1.15, 1],
+        y: [-15, 0],
+        opacity: [0, 1],
+        transition: { type: 'spring', damping: 12 },
+      };
+
+  const leafWrap = shouldReduceMotion
+    ? { opacity: [0, 1], transition: { delay: 1, duration: 0.4 } }
+    : {
+        strokeDashoffset: [120, 0],
+        opacity: [0, 1],
+        transition: { delay: 1, duration: 0.7, ease: 'easeInOut' },
+      };
+
+  const textFadeIn = {
+    opacity: [0, 1],
+    y: shouldReduceMotion ? [0, 0] : [10, 0],
+    transition: { delay: 1.4, duration: 0.5, ease: 'easeOut' },
+  };
+
+  const produceDelay = (extra) =>
+    shouldReduceMotion
+      ? producePop
+      : {
+          ...producePop,
+          transition: { ...producePop.transition, delay: extra },
+        };
+
   return (
-    <div className="aal-container">
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 200 200"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
+    <div
+      aria-hidden="true"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        userSelect: 'none',
+        padding: 16,
+        maxWidth: '100%',
+      }}
+    >
+      <div
+        style={{
+          position: 'relative',
+          width: 160,
+          height: 160,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 24,
+          flexShrink: 0,
+        }}
       >
-        {/* Circles */}
-        <circle cx="100" cy="100" r="93" stroke="#9E623B" strokeWidth="2" fill="none" opacity="0.8" className="aal-circle-1" />
-        <circle cx="100" cy="100" r="85" stroke="#5C7A2A" strokeWidth="1.5" fill="none" opacity="0.5" className="aal-circle-2" />
+        <motion.div
+          style={{
+            position: 'absolute',
+            width: 128,
+            height: 128,
+            borderRadius: '50%',
+            background: LOGO_COLORS.glow,
+            filter: 'blur(32px)',
+            pointerEvents: 'none',
+          }}
+          animate={glowEffect}
+        />
 
-        {/* Left branch */}
-        <g className="aal-branch-left">
-          <path d="M 20 100 Q 30 80, 45 70 Q 55 62, 65 58"
-            stroke="#5C7A2A" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
-          <ellipse cx="25" cy="92" rx="4" ry="7" fill="#5C7A2A" opacity="0.8" transform="rotate(-30 25 92)" />
-          <ellipse cx="32" cy="82" rx="4" ry="7" fill="#5C7A2A" opacity="0.75" transform="rotate(-35 32 82)" />
-          <ellipse cx="40" cy="74" rx="4" ry="7" fill="#5C7A2A" opacity="0.8" transform="rotate(-38 40 74)" />
-          <ellipse cx="48" cy="67" rx="4" ry="7" fill="#5C7A2A" opacity="0.75" transform="rotate(-40 48 67)" />
-          <ellipse cx="56" cy="62" rx="4" ry="7" fill="#5C7A2A" opacity="0.8" transform="rotate(-42 56 62)" />
-        </g>
+        <svg
+          viewBox="0 0 100 100"
+          style={{ width: '100%', height: '100%', overflow: 'visible', position: 'relative', zIndex: 1 }}
+        >
+          <g transform="translate(0, 5)">
+            <motion.path
+              d={LEAF_PATH}
+              fill="none"
+              stroke={LOGO_COLORS.leafStroke}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeDasharray="120"
+              animate={leafWrap}
+            />
 
-        {/* Right branch */}
-        <g className="aal-branch-right">
-          <path d="M 180 100 Q 170 80, 155 70 Q 145 62, 135 58"
-            stroke="#5C7A2A" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.9" />
-          <ellipse cx="175" cy="92" rx="4" ry="7" fill="#5C7A2A" opacity="0.8" transform="rotate(30 175 92)" />
-          <ellipse cx="168" cy="82" rx="4" ry="7" fill="#5C7A2A" opacity="0.75" transform="rotate(35 168 82)" />
-          <ellipse cx="160" cy="74" rx="4" ry="7" fill="#5C7A2A" opacity="0.8" transform="rotate(38 160 74)" />
-          <ellipse cx="152" cy="67" rx="4" ry="7" fill="#5C7A2A" opacity="0.75" transform="rotate(40 152 67)" />
-          <ellipse cx="144" cy="62" rx="4" ry="7" fill="#5C7A2A" opacity="0.8" transform="rotate(42 144 62)" />
-        </g>
+            <motion.path
+              d="M 30,52 L 34,70 C 34,72 37,74 40,74 L 60,74 C 63,74 66,72 66,70 L 70,52 Z"
+              fill="none"
+              stroke={LOGO_COLORS.dark}
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              animate={basketDrop}
+            />
+            <motion.path
+              d="M 26,52 L 74,52"
+              stroke={LOGO_COLORS.dark}
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              animate={basketDrop}
+            />
 
-        {/* Leaves */}
-        <g className="aal-leaves">
-          <path d="M 100 70 Q 95 75, 100 80 Q 105 75, 100 70 Z" fill="#5C7A2A" opacity="0.7" />
-          <path d="M 90 75 Q 85 80, 90 85 Q 95 80, 90 75 Z" fill="#16A34A" opacity="0.6" />
-          <path d="M 110 75 Q 105 80, 110 85 Q 115 80, 110 75 Z" fill="#16A34A" opacity="0.6" />
-        </g>
+            <g transform="translate(39, 44)">
+              <motion.circle cx="0" cy="0" r="7" fill={LOGO_COLORS.tomato} animate={producePop} />
+              <motion.path
+                d="M -2,-7 Q 0,-10 2,-7 M -1,-7 L -1,-9 M 1,-7 L 2,-9"
+                stroke={LOGO_COLORS.leafStroke}
+                strokeWidth="1"
+                strokeLinecap="round"
+                animate={producePop}
+              />
+            </g>
 
-        {/* Fruits — fall from above, staggered */}
-        <g className="aal-fruit-red">
-          <circle cx="85" cy="100" r="10" fill="#DC2626" opacity="0.8" />
-          <circle cx="87" cy="98" r="3" fill="#FCA5A5" opacity="0.5" />
-        </g>
-        <g className="aal-fruit-orange">
-          <circle cx="115" cy="100" r="10" fill="#F97316" opacity="0.8" />
-          <circle cx="117" cy="98" r="3" fill="#FED7AA" opacity="0.5" />
-        </g>
-        <g className="aal-fruit-yellow">
-          <circle cx="100" cy="105" r="9" fill="#EAB308" opacity="0.8" />
-          <circle cx="102" cy="103" r="2.5" fill="#FEF08A" opacity="0.5" />
-        </g>
+            <g transform="translate(52, 45)">
+              <motion.circle cx="0" cy="0" r="8" fill={LOGO_COLORS.orange} animate={produceDelay(0.15)} />
+              <motion.circle
+                cx="2"
+                cy="-2"
+                r="1"
+                fill={LOGO_COLORS.cream}
+                opacity="0.4"
+                animate={produceDelay(0.15)}
+              />
+            </g>
 
-        {/* Extra produce accents */}
-        <g className="aal-produce-green">
-          <ellipse cx="73" cy="108" rx="7" ry="4.5" fill="#16A34A" opacity="0.8" transform="rotate(-20 73 108)" />
-          <ellipse cx="75" cy="107" rx="2" ry="1.4" fill="#86EFAC" opacity="0.55" transform="rotate(-20 75 107)" />
-        </g>
-        <g className="aal-produce-purple">
-          <ellipse cx="127" cy="109" rx="6.5" ry="4.2" fill="#7C3AED" opacity="0.78" transform="rotate(22 127 109)" />
-          <path d="M 123 104 Q 126 101, 130 103" stroke="#5C7A2A" strokeWidth="1.2" strokeLinecap="round" opacity="0.75" />
-        </g>
-        <g className="aal-produce-red">
-          <circle cx="100" cy="118" r="4.5" fill="#EF4444" opacity="0.82" />
-          <path d="M 98 114.5 Q 100 112.5, 102 114.5" stroke="#5C7A2A" strokeWidth="1.1" strokeLinecap="round" opacity="0.75" />
-        </g>
+            <g transform="translate(63, 42) rotate(25)">
+              <motion.rect
+                x="-4"
+                y="-9"
+                width="8"
+                height="18"
+                rx="4"
+                fill={LOGO_COLORS.cucumber}
+                animate={produceDelay(0.3)}
+              />
+              <motion.path
+                d="M -2,-4 L -2,4 M 2,-6 L 2,2"
+                stroke={LOGO_COLORS.cucumberDetail}
+                strokeWidth="0.7"
+                strokeLinecap="round"
+                animate={produceDelay(0.3)}
+              />
+            </g>
 
-        {/* Decorative dots */}
-        <g className="aal-details">
-          <circle cx="100" cy="90" r="2" fill="#5C7A2A" opacity="0.4" />
-          <circle cx="95" cy="92" r="1.5" fill="#5C7A2A" opacity="0.4" />
-          <circle cx="105" cy="92" r="1.5" fill="#5C7A2A" opacity="0.4" />
-          <path d="M 35 135 L 38 125" stroke="#9E623B" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
-          <circle cx="38" cy="125" r="1.5" fill="#9E623B" opacity="0.6" />
-          <circle cx="36" cy="128" r="1.5" fill="#9E623B" opacity="0.6" />
-          <circle cx="40" cy="128" r="1.5" fill="#9E623B" opacity="0.6" />
-          <path d="M 165 135 L 162 125" stroke="#9E623B" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
-          <circle cx="162" cy="125" r="1.5" fill="#9E623B" opacity="0.6" />
-          <circle cx="160" cy="128" r="1.5" fill="#9E623B" opacity="0.6" />
-          <circle cx="164" cy="128" r="1.5" fill="#9E623B" opacity="0.6" />
-        </g>
+            <g transform="translate(46, 32) rotate(-15)">
+              <motion.path
+                d="M 0,8 C -6,4 -6,-4 0,-8 C 6,-4 6,4 0,8 Z"
+                fill={LOGO_COLORS.topLeaf}
+                animate={produceDelay(0.45)}
+              />
+              <motion.path
+                d="M 0,8 L 0,-6"
+                stroke={LOGO_COLORS.cream}
+                strokeWidth="0.8"
+                opacity="0.5"
+                animate={produceDelay(0.45)}
+              />
+            </g>
+          </g>
+        </svg>
+      </div>
 
-        {/* Brand text — last to appear */}
-        <g className="aal-text">
-          <text x="100" y="149" fontFamily="Georgia, serif" fontSize="16" fontWeight="bold"
-            fill="#5C7A2A" textAnchor="middle" letterSpacing="0.8">
-            ABU AL-ANAS
-          </text>
-          <line x1="57" y1="157" x2="143" y2="157" stroke="#9E623B" strokeWidth="0.8" opacity="0.5" />
-          <text x="100" y="166" fontFamily="Georgia, serif" fontSize="7.5" fontWeight="normal"
-            fill="#9E623B" textAnchor="middle" letterSpacing="1.1">
-            FRUIT &amp; VEGETABLES
-          </text>
-          <circle cx="55" cy="157" r="1" fill="#9E623B" opacity="0.5" />
-          <circle cx="145" cy="157" r="1" fill="#9E623B" opacity="0.5" />
-        </g>
-      </svg>
-
-      <style>{`
-        .aal-container {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-
-        /* Circles */
-        .aal-circle-1 { animation: aal-fade 0.5s ease-out 0.6s both; }
-        .aal-circle-2 { animation: aal-fade 0.5s ease-out 0.75s both; }
-
-        /* Branches slide in from sides */
-        .aal-branch-left  { animation: aal-slide-left  0.6s ease-out 0.85s both; }
-        .aal-branch-right { animation: aal-slide-right 0.6s ease-out 0.85s both; }
-
-        /* Leaves grow from centre */
-        .aal-leaves { animation: aal-grow 0.4s ease-out 1.2s both; transform-origin: 100px 77px; }
-
-        /* Fruits fall with spring, staggered */
-        .aal-fruit-red    { animation: aal-fall 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0s    both; }
-        .aal-fruit-orange { animation: aal-fall 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s  both; }
-        .aal-fruit-yellow { animation: aal-fall 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s  both; }
-        .aal-produce-green  { animation: aal-fall 0.72s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s both; }
-        .aal-produce-purple { animation: aal-fall 0.72s cubic-bezier(0.34, 1.56, 0.64, 1) 0.32s both; }
-        .aal-produce-red    { animation: aal-fall 0.68s cubic-bezier(0.34, 1.56, 0.64, 1) 0.4s  both; }
-
-        /* Details and text */
-        .aal-details { animation: aal-fade 0.4s ease-out 1.35s both; }
-        .aal-text    { animation: aal-fade 0.4s ease-out 1.55s both; }
-
-        @keyframes aal-fall {
-          from { transform: translateY(-140px); opacity: 0; }
-          60%  { opacity: 1; }
-          to   { transform: translateY(0);      opacity: 1; }
-        }
-
-        @keyframes aal-fade {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
-
-        @keyframes aal-slide-left {
-          from { transform: translateX(-40px); opacity: 0; }
-          to   { transform: translateX(0);     opacity: 1; }
-        }
-
-        @keyframes aal-slide-right {
-          from { transform: translateX(40px); opacity: 0; }
-          to   { transform: translateX(0);    opacity: 1; }
-        }
-
-        @keyframes aal-grow {
-          from { transform: scale(0); opacity: 0; }
-          to   { transform: scale(1); opacity: 1; }
-        }
-      `}</style>
+      <motion.div animate={textFadeIn}>
+        <div
+          style={{
+            textAlign: 'center',
+            fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+            fontSize: 'clamp(1.5rem, 5vw, 1.875rem)',
+            fontWeight: 700,
+            color: LOGO_COLORS.dark,
+          }}
+        >
+          Abu Al Anas
+        </div>
+        <div
+          style={{
+            textAlign: 'center',
+            fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+            fontSize: 'clamp(0.7rem, 2.5vw, 0.875rem)',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.25em',
+            color: LOGO_COLORS.tagline,
+            marginTop: 6,
+          }}
+        >
+          Fruits &amp; Vegetables
+        </div>
+      </motion.div>
     </div>
   );
-};
-
-export default AnimatedLogo;
+}
