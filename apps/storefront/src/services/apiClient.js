@@ -7,17 +7,18 @@ import {
 } from "./authStorage";
 
 function resolveBaseURL() {
-  const fromEnv = import.meta.env.VITE_API_URL;
+  const fromEnv =
+    import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
   if (fromEnv && String(fromEnv).trim() !== "") {
     return String(fromEnv).replace(/\/+$/, "");
   }
   if (import.meta.env.DEV) {
     console.warn(
-      "[storefront] VITE_API_URL is unset; using http://localhost:5000/api/v1. Add apps/storefront/.env (see .env.example)."
+      "[storefront] VITE_API_BASE_URL is unset; using http://localhost:5000/api/v1. Add apps/storefront/.env (see .env.example)."
     );
     return "http://localhost:5000/api/v1";
   }
-  console.error("[storefront] VITE_API_URL must be set for production builds.");
+  console.error("[storefront] VITE_API_BASE_URL must be set for production builds.");
   return "";
 }
 
