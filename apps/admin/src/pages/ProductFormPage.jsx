@@ -69,7 +69,7 @@ const colors = {
   warningBorder:'#fde68a',
 };
 
-const fontStack = "'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif";
+const fontStack = "var(--font-sans)";
 
 const inputBase = {
   width: '100%',

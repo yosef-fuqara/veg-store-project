@@ -4,11 +4,11 @@ const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
 const MAX_PURCHASE_AMOUNT_ILS = 50000;
 
-// Either integer quantity (classic) or purchase by ILS amount — never both.
+// Quantity (units or kg) or purchase by ILS amount — never both.
 const addCartItemSchema = Joi.alternatives().try(
   Joi.object({
     productId: Joi.string().pattern(objectIdRegex).required(),
-    quantity: Joi.number().integer().min(1).max(100).required(),
+    quantity: Joi.number().min(0.25).max(500).required(),
     wrap: Joi.boolean().optional()
   }).unknown(false),
   Joi.object({

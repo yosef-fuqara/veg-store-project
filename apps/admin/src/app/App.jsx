@@ -15,6 +15,8 @@ import AdminOrderDetailsPage from "../pages/AdminOrderDetailsPage";
 import AdminSalesDashboardPage from "../pages/AdminSalesDashboardPage";
 import AdminPromotionsPage from "../pages/AdminPromotionsPage";
 import AdminStoreStatusPage from "../pages/AdminStoreStatusPage";
+import AdminMarketingCustomersPage from "../pages/AdminMarketingCustomersPage";
+import AdminMarketingCampaignsPage from "../pages/AdminMarketingCampaignsPage";
 import AbuAlAnasLogo from "../components/common/Logo";
 import PageTransition from "../components/common/PageTransition";
 import * as storeSettingsService from "../services/storeSettingsService";
@@ -101,6 +103,27 @@ const NAV_ITEMS = [
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="5" width="18" height="14" rx="2" />
         <path d="M7 9h10M7 13h6" />
+      </svg>
+    ),
+  },
+  {
+    to: '/marketing-campaigns',
+    labelKey: 'items.marketingCampaigns',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 2L11 13" />
+        <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+      </svg>
+    ),
+  },
+  {
+    to: '/marketing-customers',
+    labelKey: 'items.marketingCustomers',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="8.5" cy="7" r="4"/>
+        <path d="M20 8v6M23 11h-6"/>
       </svg>
     ),
   },
@@ -818,7 +841,7 @@ const App = () => {
           maxHeight: layoutScrollLocked ? '100vh' : undefined,
           overflow: layoutScrollLocked ? 'hidden' : undefined,
           background: colors.bg,
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontFamily: 'var(--font-sans)',
           position: 'relative',
         }}
       >
@@ -874,6 +897,8 @@ const App = () => {
               <Route path="/orders/:id" element={<RequireAuth><RequireAdmin><AdminOrderDetailsPage /></RequireAdmin></RequireAuth>} />
               <Route path="/sales" element={<RequireAuth><RequireAdmin><AdminSalesDashboardPage /></RequireAdmin></RequireAuth>} />
               <Route path="/promotions" element={<RequireAuth><RequireAdmin><AdminPromotionsPage /></RequireAdmin></RequireAuth>} />
+              <Route path="/marketing-campaigns" element={<RequireAuth><RequireAdmin><AdminMarketingCampaignsPage /></RequireAdmin></RequireAuth>} />
+              <Route path="/marketing-customers" element={<RequireAuth><RequireAdmin><AdminMarketingCustomersPage /></RequireAdmin></RequireAuth>} />
               <Route path="/store-status" element={<RequireAuth><RequireAdmin><AdminStoreStatusPage /></RequireAdmin></RequireAuth>} />
               <Route path="/" element={<Navigate to="/products" replace />} />
             </Routes>

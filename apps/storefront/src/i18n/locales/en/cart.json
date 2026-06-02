@@ -38,7 +38,8 @@
     "summaryLabel": "Wrap fees",
     "unavailable": "Wrapping is only available for products sold by the kilogram."
   },
-  "purchaseByAmountBadge": "By {{amount}}",
+  "purchaseByWeightBadge": "By weight · {{qty}} {{unit}}",
+  "purchaseByAmountBadge": "By amount · {{amount}}",
   "purchaseByAmountNote": "You chose a basket value of {{amount}}; quantity is set by the store.",
   "purchaseByAmountLineDetail": "{{unitPrice}} per {{unitLabel}} · approx. {{weight}} {{unitLabel}}"
 }

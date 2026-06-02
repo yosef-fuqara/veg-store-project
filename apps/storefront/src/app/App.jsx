@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Routes, Route, NavLink, Link, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, NavLink, Link, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
-import { Clock, Phone } from "lucide-react";
+import { Clock, Phone, User } from "lucide-react";
 import { getModalHoursBody } from "../utils/storeHoursDisplay";
 import {
   STOREFRONT_BUSINESS_HOURS_ID,
@@ -38,6 +38,13 @@ import ResetPasswordPage from "../pages/ResetPasswordPage";
 import OrderConfirmationPage from "../pages/OrderConfirmationPage";
 import OrderHistoryPage from "../pages/OrderHistoryPage";
 import RegisterPage from "../pages/RegisterPage";
+import AccountLayout from "../layouts/AccountLayout";
+import AccountDashboardPage from "../pages/account/AccountDashboardPage";
+import AccountAddressesPage from "../pages/account/AccountAddressesPage";
+import AccountFavoritesPage from "../pages/account/AccountFavoritesPage";
+import AccountWhatsAppPage from "../pages/account/AccountWhatsAppPage";
+import AccountProfilePage from "../pages/account/AccountProfilePage";
+import AccountSettingsPage from "../pages/account/AccountSettingsPage";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -55,7 +62,7 @@ const colors = {
 const appRootStyle = {
   minHeight: '100vh',
   background: colors.bg,
-  fontFamily: "'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif",
+  fontFamily: 'var(--font-sans)',
   color: colors.textPrimary,
 };
 
@@ -161,8 +168,8 @@ const CartAnchorPulse = ({ bumpKey, anchorRef, inlineFlexStyle, children }) => {
       key={`cart-pulse-${bumpKey}`}
       ref={anchorRef}
       initial={{ scale: 1 }}
-      animate={{ scale: [1, 1.14, 1] }}
-      transition={{ duration: 0.42, ease: [0.25, 0.1, 0.25, 1] }}
+      animate={{ scale: [1, 1.2, 0.94, 1] }}
+      transition={{ duration: 0.4, times: [0, 0.38, 0.68, 1], ease: [0.34, 1.4, 0.64, 1] }}
       style={inlineFlexStyle}
     >
       {children}
@@ -412,7 +419,7 @@ const NavPhonePopover = ({ t, dir, menuOpen }) => {
 
 // ─── AppNav ───────────────────────────────────────────────────────────────────
 const AppNav = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { openCartDrawer } = useCartDrawer();
@@ -564,6 +571,24 @@ const AppNav = () => {
         {isMobile ? (
           /* ── Mobile controls ──────────────────────────────── */
           <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+            {user ? (
+              <NavLink
+                to="/account"
+                aria-label={t('account')}
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: colors.textPrimary,
+                  textDecoration: 'none',
+                }}
+              >
+                <User size={20} strokeWidth={2} aria-hidden />
+              </NavLink>
+            ) : null}
             <MobileCartIcon t={t} />
             <button
               type="button"
@@ -594,37 +619,23 @@ const AppNav = () => {
               >
                 {t('products')}
               </button>
-              {user && <NavLink to="/orders" style={getLinkStyle}>{t('orders')}</NavLink>}
               <CartNavButton t={t} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
               <LanguageSwitcher />
               {user ? (
-                <>
-                  <span style={{
-                    fontSize: '13px', color: colors.textSecondary, fontWeight: 500,
-                    whiteSpace: 'nowrap', maxWidth: '140px',
-                    overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}>
-                    {t('greeting', { name: user.name })}
+                <NavLink
+                  to="/account"
+                  style={getLinkStyle}
+                  aria-label={t('account')}
+                  title={t('account')}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <User size={17} strokeWidth={2} aria-hidden />
+                    {t('account')}
                   </span>
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.96 }}
-                    transition={{ duration: 0.12 }}
-                    onClick={() => { logout(); navigate('/', { replace: true }); }}
-                    style={{
-                      padding: '6px 16px', borderRadius: '9999px',
-                      border: `1.5px solid ${colors.primary}`,
-                      background: 'transparent', color: colors.primary,
-                      fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {t('logout')}
-                  </motion.button>
-                </>
+                </NavLink>
               ) : (
                 <>
                   <NavLink to="/login" style={getLinkStyle}>{t('login')}</NavLink>
@@ -692,7 +703,12 @@ const AppNav = () => {
             >
               <NavLink to="/" end style={({ isActive }) => mobileItemStyle(isActive)} onClick={handleHomeNavClick}>{t('home')}</NavLink>
               <button onClick={handleProductsClick} style={mobileItemStyle()}>{t('products')}</button>
-              {user && <NavLink to="/orders" style={({ isActive }) => mobileItemStyle(isActive)}>{t('orders')}</NavLink>}
+              {user ? (
+                <NavLink to="/account" style={({ isActive }) => mobileItemStyle(isActive)}>
+                  <User size={18} strokeWidth={2} aria-hidden />
+                  {t('account')}
+                </NavLink>
+              ) : null}
               <button
                 type="button"
                 onClick={() => { openCartDrawer(); setMenuOpen(false); }}
@@ -703,20 +719,7 @@ const AppNav = () => {
 
               <div style={{ height: '1px', background: colors.border, margin: '8px 0' }} />
 
-              {user ? (
-                <>
-                  <div style={{ padding: '4px 14px', fontSize: '13px', color: colors.textMuted }}>
-                    {t('greeting', { name: user.name })}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => { logout(); navigate('/', { replace: true }); setMenuOpen(false); }}
-                    style={{ ...mobileItemStyle(), color: colors.textSecondary }}
-                  >
-                    {t('logout')}
-                  </button>
-                </>
-              ) : (
+              {user ? null : (
                 <>
                   <NavLink to="/login" style={({ isActive }) => mobileItemStyle(isActive)}>{t('login')}</NavLink>
                   <Link
@@ -863,8 +866,24 @@ const App = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/cart" element={<RequireAuth><CartPage /></RequireAuth>} />
         <Route path="/checkout" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
-        <Route path="/orders" element={<RequireAuth><OrderHistoryPage /></RequireAuth>} />
+        <Route path="/orders" element={<Navigate to="/account/orders" replace />} />
         <Route path="/orders/:id" element={<RequireAuth><OrderConfirmationPage /></RequireAuth>} />
+        <Route
+          path="/account"
+          element={(
+            <RequireAuth>
+              <AccountLayout />
+            </RequireAuth>
+          )}
+        >
+          <Route index element={<AccountDashboardPage />} />
+          <Route path="orders" element={<OrderHistoryPage embedded />} />
+          <Route path="addresses" element={<AccountAddressesPage />} />
+          <Route path="favorites" element={<AccountFavoritesPage />} />
+          <Route path="whatsapp" element={<AccountWhatsAppPage />} />
+          <Route path="profile" element={<AccountProfilePage />} />
+          <Route path="settings" element={<AccountSettingsPage />} />
+        </Route>
       </Routes>
       <Footer />
       {!isStoreClosed ? <PromotionPopup /> : null}

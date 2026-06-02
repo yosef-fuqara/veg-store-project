@@ -9,8 +9,12 @@ import { getLocalizedProductName } from "../utils/localizedProduct";
 import {
   formatQtyDisplay,
   formatApproxWeightQuantity,
-  PURCHASE_AMOUNT_CART_STEP_ILS
+  formatCartWeightDisplay,
+  PURCHASE_AMOUNT_CART_STEP_ILS,
+  weightCartQuantityMin,
+  weightCartQuantityStep
 } from "../utils/cartLineQuantity";
+import { displayPricePerKg, isWeightBasedUnit } from "../utils/storefrontWeight";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -119,11 +123,11 @@ const CartPage = () => {
             const wrapAvailable = Boolean(item.productSnapshot?.wrapAvailable);
             const wrapFee = Number(item.wrapFee) || 0;
             const unit = item.productSnapshot?.unit;
-            const allowFrac =
-              Boolean(item.productSnapshot?.allowPurchaseByAmount) &&
-              (unit === 'kg' || unit === 'gram');
-            const step = allowFrac ? 0.25 : 1;
-            const minQ = allowFrac ? 0.01 : 1;
+            const isAmountLine = item.purchaseMode === 'amount' && item.requestedAmountIls != null;
+            const isWeightLine = !isAmountLine && isWeightBasedUnit(unit);
+            const allowFrac = isWeightLine;
+            const step = allowFrac ? weightCartQuantityStep(unit) : 1;
+            const minQ = allowFrac ? weightCartQuantityMin(unit) : 1;
             const maxQ = allowFrac ? 500 : 100;
             const bumpQty = (delta) => {
               const n = Number(item.quantity);
@@ -137,12 +141,16 @@ const CartPage = () => {
               const next = Math.min(50000, Math.max(1, nextRaw));
               updateItem(item.product, { purchaseAmountIls: next });
             };
-            const isAmountLine = item.purchaseMode === 'amount' && item.requestedAmountIls != null;
-            const showApproxWeight = isAmountLine && (unit === 'kg' || unit === 'gram');
-            const unitLabel =
-              unit === 'kg' || unit === 'gram' || unit === 'unit' || unit === 'box'
+            const showApproxWeight = isAmountLine && isWeightBasedUnit(unit);
+            const kgLabel = t('home:units.kg');
+            const unitLabel = isWeightBasedUnit(unit)
+              ? kgLabel
+              : unit === 'unit' || unit === 'box'
                 ? t(`home:units.${unit}`)
                 : unit || '';
+            const unitPriceDisplay = isWeightBasedUnit(unit)
+              ? displayPricePerKg(item.unitPriceSnapshot, unit)
+              : item.unitPriceSnapshot;
             const atMinPurchaseAmount = isAmountLine && Number(item.requestedAmountIls) <= 1 + 1e-9;
             const thumbUrl =
               typeof item.productSnapshot?.imageUrl === 'string' ? item.productSnapshot.imageUrl.trim() : '';
@@ -183,12 +191,20 @@ const CartPage = () => {
                           {t('cart:purchaseByAmountBadge', { amount: formatPrice(item.requestedAmountIls, lang) })}
                         </div>
                       )}
+                      {isWeightLine && (
+                        <div style={{ fontSize: '12px', color: colors.primary, marginTop: '4px', fontWeight: 600 }}>
+                          {t('cart:purchaseByWeightBadge', {
+                            qty: formatCartWeightDisplay(item.quantity, unit),
+                            unit: kgLabel
+                          })}
+                        </div>
+                      )}
                       <div style={{ fontSize: '13px', color: colors.textSecondary, marginTop: '2px' }}>
                         {isAmountLine ? (
                           showApproxWeight ? (
                             t('cart:purchaseByAmountLineDetail', {
-                              unitPrice: formatPrice(item.unitPriceSnapshot, lang),
-                              unitLabel,
+                              unitPrice: formatPrice(unitPriceDisplay, lang),
+                              unitLabel: kgLabel,
                               weight: formatApproxWeightQuantity(item.quantity, unit)
                             })
                           ) : (
@@ -198,7 +214,11 @@ const CartPage = () => {
                           )
                         ) : (
                           <>
-                            {formatQtyDisplay(item.quantity)} × {formatPrice(item.unitPriceSnapshot, lang)}
+                            {isWeightLine
+                              ? `${formatCartWeightDisplay(item.quantity, unit)} ${kgLabel}`
+                              : `${formatQtyDisplay(item.quantity)}`}{' '}
+                            × {formatPrice(unitPriceDisplay, lang)}
+                            {isWeightLine ? ` / ${kgLabel}` : ''}
                           </>
                         )}
                       </div>
@@ -224,7 +244,9 @@ const CartPage = () => {
                     <span style={{ minWidth: '36px', textAlign: 'center', fontSize: '14px', fontWeight: 600, color: colors.textPrimary }}>
                       {isAmountLine
                         ? formatPrice(item.requestedAmountIls, lang)
-                        : formatQtyDisplay(item.quantity)}
+                        : isWeightLine
+                          ? `${formatCartWeightDisplay(item.quantity, unit)} ${kgLabel}`
+                          : formatQtyDisplay(item.quantity)}
                     </span>
                     <button
                       onClick={() =>

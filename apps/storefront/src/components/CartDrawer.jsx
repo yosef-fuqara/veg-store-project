@@ -13,8 +13,12 @@ import { getLocalizedProductName } from "../utils/localizedProduct";
 import {
   formatQtyDisplay,
   formatApproxWeightQuantity,
-  PURCHASE_AMOUNT_CART_STEP_ILS
+  formatCartWeightDisplay,
+  PURCHASE_AMOUNT_CART_STEP_ILS,
+  weightCartQuantityMin,
+  weightCartQuantityStep
 } from "../utils/cartLineQuantity";
+import { displayPricePerKg, isWeightBasedUnit } from "../utils/storefrontWeight";
 import { WhatsAppFabDismissible } from "./WhatsAppFloat";
 import { FloatingStoreNavigationFab } from "./StoreNavigation";
 import {
@@ -76,8 +80,8 @@ const CartAnchorPulse = ({ bumpKey, anchorRef, inlineFlexStyle, children }) => {
       key={`fab-cart-pulse-${bumpKey}`}
       ref={anchorRef}
       initial={{ scale: 1 }}
-      animate={{ scale: [1, 1.12, 1] }}
-      transition={{ duration: 0.42, ease: [0.25, 0.1, 0.25, 1] }}
+      animate={{ scale: [1, 1.2, 0.94, 1] }}
+      transition={{ duration: 0.4, times: [0, 0.38, 0.68, 1], ease: [0.34, 1.4, 0.64, 1] }}
       style={inlineFlexStyle}
     >
       {children}
@@ -318,10 +322,11 @@ export function CartDrawerHost() {
                           const wrapAvailable = Boolean(item.productSnapshot?.wrapAvailable);
                           const wrapFee = Number(item.wrapFee) || 0;
                           const unit = item.productSnapshot?.unit;
-                          const allowFrac =
-                            Boolean(item.productSnapshot?.allowPurchaseByAmount) && (unit === "kg" || unit === "gram");
-                          const step = allowFrac ? 0.25 : 1;
-                          const minQ = allowFrac ? 0.01 : 1;
+                          const isAmountLine = item.purchaseMode === "amount" && item.requestedAmountIls != null;
+                          const isWeightLine = !isAmountLine && isWeightBasedUnit(unit);
+                          const allowFrac = isWeightLine;
+                          const step = allowFrac ? weightCartQuantityStep(unit) : 1;
+                          const minQ = allowFrac ? weightCartQuantityMin(unit) : 1;
                           const maxQ = allowFrac ? 500 : 100;
                           const bumpQty = (delta) => {
                             const n = Number(item.quantity);
@@ -335,12 +340,16 @@ export function CartDrawerHost() {
                             const next = Math.min(50000, Math.max(1, nextRaw));
                             updateItem(item.product, { purchaseAmountIls: next });
                           };
-                          const isAmountLine = item.purchaseMode === "amount" && item.requestedAmountIls != null;
-                          const showApproxWeight = isAmountLine && (unit === "kg" || unit === "gram");
-                          const unitLabel =
-                            unit === "kg" || unit === "gram" || unit === "unit" || unit === "box"
+                          const showApproxWeight = isAmountLine && isWeightBasedUnit(unit);
+                          const kgLabel = t("home:units.kg");
+                          const unitLabel = isWeightBasedUnit(unit)
+                            ? kgLabel
+                            : unit === "unit" || unit === "box"
                               ? t(`home:units.${unit}`)
                               : unit || "";
+                          const unitPriceDisplay = isWeightBasedUnit(unit)
+                            ? displayPricePerKg(item.unitPriceSnapshot, unit)
+                            : item.unitPriceSnapshot;
                           const atMinPurchaseAmount = isAmountLine && Number(item.requestedAmountIls) <= 1 + 1e-9;
                           const thumbUrl =
                             typeof item.productSnapshot?.imageUrl === "string"
@@ -393,6 +402,14 @@ export function CartDrawerHost() {
                                     {t("cart:purchaseByAmountBadge", { amount: formatPrice(item.requestedAmountIls, lang) })}
                                   </div>
                                 ) : null}
+                                {isWeightLine ? (
+                                  <div style={{ fontSize: 12, color: colors.primary, marginTop: 4, fontWeight: 600 }}>
+                                    {t("cart:purchaseByWeightBadge", {
+                                      qty: formatCartWeightDisplay(item.quantity, unit),
+                                      unit: kgLabel,
+                                    })}
+                                  </div>
+                                ) : null}
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
                                   <div
                                     style={{
@@ -439,7 +456,9 @@ export function CartDrawerHost() {
                                     >
                                       {isAmountLine
                                         ? formatPrice(item.requestedAmountIls, lang)
-                                        : formatQtyDisplay(item.quantity)}
+                                        : isWeightLine
+                                          ? `${formatCartWeightDisplay(item.quantity, unit)} ${kgLabel}`
+                                          : formatQtyDisplay(item.quantity)}
                                     </span>
                                     <button
                                       type="button"
@@ -470,8 +489,8 @@ export function CartDrawerHost() {
                                     {isAmountLine ? (
                                       showApproxWeight ? (
                                         t("cart:purchaseByAmountLineDetail", {
-                                          unitPrice: formatPrice(item.unitPriceSnapshot, lang),
-                                          unitLabel,
+                                          unitPrice: formatPrice(unitPriceDisplay, lang),
+                                          unitLabel: kgLabel,
                                           weight: formatApproxWeightQuantity(item.quantity, unit),
                                         })
                                       ) : (
@@ -481,8 +500,11 @@ export function CartDrawerHost() {
                                       )
                                     ) : (
                                       <>
-                                        {formatQtyDisplay(item.quantity)} ×{" "}
-                                        {formatPrice(item.unitPriceSnapshot, lang)}
+                                        {isWeightLine
+                                          ? `${formatCartWeightDisplay(item.quantity, unit)} ${kgLabel}`
+                                          : formatQtyDisplay(item.quantity)}{" "}
+                                        × {formatPrice(unitPriceDisplay, lang)}
+                                        {isWeightLine ? ` / ${kgLabel}` : ""}
                                       </>
                                     )}
                                   </span>

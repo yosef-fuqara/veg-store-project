@@ -8,12 +8,13 @@ export const login = async ({ email, password }) => {
   };
 };
 
-export const register = async ({ name, phone, email, password }) => {
+export const register = async ({ name, phone, email, password, marketingConsentWhatsApp }) => {
   const { data } = await apiClient.post("/auth/register", {
     name,
     phone,
     email,
-    password
+    password,
+    marketingConsentWhatsApp: marketingConsentWhatsApp === true
   });
   return {
     user: data.data.user,

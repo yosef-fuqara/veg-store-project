@@ -7,7 +7,8 @@ const registerSchema = Joi.object({
   name: Joi.string().trim().min(2).max(80).required(),
   phone: israeliMobileString,
   email: Joi.string().trim().email().required(),
-  password: passwordSchema
+  password: passwordSchema,
+  marketingConsentWhatsApp: Joi.boolean().default(false)
 });
 
 const loginSchema = Joi.object({

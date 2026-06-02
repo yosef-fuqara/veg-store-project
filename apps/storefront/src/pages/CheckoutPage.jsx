@@ -14,6 +14,7 @@ import {
 } from "../config/delivery";
 import { useCart } from "../features/cart/CartContext";
 import { useStoreSettings } from "../features/store/StoreSettingsContext";
+import { useAuth } from "../features/auth/AuthContext";
 import BusinessHoursNoticeModal from "../components/BusinessHoursNoticeModal";
 import StoreClosedSection from "../components/StoreClosedSection";
 import { useLocalStorage } from "../hooks/useLocalStorage";
@@ -322,6 +323,7 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshCart } = useCart();
+  const { user } = useAuth();
   const { settings, loading: storeSettingsLoading, canOrderNow } = useStoreSettings();
   const [, setCheckoutDraft] = useLocalStorage(VEGSTORE_CHECKOUT_DRAFT_KEY, null);
   const { t, i18n } = useTranslation(["checkout", "cart", "home", "storeClosed"]);
@@ -356,6 +358,7 @@ const CheckoutPage = () => {
   const [businessHoursNoticeOpen, setBusinessHoursNoticeOpen] = useState(false);
   const businessHoursNoticeAcknowledgedRef = useRef(false);
   const checkoutSubmitInFlightRef = useRef(false);
+  const hasSuggestedRegisteredPhoneRef = useRef(false);
 
   const fieldElRefs = useRef({});
   const assignFieldRef = (key) => (el) => {
@@ -504,6 +507,29 @@ const CheckoutPage = () => {
   const fieldErr = (id) => fieldErrors[id]
     ? <span style={{ fontSize: '12px', color: colors.error, display: 'block', marginTop: '4px' }}>{fieldErrors[id]}</span>
     : null;
+
+  const registeredPhone = typeof user?.phone === "string" ? user.phone.trim() : "";
+  const canUseRegisteredPhone = registeredPhone.length > 0;
+
+  useEffect(() => {
+    if (!canUseRegisteredPhone) return;
+    if (hasSuggestedRegisteredPhoneRef.current) return;
+    const currentPhone = (form.customerPhone ?? "").trim();
+    if (currentPhone) return;
+    hasSuggestedRegisteredPhoneRef.current = true;
+    setForm((prev) => ({ ...prev, customerPhone: registeredPhone }));
+  }, [canUseRegisteredPhone, form.customerPhone, registeredPhone]);
+
+  const handleUseRegisteredPhone = () => {
+    if (!canUseRegisteredPhone) return;
+    setForm((prev) => ({ ...prev, customerPhone: registeredPhone }));
+    setFieldErrors((prev) => {
+      if (!prev.customerPhone) return prev;
+      const next = { ...prev };
+      delete next.customerPhone;
+      return next;
+    });
+  };
 
   const validateClientSide = () => {
     const fields = {};
@@ -911,8 +937,31 @@ const CheckoutPage = () => {
             }}
           >
             <label style={{ ...labelStyle, minWidth: 0 }}>
-              {t("phoneRequired")}
+              {t("phoneForOrderUpdatesLabel")}
               <input ref={assignFieldRef("customerPhone")} type="tel" inputMode="tel" autoComplete="tel-national" value={form.customerPhone} onChange={updateField("customerPhone")} maxLength={22} onFocus={focus("customerPhone")} onBlur={blur} style={inputStyle("customerPhone")} />
+              <span style={{ fontSize: "12px", color: colors.textMuted, lineHeight: 1.45 }}>
+                {t("phoneOrderUpdatesHelper")}
+              </span>
+              {canUseRegisteredPhone && (
+                <button
+                  type="button"
+                  onClick={handleUseRegisteredPhone}
+                  style={{
+                    alignSelf: "flex-start",
+                    padding: 0,
+                    border: "none",
+                    background: "none",
+                    color: colors.primary,
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    textUnderlineOffset: "3px",
+                  }}
+                >
+                  {t("useRegisteredPhoneNumber")}
+                </button>
+              )}
               {fieldErr("customerPhone")}
             </label>
             <label style={{ ...labelStyle, minWidth: 0 }}>

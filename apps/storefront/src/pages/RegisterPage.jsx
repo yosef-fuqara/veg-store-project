@@ -48,6 +48,19 @@ const labelStyle = {
   color: colors.textSecondary,
 };
 
+const consentLabelStyle = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "10px",
+  marginTop: "2px",
+  fontSize: "13px",
+  lineHeight: 1.45,
+  color: colors.textSecondary
+};
+
+const marketingConsentText =
+  "I agree to receive promotions and offers from the store by WhatsApp. I can unsubscribe at any time.";
+
 const fieldErrorsFromResponse = (err) => {
   const fields = err.response?.data?.details?.fields;
   if (!Array.isArray(fields)) return {};
@@ -83,14 +96,23 @@ const RegisterPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const [form, setForm] = useState({ name: '', phone: '', email: '', password: '' });
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    password: "",
+    marketingConsentWhatsApp: false
+  });
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [focused, setFocused] = useState(null);
 
   const redirectTo = searchParams.get('redirect') || '/';
-  const update = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  const update = (key) => (e) => {
+    const value = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
   const focus  = (field) => () => setFocused(field);
   const blur   = () => setFocused(null);
 
@@ -116,7 +138,11 @@ const RegisterPage = () => {
     }
     setSubmitting(true);
     try {
-      await register({ ...form, phone: normalizedPhone });
+      await register({
+        ...form,
+        phone: normalizedPhone,
+        marketingConsentWhatsApp: form.marketingConsentWhatsApp
+      });
       navigate(redirectTo, { replace: true });
     } catch (err) {
       const fields = fieldErrorsFromResponse(err);
@@ -208,6 +234,23 @@ const RegisterPage = () => {
                 style={inputStyle('email')}
               />
               <FieldError message={fieldErrors.email} />
+            </label>
+
+            <label style={consentLabelStyle}>
+              <input
+                type="checkbox"
+                checked={form.marketingConsentWhatsApp}
+                onChange={update("marketingConsentWhatsApp")}
+                style={{
+                  width: "17px",
+                  height: "17px",
+                  marginTop: "1px",
+                  accentColor: colors.primary,
+                  cursor: "pointer",
+                  flexShrink: 0
+                }}
+              />
+              <span>{marketingConsentText}</span>
             </label>
 
             <label style={labelStyle}>

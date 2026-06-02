@@ -37,7 +37,10 @@ const { getOrderCreationBlockResponse } = require("../services/store-settings.se
  * Does not alter stored order rows or pricing.
  */
 const ADMIN_ORDER_RESPONSE_POPULATE = [
-  { path: "user", select: "name email phone" },
+  {
+    path: "user",
+    select: "name email phone marketingConsentWhatsApp marketingConsentWhatsAppAt marketingConsentSource"
+  },
   { path: "items.product", select: "imageUrl" }
 ];
 

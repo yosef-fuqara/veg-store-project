@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useCart } from "../features/cart/CartContext";
 import { useCartVisualFeedback } from "../features/cart/CartVisualFeedbackContext";
 import { formatPrice } from "../utils/formatPrice";
-import { formatApproxWeightQuantity } from "../utils/cartLineQuantity";
 import {
   getLocalizedProductDescription,
   getLocalizedProductName,
   getLocalizedText
 } from "../utils/localizedProduct";
+import ProductCardPurchasePanel from "./ProductCardPurchasePanel";
+import FavoriteProductButton from "./account/FavoriteProductButton";
+import { displayPricePerKg, isWeightBasedUnit } from "../utils/storefrontWeight";
 
 const colors = {
   primary: "#1e6b3c",
@@ -32,7 +33,6 @@ const colors = {
 
 const UNIT_KEYS = {
   kg: "units.kg",
-  gram: "units.gram",
   unit: "units.unit",
   box: "units.box"
 };
@@ -94,23 +94,22 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
   const { addItem, cart } = useCart();
   const { notifyProductAddedToCart } = useCartVisualFeedback();
   const addButtonRef = useRef(null);
+  const flyImageRef = useRef(null);
   const [adding, setAdding] = useState(false);
-  const [buyMode, setBuyMode] = useState("quantity");
-  const [qtyInput, setQtyInput] = useState("1");
-  const [amountInput, setAmountInput] = useState("10");
 
   const id = product._id;
   const name = getLocalizedProductName(product, lang);
   const imageUrl = typeof product.imageUrl === "string" ? product.imageUrl : "";
   const unit = typeof product.unit === "string" ? product.unit : "";
-  const unitLabel = UNIT_KEYS[unit] ? t(UNIT_KEYS[unit]) : unit;
-
   const price = Number(product.price);
   const salePrice =
     product.salePrice != null && product.salePrice !== "" ? Number(product.salePrice) : null;
   const hasSale =
     salePrice != null && !Number.isNaN(salePrice) && !Number.isNaN(price) && salePrice < price;
   const displayPrice = hasSale ? salePrice : price;
+  const weightBased = isWeightBasedUnit(unit);
+  const unitLabel = weightBased ? t("units.kg") : UNIT_KEYS[unit] ? t(UNIT_KEYS[unit]) : unit;
+  const priceForDisplay = weightBased ? displayPricePerKg(displayPrice, unit) : displayPrice;
 
   const inStock = !isProductUnavailable(product);
   const isPreorder = Boolean(product.isPreorderOnly);
@@ -119,7 +118,6 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
     product.category?.name ?? (typeof product.category === "string" ? product.category : "");
   const categoryName = getLocalizedText(rawCategoryLabel, lang);
   const isFeatured = Boolean(product.isFeatured || product.featured);
-  const allowByAmount = Boolean(product.allowPurchaseByAmount);
 
   const existingLine = useMemo(
     () => cart.items.find((it) => String(it.product) === String(id)),
@@ -130,75 +128,30 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
   );
   const lockedToQuantity = Boolean(existingLine) && !lockedToAmount;
 
-  useEffect(() => {
-    if (!allowByAmount || !id) return;
-    if (lockedToAmount) setBuyMode("amount");
-    else if (lockedToQuantity) setBuyMode("quantity");
-  }, [allowByAmount, id, lockedToAmount, lockedToQuantity]);
-
-  const parsedQty = Math.min(100, Math.max(1, Math.floor(Number(qtyInput)) || 1));
-  const parsedAmount = Math.max(0, Number(amountInput));
-  const estimatedQtyStr =
-    buyMode === "amount" && parsedAmount > 0 && displayPrice > 0
-      ? formatApproxWeightQuantity(parsedAmount / displayPrice, unit)
-      : null;
-
-  const canAdd = inStock && !!id && !adding && !orderingDisabled;
-  const handleAdd = async () => {
-    if (!canAdd || adding) return;
+  const handleConfirmAdd = async (payload) => {
+    if (!id) return false;
     setAdding(true);
     try {
       let ok = false;
-      if (allowByAmount && buyMode === "amount") {
-        if (!parsedAmount || parsedAmount <= 0) {
-          setAdding(false);
-          return;
-        }
-        ok = await addItem(String(id), 1, { purchaseAmountIls: parsedAmount });
+      if ("purchaseAmountIls" in payload) {
+        ok = await addItem(String(id), 1, { purchaseAmountIls: payload.purchaseAmountIls });
       } else {
-        const q = allowByAmount && buyMode === "quantity" ? parsedQty : 1;
-        ok = await addItem(String(id), q);
+        ok = await addItem(String(id), payload.quantity);
       }
-      if (ok && addButtonRef.current) {
-        notifyProductAddedToCart({
-          fromRect: addButtonRef.current.getBoundingClientRect(),
-          imageUrl
-        });
+      if (ok) {
+        const flyEl = flyImageRef.current || addButtonRef.current;
+        if (flyEl) {
+          notifyProductAddedToCart({
+            fromRect: flyEl.getBoundingClientRect(),
+            imageUrl
+          });
+        }
       }
+      return ok;
     } finally {
       setAdding(false);
     }
   };
-
-  const addDisabled =
-    !canAdd ||
-    (allowByAmount && buyMode === "amount" && (!parsedAmount || parsedAmount <= 0));
-
-  const tabBtn = (active, onClick, label, disabled = false, title) => (
-    <button
-      type="button"
-      onClick={disabled ? undefined : onClick}
-      disabled={disabled}
-      title={title}
-      style={{
-        flex: 1,
-        minWidth: 0,
-        padding: compact ? "4px 5px" : "6px 8px",
-        borderRadius: compact ? "6px" : "8px",
-        border: active ? `1px solid ${colors.primary}` : `1px solid ${colors.border}`,
-        background: active ? "#eef7f1" : colors.surface,
-        color: active ? colors.primary : colors.textSecondary,
-        fontSize: compact ? "10px" : "12px",
-        fontWeight: 600,
-        lineHeight: 1.2,
-        cursor: disabled ? "not-allowed" : "pointer",
-        fontFamily: "inherit",
-        opacity: disabled ? 0.5 : 1
-      }}
-    >
-      {label}
-    </button>
-  );
 
   const description = getLocalizedProductDescription(product, lang).trim();
   const hasStoreDescription = Boolean(description);
@@ -292,6 +245,7 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
 
   const imageArea = (
     <div
+      ref={flyImageRef}
       style={{
         position: "relative",
         aspectRatio: compact ? "1" : "4/3",
@@ -335,6 +289,8 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
           </div>
         )}
       </motion.div>
+
+      <FavoriteProductButton productId={id} />
 
       {!inStock && (
         <>
@@ -588,7 +544,7 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
                 lineHeight: 1
               }}
             >
-              {formatPrice(displayPrice, lang)}
+              {formatPrice(priceForDisplay, lang)}
             </span>
             {hasSale && !compact && (
               <span
@@ -606,127 +562,6 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
         </div>
 
         <div style={{ flex: 1 }} />
-
-        {allowByAmount && inStock && !!id && (
-          <div style={{ display: "flex", gap: compact ? "4px" : "6px", marginTop: compact ? "4px" : "8px" }}>
-            {tabBtn(
-              buyMode === "quantity",
-              () => setBuyMode("quantity"),
-              t("buyByQuantity"),
-              lockedToAmount || orderingDisabled,
-              lockedToAmount
-                ? t("purchaseModeLockedInCartAmount")
-                : orderingDisabled
-                  ? t("cannotOrderNow", { ns: "storeClosed" })
-                  : undefined
-            )}
-            {tabBtn(
-              buyMode === "amount",
-              () => setBuyMode("amount"),
-              t("buyByAmount"),
-              lockedToQuantity || orderingDisabled,
-              lockedToQuantity
-                ? t("purchaseModeLockedInCartQuantity")
-                : orderingDisabled
-                  ? t("cannotOrderNow", { ns: "storeClosed" })
-                  : undefined
-            )}
-          </div>
-        )}
-
-        {allowByAmount && buyMode === "quantity" && inStock && !!id && (
-          <div style={{ marginTop: compact ? "4px" : "8px" }}>
-            <label
-              style={{
-                fontSize: compact ? "9px" : "11px",
-                color: colors.textMuted,
-                display: "block",
-                marginBottom: compact ? "2px" : "4px"
-              }}
-            >
-              {t("quantityLabel")}
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              step={1}
-              value={qtyInput}
-              disabled={orderingDisabled}
-              onChange={(e) => setQtyInput(e.target.value)}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: compact ? "6px 8px" : "8px 10px",
-                borderRadius: compact ? "6px" : "8px",
-                border: `1px solid ${colors.border}`,
-                fontSize: compact ? "12px" : "14px"
-              }}
-            />
-          </div>
-        )}
-
-        {allowByAmount && buyMode === "amount" && inStock && !!id && (
-          <div
-            style={{
-              marginTop: compact ? "4px" : "8px",
-              display: "flex",
-              flexDirection: "column",
-              gap: compact ? "4px" : "8px"
-            }}
-          >
-            <div style={{ display: "flex", gap: compact ? "4px" : "6px", flexWrap: "wrap" }}>
-              {[10, 20, 50].map((chip) => (
-                <button
-                  key={chip}
-                  type="button"
-                  disabled={orderingDisabled}
-                  onClick={() => !orderingDisabled && setAmountInput(String(chip))}
-                  style={{
-                    padding: compact ? "4px 8px" : "6px 12px",
-                    borderRadius: "9999px",
-                    border: `1px solid ${colors.border}`,
-                    background: colors.surface,
-                    fontSize: compact ? "10px" : "12px",
-                    fontWeight: 600,
-                    cursor: orderingDisabled ? "not-allowed" : "pointer",
-                    opacity: orderingDisabled ? 0.55 : 1
-                  }}
-                >
-                  ₪{chip}
-                </button>
-              ))}
-            </div>
-            <input
-              type="number"
-              min={0.01}
-              step={0.01}
-              placeholder={t("amountPlaceholder")}
-              value={amountInput}
-              disabled={orderingDisabled}
-              onChange={(e) => setAmountInput(e.target.value)}
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: compact ? "6px 8px" : "8px 10px",
-                borderRadius: compact ? "6px" : "8px",
-                border: `1px solid ${colors.border}`,
-                fontSize: compact ? "12px" : "14px"
-              }}
-            />
-            {estimatedQtyStr && unitLabel && (
-              <div
-                style={{
-                  fontSize: compact ? "10px" : "12px",
-                  color: colors.textSecondary,
-                  lineHeight: 1.3
-                }}
-              >
-                {t("estimatedQtyApprox", { qty: estimatedQtyStr, unit: unitLabel })}
-              </div>
-            )}
-          </div>
-        )}
 
         <div
           style={{
@@ -772,67 +607,37 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
             </div>
           )}
 
-          <motion.button
-            ref={addButtonRef}
-            type="button"
-            onClick={handleAdd}
-            disabled={addDisabled}
-            title={orderingDisabled ? t("cannotOrderNow", { ns: "storeClosed" }) : undefined}
-            aria-label={
-              inStock
-                ? allowByAmount && buyMode === "amount"
-                  ? t("addByAmount")
-                  : t("addToCart")
-                : t("outOfStock")
-            }
-            aria-disabled={addDisabled}
-            aria-busy={adding}
-            whileHover={!addDisabled && !compact ? { scale: 1.05, background: colors.primaryHover } : {}}
-            whileTap={!addDisabled ? { scale: 0.93 } : {}}
-            transition={{ duration: 0.12 }}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: compact ? "4px" : "5px",
-              padding: compact ? "7px 10px" : "8px 15px",
-              width: compact ? "100%" : "auto",
-              minHeight: compact ? "32px" : "auto",
-              borderRadius: compact ? "8px" : "9999px",
-              border: "none",
-              background: !addDisabled ? colors.primary : colors.border,
-              color: !addDisabled ? colors.textInverse : colors.textMuted,
-              fontSize: compact ? "11px" : "13px",
-              fontWeight: 600,
-              cursor: !addDisabled ? "pointer" : "not-allowed",
-              boxShadow: !addDisabled ? shadow.primary : "none",
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-              marginInlineStart: compact ? 0 : "auto",
-              opacity: inStock && !!id ? 1 : 0.92,
-              transition: "background 0.2s ease, color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease"
-            }}
-          >
-            {adding ? (
-              <motion.span
-                aria-hidden
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 0.65, ease: "linear" }}
-                style={{ display: "inline-flex", lineHeight: 0 }}
-              >
-                <Loader2 size={compact ? 12 : 15} strokeWidth={2.5} />
-              </motion.span>
-            ) : inStock && !!id ? (
-              <span style={{ fontSize: compact ? "14px" : "14px", lineHeight: 1 }}>+</span>
-            ) : null}
-            {inStock
-              ? allowByAmount && buyMode === "amount"
-                ? t("addByAmount")
-                : t("addToCart")
-              : t("outOfStock")}
-          </motion.button>
+          {!inStock && (
+            <span
+              style={{
+                fontSize: compact ? "11px" : "13px",
+                fontWeight: 600,
+                color: colors.textMuted,
+                textAlign: compact ? "center" : "end",
+                width: compact ? "100%" : "auto",
+                marginInlineStart: compact ? 0 : "auto"
+              }}
+            >
+              {t("outOfStock")}
+            </span>
+          )}
           </div>
         </div>
+
+        {inStock && !!id && (
+          <ProductCardPurchasePanel
+            product={product}
+            lang={lang}
+            displayPrice={displayPrice}
+            compact={compact}
+            orderingDisabled={orderingDisabled}
+            lockedToAmount={lockedToAmount}
+            lockedToQuantity={lockedToQuantity}
+            adding={adding}
+            addButtonRef={addButtonRef}
+            onAdd={handleConfirmAdd}
+          />
+        )}
       </div>
     </motion.article>
   );

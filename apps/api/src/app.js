@@ -11,8 +11,37 @@ const errorMiddleware = require("./middlewares/error.middleware");
 
 const app = express();
 
+const normalizeOrigin = (value) => String(value || "").replace(/\/+$/, "");
+const allowedOrigins = new Set(env.corsAllowedOrigins.map(normalizeOrigin));
+
 const corsOptions = {
-  origin: env.corsAllowedOrigins,
+  origin(origin, callback) {
+    // Allow requests without an Origin header (e.g. server-to-server, curl, health checks).
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (allowedOrigins.has(normalizedOrigin)) {
+      callback(null, true);
+      return;
+    }
+
+    if (env.nodeEnv !== "production") {
+      try {
+        const { hostname } = new URL(normalizedOrigin);
+        if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
+          callback(null, true);
+          return;
+        }
+      } catch (_error) {
+        // Invalid Origin header; reject below.
+      }
+    }
+
+    callback(new Error(`CORS origin denied: ${origin}`));
+  },
   credentials: true
 };
 

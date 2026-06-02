@@ -299,6 +299,90 @@ describe("Cart", () => {
     expect(patch.body.code).toBe("CART_UPDATE_QUANTITY_BLOCKED_AMOUNT_LINE");
   });
 
+  it("adds fractional kg (0.5) for legacy gram-unit products (quantity sent in kg)", async () => {
+    const user = await createCustomerUser();
+    const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+    const product = await createProduct({
+      unit: "gram",
+      price: 0.02,
+      allowPurchaseByAmount: false
+    });
+
+    const res = await request(getApp())
+      .post(apiUrl("/cart/items"))
+      .set("Authorization", `Bearer ${token}`)
+      .send({ productId: String(product._id), quantity: 0.5 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.cart.items[0].quantity).toBe(0.5);
+    expect(res.body.data.cart.items[0].lineProductSubtotal).toBe(10);
+  });
+
+  it("adds fractional kg (0.5) for weight products without purchase-by-amount", async () => {
+    const user = await createCustomerUser();
+    const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+    const product = await createProduct({
+      unit: "kg",
+      price: 20,
+      allowPurchaseByAmount: false
+    });
+
+    const res = await request(getApp())
+      .post(apiUrl("/cart/items"))
+      .set("Authorization", `Bearer ${token}`)
+      .send({ productId: String(product._id), quantity: 0.5 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.cart.items[0].quantity).toBe(0.5);
+    expect(res.body.data.cart.items[0].lineProductSubtotal).toBe(10);
+  });
+
+  it("accepts quarter-kg quantities (0.25 and 1) for kg products", async () => {
+    const user = await createCustomerUser();
+    const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+    const product = await createProduct({
+      unit: "kg",
+      price: 20,
+      allowPurchaseByAmount: false
+    });
+
+    const first = await request(getApp())
+      .post(apiUrl("/cart/items"))
+      .set("Authorization", `Bearer ${token}`)
+      .send({ productId: String(product._id), quantity: 0.25 });
+
+    expect(first.status).toBe(200);
+    expect(first.body.data.cart.items[0].quantity).toBe(0.25);
+
+    const second = await request(getApp())
+      .patch(apiUrl(`/cart/items/${product._id}`))
+      .set("Authorization", `Bearer ${token}`)
+      .send({ quantity: 1 });
+
+    expect(second.status).toBe(200);
+    expect(second.body.data.cart.items[0].quantity).toBe(1);
+  });
+
+  it("keeps amount-mode working for legacy gram unit products", async () => {
+    const user = await createCustomerUser();
+    const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+    const product = await createProduct({
+      unit: "gram",
+      price: 0.02,
+      allowPurchaseByAmount: true
+    });
+
+    const res = await request(getApp())
+      .post(apiUrl("/cart/items"))
+      .set("Authorization", `Bearer ${token}`)
+      .send({ productId: String(product._id), purchaseAmountIls: 10 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.cart.items[0].purchaseMode).toBe("amount");
+    expect(res.body.data.cart.items[0].quantity).toBe(0.5);
+    expect(res.body.data.cart.items[0].lineProductSubtotal).toBe(10);
+  });
+
   it("returns 400 when PATCH purchaseAmountIls on a quantity-mode line", async () => {
     const user = await createCustomerUser();
     const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);

@@ -12,6 +12,8 @@
     "orders": "Orders",
     "sales": "Sales",
     "popups": "Popups",
+    "marketingCampaigns": "Marketing Campaigns",
+    "marketingCustomers": "Marketing Customers",
     "storeStatus": "Store Status"
   },
   "languageSwitcher": {

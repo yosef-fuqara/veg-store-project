@@ -9,6 +9,7 @@ import heCart from "./locales/he/cart.json";
 import heAuth from "./locales/he/auth.json";
 import heCheckout from "./locales/he/checkout.json";
 import heOrder from "./locales/he/order.json";
+import heAccount from "./locales/he/account.json";
 import hePromotion from "./locales/he/promotion.json";
 import heStoreClosed from "./locales/he/storeClosed.json";
 import arCommon from "./locales/ar/common.json";
@@ -18,6 +19,7 @@ import arCart from "./locales/ar/cart.json";
 import arAuth from "./locales/ar/auth.json";
 import arCheckout from "./locales/ar/checkout.json";
 import arOrder from "./locales/ar/order.json";
+import arAccount from "./locales/ar/account.json";
 import arPromotion from "./locales/ar/promotion.json";
 import arStoreClosed from "./locales/ar/storeClosed.json";
 import enCommon from "./locales/en/common.json";
@@ -27,6 +29,7 @@ import enCart from "./locales/en/cart.json";
 import enAuth from "./locales/en/auth.json";
 import enCheckout from "./locales/en/checkout.json";
 import enOrder from "./locales/en/order.json";
+import enAccount from "./locales/en/account.json";
 import enPromotion from "./locales/en/promotion.json";
 import enStoreClosed from "./locales/en/storeClosed.json";
 
@@ -41,6 +44,7 @@ const resources = {
     auth: heAuth,
     checkout: heCheckout,
     order: heOrder,
+    account: heAccount,
     promotion: hePromotion,
     storeClosed: heStoreClosed
   },
@@ -52,6 +56,7 @@ const resources = {
     auth: arAuth,
     checkout: arCheckout,
     order: arOrder,
+    account: arAccount,
     promotion: arPromotion,
     storeClosed: arStoreClosed
   },
@@ -63,6 +68,7 @@ const resources = {
     auth: enAuth,
     checkout: enCheckout,
     order: enOrder,
+    account: enAccount,
     promotion: enPromotion,
     storeClosed: enStoreClosed
   }
@@ -76,7 +82,7 @@ i18n
     supportedLngs: ["he", "ar", "en"],
     fallbackLng: "en",
     lng: "he",
-    ns: ["common", "nav", "home", "cart", "auth", "checkout", "order", "promotion", "storeClosed"],
+    ns: ["common", "nav", "home", "cart", "auth", "checkout", "order", "account", "promotion", "storeClosed"],
     defaultNS: "common",
     interpolation: {
       escapeValue: false

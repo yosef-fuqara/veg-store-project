@@ -727,7 +727,7 @@ const HeroSection = ({ t, isMobile }) => {
             }}
             style={{
               margin: 0,
-              fontFamily: "'Rubik', 'Segoe UI', system-ui, sans-serif",
+              fontFamily: "var(--font-sans)",
               fontSize: isMobile
                 ? 'clamp(30px, 8vw, 44px)'
                 : 'clamp(40px, 4.2vw, 64px)',

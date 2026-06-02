@@ -1,5 +1,5 @@
 const express = require("express");
-const { getAdminPing } = require("../controllers/admin.controller");
+const { getAdminPing, listMarketingCustomers } = require("../controllers/admin.controller");
 const {
   getAdminStoreSettings,
   patchAdminStoreSettings
@@ -9,6 +9,15 @@ const { requireRole } = require("../middlewares/role.middleware");
 const { USER_ROLES } = require("../constants/roles");
 const validate = require("../middlewares/validate.middleware");
 const { patchAdminStoreSettingsSchema } = require("../validators/store-settings.validator");
+const {
+  previewMarketingCampaignSchema,
+  sendMarketingCampaignSchema
+} = require("../validators/admin-marketing.validator");
+const {
+  getMarketingRecipientsCount,
+  previewMarketingCampaign,
+  sendMarketingCampaign
+} = require("../controllers/admin-marketing.controller");
 
 const router = express.Router();
 
@@ -26,6 +35,32 @@ router.patch(
   requireRole(USER_ROLES.ADMIN),
   validate(patchAdminStoreSettingsSchema),
   patchAdminStoreSettings
+);
+router.get(
+  "/marketing-customers",
+  requireAuth,
+  requireRole(USER_ROLES.ADMIN),
+  listMarketingCustomers
+);
+router.get(
+  "/marketing/recipients/count",
+  requireAuth,
+  requireRole(USER_ROLES.ADMIN),
+  getMarketingRecipientsCount
+);
+router.post(
+  "/marketing/campaigns/preview",
+  requireAuth,
+  requireRole(USER_ROLES.ADMIN),
+  validate(previewMarketingCampaignSchema),
+  previewMarketingCampaign
+);
+router.post(
+  "/marketing/campaigns/send",
+  requireAuth,
+  requireRole(USER_ROLES.ADMIN),
+  validate(sendMarketingCampaignSchema),
+  sendMarketingCampaign
 );
 
 module.exports = router;

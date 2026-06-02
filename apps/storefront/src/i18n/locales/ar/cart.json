@@ -38,7 +38,8 @@
     "summaryLabel": "تكلفة التغليف",
     "unavailable": "التغليف متاح فقط للمنتجات التي تُباع بالكيلوغرام."
   },
-  "purchaseByAmountBadge": "بمبلغ {{amount}}",
+  "purchaseByWeightBadge": "حسب الوزن · {{qty}} {{unit}}",
+  "purchaseByAmountBadge": "حسب المبلغ · {{amount}}",
   "purchaseByAmountNote": "اخترت قيمة {{amount}}؛ تُحدَّد الكمية حسب سعر المتجر.",
   "purchaseByAmountLineDetail": "{{unitPrice}} لل{{unitLabel}} · وزن تقديري {{weight}} {{unitLabel}}"
 }

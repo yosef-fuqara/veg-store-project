@@ -14,6 +14,15 @@ import { useTranslation } from "react-i18next";
 const CartVisualFeedbackContext = createContext(null);
 
 const FLY_SIZE = 46;
+/** Total fly duration — visible arc from product to cart (ms). */
+const FLY_DURATION_MS = 900;
+const FLY_DURATION_S = FLY_DURATION_MS / 1000;
+/** Start enlarged, shrink continuously, land small at the cart icon. */
+const FLY_SCALE_START = 1.32;
+const FLY_SCALE_END = 0.25;
+/** Position: smooth deceleration into the cart. Scale: steady shrink over the full flight. */
+const FLY_MOTION_EASE = [0.22, 1, 0.36, 1];
+const FLY_SCALE_EASE = [0.33, 0, 0.2, 1];
 const PRIMARY = "#1e6b3c";
 const PRIMARY_SURFACE = "#eef7f1";
 
@@ -33,9 +42,19 @@ function CartFlyParticle({ spec, onDone }) {
   return createPortal(
     <motion.div
       layout={false}
-      initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
-      animate={{ x: dx, y: dy, scale: 0.35, opacity: 0.15 }}
-      transition={{ duration: 0.62, ease: [0.25, 0.1, 0.25, 1] }}
+      initial={{ x: 0, y: 0, scale: FLY_SCALE_START, opacity: 1 }}
+      animate={{
+        x: dx,
+        y: dy,
+        scale: FLY_SCALE_END,
+        opacity: [1, 1, 0.88]
+      }}
+      transition={{
+        duration: FLY_DURATION_S,
+        ease: FLY_MOTION_EASE,
+        scale: { duration: FLY_DURATION_S, ease: FLY_SCALE_EASE },
+        opacity: { duration: FLY_DURATION_S, times: [0, 0.72, 1], ease: "linear" }
+      }}
       onAnimationComplete={onDone}
       style={{
         position: "fixed",
@@ -46,7 +65,9 @@ function CartFlyParticle({ spec, onDone }) {
         borderRadius: "14px",
         zIndex: 10001,
         pointerEvents: "none",
-        boxShadow: "0 6px 20px rgba(30,107,60,0.35), 0 0 0 1px rgba(30,107,60,0.2)",
+        transformOrigin: "center center",
+        willChange: "transform, opacity",
+        boxShadow: "0 8px 28px rgba(30,107,60,0.38), 0 0 0 1px rgba(30,107,60,0.22)",
         overflow: "hidden",
         background: imageUrl ? "#fff" : `linear-gradient(145deg, ${PRIMARY_SURFACE} 0%, ${PRIMARY} 100%)`,
         display: "flex",
@@ -138,6 +159,7 @@ export function CartVisualFeedbackProvider({ children }) {
   const [cartBumpKey, setCartBumpKey] = useState(0);
   const [toastVisible, setToastVisible] = useState(false);
   const toastHideTimerRef = useRef(null);
+  const flyBumpPendingRef = useRef(false);
 
   useEffect(
     () => () => {
@@ -154,12 +176,15 @@ export function CartVisualFeedbackProvider({ children }) {
       desktopCartAnchorRef.current
     );
 
+    let willFly = false;
     if (fromRect && anchor) {
       const ar = anchor.getBoundingClientRect();
       const x0 = fromRect.left + fromRect.width / 2 - FLY_SIZE / 2;
       const y0 = fromRect.top + fromRect.height / 2 - FLY_SIZE / 2;
       const x1 = ar.left + ar.width / 2 - FLY_SIZE / 2;
       const y1 = ar.top + ar.height / 2 - FLY_SIZE / 2;
+      willFly = true;
+      flyBumpPendingRef.current = true;
       setFlySpec({
         id: Date.now(),
         x0,
@@ -170,10 +195,20 @@ export function CartVisualFeedbackProvider({ children }) {
       });
     }
 
-    setCartBumpKey((k) => k + 1);
+    if (!willFly) {
+      setCartBumpKey((k) => k + 1);
+    }
     setToastVisible(true);
     if (toastHideTimerRef.current) clearTimeout(toastHideTimerRef.current);
     toastHideTimerRef.current = setTimeout(() => setToastVisible(false), 2600);
+  }, []);
+
+  const handleFlyComplete = useCallback(() => {
+    setFlySpec(null);
+    if (flyBumpPendingRef.current) {
+      flyBumpPendingRef.current = false;
+      setCartBumpKey((k) => k + 1);
+    }
   }, []);
 
   const value = useMemo(
@@ -194,7 +229,7 @@ export function CartVisualFeedbackProvider({ children }) {
         <CartFlyParticle
           key={flySpec.id}
           spec={flySpec}
-          onDone={() => setFlySpec(null)}
+          onDone={handleFlyComplete}
         />
       ) : null}
       <AddedToCartToast visible={toastVisible} />

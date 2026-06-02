@@ -10,17 +10,7 @@ const {
   buildPasswordResetUrl
 } = require("../services/password-reset-email.service");
 
-const sanitizeUser = (user) => ({
-  id: user._id,
-  name: user.name,
-  phone: user.phone,
-  email: user.email,
-  role: user.role,
-  addresses: user.addresses,
-  isActive: user.isActive,
-  createdAt: user.createdAt,
-  updatedAt: user.updatedAt
-});
+const { sanitizeUser } = require("../utils/sanitize-user");
 
 const register = async (req, res, next) => {
   try {
@@ -30,10 +20,15 @@ const register = async (req, res, next) => {
     }
 
     const password = await bcrypt.hash(req.body.password, 12);
+    const marketingConsentWhatsApp = req.body.marketingConsentWhatsApp === true;
     const user = await User.create({
-      ...req.body,
+      name: req.body.name,
+      phone: req.body.phone,
       email: req.body.email.toLowerCase(),
-      password
+      password,
+      marketingConsentWhatsApp,
+      marketingConsentWhatsAppAt: marketingConsentWhatsApp ? new Date() : null,
+      marketingConsentSource: marketingConsentWhatsApp ? "account_creation" : null
     });
 
     const accessToken = signAccessToken(user);

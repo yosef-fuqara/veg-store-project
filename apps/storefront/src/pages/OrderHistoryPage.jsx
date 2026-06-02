@@ -104,7 +104,7 @@ const addressText = (address) => {
   ].filter(Boolean).join(", ") || "—";
 };
 
-const OrderHistoryPage = () => {
+const OrderHistoryPage = ({ embedded = false }) => {
   const { t, i18n } = useTranslation(["order", "cart", "home"]);
   const { t: tCheckout } = useTranslation("checkout");
   const lang = (i18n.language || "he").split("-")[0];
@@ -130,19 +130,27 @@ const OrderHistoryPage = () => {
     load();
   }, [load]);
 
+  const sectionStyle = embedded
+    ? { display: "flex", flexDirection: "column", gap: "20px" }
+    : pageStyle;
+  const titleStyle = embedded
+    ? { margin: "0 0 6px", fontSize: "22px", lineHeight: "28px", fontWeight: 700, color: colors.textPrimary }
+    : { margin: "0 0 8px", fontSize: "30px", lineHeight: "36px", fontWeight: 700, color: colors.textPrimary };
+  const TitleTag = embedded ? "h2" : "h1";
+
   return (
-    <section style={pageStyle}>
+    <section style={sectionStyle}>
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-        style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
+        style={{ display: 'flex', flexDirection: 'column', gap: embedded ? '20px' : '24px' }}
       >
         <div>
-          <h1 style={{ margin: '0 0 8px', fontSize: '30px', lineHeight: '36px', fontWeight: 700, color: colors.textPrimary }}>
+          <TitleTag style={titleStyle}>
             {t("history.title")}
-          </h1>
-          <p style={{ margin: 0, fontSize: '16px', lineHeight: '24px', color: colors.textSecondary }}>
+          </TitleTag>
+          <p style={{ margin: 0, fontSize: embedded ? '15px' : '16px', lineHeight: '24px', color: colors.textSecondary }}>
             {t("history.subtitle")}
           </p>
         </div>

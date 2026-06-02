@@ -38,7 +38,8 @@
     "summaryLabel": "תוספת עטיפה",
     "unavailable": "העטיפה זמינה רק למוצרים הנמכרים לפי ק״ג."
   },
-  "purchaseByAmountBadge": "לפי {{amount}}",
+  "purchaseByWeightBadge": "לפי משקל · {{qty}} {{unit}}",
+  "purchaseByAmountBadge": "לפי סכום · {{amount}}",
   "purchaseByAmountNote": "נבחר סכום {{amount}}; הכמות נקבעת לפי המחיר בחנות.",
   "purchaseByAmountLineDetail": "{{unitPrice}} ל-{{unitLabel}} · משקל משוער {{weight}} {{unitLabel}}"
 }

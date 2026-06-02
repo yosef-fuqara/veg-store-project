@@ -49,8 +49,13 @@ const roundHalfUp = (value, decimalPlaces) => {
 
 const roundQuantityFromAmount = (rawQuantity) => roundHalfUp(rawQuantity, 4);
 
-const lineProductSubtotal = (quantity, unitPrice) =>
-  roundHalfUp(Number(quantity) * Number(unitPrice), 2);
+/** Weight quantity is stored in kg; legacy gram-unit products still price per gram. */
+const lineProductSubtotal = (quantity, unitPrice, unit) => {
+  const q = Number(quantity);
+  const p = Number(unitPrice);
+  const factor = unit === PRODUCT_UNITS.GRAM ? 1000 : 1;
+  return roundHalfUp(q * factor * p, 2);
+};
 
 /** Final amount to charge in whole ₪ (truncate downward). Used only for order/cart payable totals, not per line. */
 const floorPayableIls = (value) => {
@@ -62,16 +67,71 @@ const floorPayableIls = (value) => {
 const allowsFractionalQuantityByUnit = (unit) =>
   unit === PRODUCT_UNITS.KG || unit === PRODUCT_UNITS.GRAM;
 
-const assertQuantityAllowedForProduct = (product, quantity) => {
+const QUARTER_KG = 0.25;
+const QUARTER_GRAM = 250;
+const INTEGRAL_WEIGHT_EPS = 1e-6;
+
+const isMultipleOf = (value, step) => {
+  const ratio = Number(value) / step;
+  return Math.abs(ratio - Math.round(ratio)) <= INTEGRAL_WEIGHT_EPS;
+};
+
+const isValidQuarterKg = (value) =>
+  Number.isFinite(value) &&
+  value >= QUARTER_KG &&
+  value <= MAX_CART_LINE_QUANTITY &&
+  isMultipleOf(value, QUARTER_KG);
+
+/**
+ * Cart stores weight in kg. For legacy gram-unit rows, accept either:
+ * - kg quarter steps (new format)
+ * - gram quarter steps (legacy format, e.g. 250, 500, 750)
+ */
+const coerceCartWeightQuantityKg = (product, quantity) => {
   const q = Number(quantity);
+  if (!Number.isFinite(q)) return q;
+
+  if (product.unit !== PRODUCT_UNITS.GRAM) return q;
+
+  if (q >= QUARTER_GRAM && isMultipleOf(q, QUARTER_GRAM)) {
+    return roundHalfUp(q / 1000, 4);
+  }
+  if (isValidQuarterKg(q)) {
+    return q;
+  }
+
+  return q;
+};
+
+const assertWeightQuantityAllowed = (product, quantityKg) => {
+  const q = coerceCartWeightQuantityKg(product, quantityKg);
+  if (!Number.isFinite(q) || q < QUARTER_KG || q > MAX_CART_LINE_QUANTITY) {
+    throw new AppError("Invalid weight for this product", StatusCodes.BAD_REQUEST);
+  }
+  if (!isMultipleOf(q, QUARTER_KG)) {
+    throw new AppError("Weight must be in steps of 0.25 kg", StatusCodes.BAD_REQUEST);
+  }
+};
+
+const assertQuantityAllowedForProduct = (product, quantity, purchaseMode = PURCHASE_MODE_QUANTITY) => {
+  let q = Number(quantity);
+  if (
+    allowsFractionalQuantityByUnit(product.unit) &&
+    purchaseMode === PURCHASE_MODE_QUANTITY
+  ) {
+    q = coerceCartWeightQuantityKg(product, q);
+  }
   if (!Number.isFinite(q) || q < MIN_CART_LINE_QUANTITY || q > MAX_CART_LINE_QUANTITY) {
     throw new AppError("Invalid quantity for this product", StatusCodes.BAD_REQUEST);
   }
 
-  const fractionalUnit = allowsFractionalQuantityByUnit(product.unit);
-  const byAmount = Boolean(product.allowPurchaseByAmount);
-
-  if (fractionalUnit && byAmount) {
+  if (allowsFractionalQuantityByUnit(product.unit)) {
+    // Quarter-kg increments are enforced only for classic "quantity" purchases.
+    // For "amount" (₪) purchases we derive quantity from money and accept any
+    // fractional result (existing behavior relies on this).
+    if (purchaseMode === PURCHASE_MODE_QUANTITY) {
+      assertWeightQuantityAllowed(product, q);
+    }
     return;
   }
 
@@ -106,7 +166,9 @@ const deriveQuantityFromPurchaseAmount = (purchaseAmountIls, effectiveUnitPrice,
     throw new AppError("Product price is invalid", StatusCodes.BAD_REQUEST);
   }
 
-  const quantity = roundQuantityFromAmount(amount / unitPrice);
+  const rawQuantity = roundQuantityFromAmount(amount / unitPrice);
+  const quantity =
+    product.unit === PRODUCT_UNITS.GRAM ? roundHalfUp(rawQuantity / 1000, 4) : rawQuantity;
 
   if (quantity < MIN_CART_LINE_QUANTITY || quantity > MAX_CART_LINE_QUANTITY) {
     throw new AppError("Calculated quantity is out of allowed range", StatusCodes.BAD_REQUEST);
@@ -154,7 +216,14 @@ const normalizeCartLineMeta = (item, product, unitPriceSnapshot) => {
     if (requested == null || !Number.isFinite(requested) || requested <= 0) {
       throw new AppError("Cart line is invalid. Please remove the item and add it again.", StatusCodes.BAD_REQUEST);
     }
-    const { quantity } = deriveQuantityFromPurchaseAmount(requested, unitPriceSnapshot, product);
+    const { quantity: derivedQty } = deriveQuantityFromPurchaseAmount(
+      requested,
+      unitPriceSnapshot,
+      product
+    );
+    const quantity = allowsFractionalQuantityByUnit(product.unit)
+      ? coerceCartWeightQuantityKg(product, derivedQty)
+      : derivedQty;
     return {
       quantity,
       purchaseMode: PURCHASE_MODE_AMOUNT,
@@ -162,8 +231,13 @@ const normalizeCartLineMeta = (item, product, unitPriceSnapshot) => {
     };
   }
 
+  let quantity = Number(item.quantity);
+  if (allowsFractionalQuantityByUnit(product.unit)) {
+    quantity = coerceCartWeightQuantityKg(product, quantity);
+  }
+
   return {
-    quantity: Number(item.quantity),
+    quantity,
     purchaseMode: PURCHASE_MODE_QUANTITY,
     requestedAmountIls: undefined
   };
@@ -200,14 +274,14 @@ const computeCartTotals = async (items) => {
       unitPriceSnapshot
     );
 
-    assertQuantityAllowedForProduct(product, quantity);
+    assertQuantityAllowedForProduct(product, quantity, purchaseMode);
 
     const wrapFee = computeLineWrapFee({
       quantity,
       wrap,
       unit: product.unit
     });
-    const lineSubtotal = lineProductSubtotal(quantity, unitPriceSnapshot);
+    const lineSubtotal = lineProductSubtotal(quantity, unitPriceSnapshot, product.unit);
     return {
       product: product._id,
       quantity,
@@ -278,6 +352,7 @@ module.exports = {
   computeLineWrapFee,
   deriveQuantityFromPurchaseAmount,
   assertQuantityAllowedForProduct,
+  coerceCartWeightQuantityKg,
   lineProductSubtotal,
   roundQuantityFromAmount
 };

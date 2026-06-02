@@ -1,0 +1,99 @@
+{
+  "title": "החשבון שלי",
+  "subtitle": "ניהול הזמנות, כתובות, מועדפים והגדרות אישיות.",
+  "navLabel": "אזורי חשבון",
+  "nav": {
+    "dashboard": "לוח בקרה",
+    "orders": "ההזמנות שלי",
+    "addresses": "כתובות שמורות",
+    "favorites": "מועדפים",
+    "whatsapp": "העדפות WhatsApp",
+    "profile": "פרטי פרופיל",
+    "settings": "הגדרות חשבון"
+  },
+  "dashboard": {
+    "welcome": "שלום, {{name}}",
+    "recentOrders": "הזמנות אחרונות",
+    "noOrders": "עדיין לא ביצעת הזמנות.",
+    "viewAllOrders": "לכל ההזמנות",
+    "quickLinks": "קיצורי דרך",
+    "linkOrders": "היסטוריית הזמנות",
+    "linkFavorites": "המועדפים שלך",
+    "linkAddresses": "כתובות שמורות",
+    "reorder": "הזמן שוב",
+    "reorderSuccess": "נוספו {{count}} פריטים לעגלה",
+    "reorderPartial": "נוספו {{added}} פריטים; {{skipped}} לא נוספו",
+    "reorderFailed": "לא ניתן להוסיף לעגלה",
+    "viewOrder": "פרטי הזמנה",
+    "orderDate": "הוזמן {{date}}"
+  },
+  "addresses": {
+    "title": "כתובות שמורות",
+    "subtitle": "שמרו כתובות משלוח לקיצור תהליך התשלום.",
+    "add": "הוסף כתובת",
+    "edit": "עריכה",
+    "delete": "מחיקה",
+    "default": "ברירת מחדל",
+    "setDefault": "הגדר כברירת מחדל",
+    "label": "תווית (אופציונלי)",
+    "city": "אזור משלוח *",
+    "cityPlaceholder": "בחרו אזור",
+    "street": "רחוב *",
+    "building": "מספר בניין",
+    "apartment": "דירה",
+    "notes": "הערות",
+    "save": "שמור כתובת",
+    "cancel": "ביטול",
+    "empty": "אין כתובות שמורות עדיין.",
+    "confirmDelete": "למחוק כתובת זו?",
+    "saved": "הכתובת נשמרה",
+    "deleted": "הכתובת נמחקה",
+    "loadAreasError": "לא ניתן לטעון אזורי משלוח."
+  },
+  "favorites": {
+    "title": "מועדפים",
+    "subtitle": "מוצרים ששמרתם לגישה מהירה.",
+    "empty": "עדיין לא שמרתם מועדפים.",
+    "browse": "לקטלוג המוצרים",
+    "remove": "הסר",
+    "addToCart": "הוסף לעגלה",
+    "added": "נוסף לעגלה"
+  },
+  "whatsapp": {
+    "title": "העדפות WhatsApp",
+    "subtitle": "שליטה בהודעות שיווק בלבד. עדכוני הזמנה נשלחים תמיד לפי הצורך.",
+    "toggleLabel": "קבלת מבצעים שיווקיים ב-WhatsApp",
+    "toggleHint": "ניתן לכבות בכל עת. לא משפיע על אישורי הזמנה או עדכוני משלוח.",
+    "consentDate": "הסכמה עודכנה: {{date}}",
+    "saved": "ההעדפות נשמרו"
+  },
+  "profile": {
+    "title": "פרטי פרופיל",
+    "name": "שם מלא",
+    "phone": "טלפון",
+    "email": "אימייל",
+    "language": "שפה מועדפת",
+    "languageHint": "משמשת בהתחברות ממכשיר חדש.",
+    "save": "שמור פרופיל",
+    "saved": "הפרופיל עודכן",
+    "saveError": "לא ניתן לעדכן את הפרופיל."
+  },
+  "settings": {
+    "title": "הגדרות חשבון",
+    "passwordSection": "שינוי סיסמה",
+    "currentPassword": "סיסמה נוכחית",
+    "newPassword": "סיסמה חדשה",
+    "confirmPassword": "אימות סיסמה חדשה",
+    "passwordMismatch": "הסיסמאות אינן תואמות",
+    "changePassword": "עדכן סיסמה",
+    "passwordChanged": "הסיסמה עודכנה",
+    "passwordError": "לא ניתן לעדכן את הסיסמה.",
+    "logoutSection": "התחברות",
+    "logout": "התנתק",
+    "logoutHint": "יציאה מהחשבון במכשיר זה."
+  },
+  "favoriteButton": {
+    "add": "הוסף למועדפים",
+    "remove": "הסר ממועדפים"
+  }
+}

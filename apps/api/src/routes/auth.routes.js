@@ -2,11 +2,32 @@ const express = require("express");
 const rateLimit = require("express-rate-limit");
 const { register, login, getMe, forgotPassword, resetPassword } = require("../controllers/auth.controller");
 const {
+  updateProfile,
+  updateMarketingConsent,
+  changePassword,
+  createAddress,
+  updateAddress,
+  deleteAddress,
+  setDefaultAddress,
+  getFavorites,
+  addFavorite,
+  removeFavorite
+} = require("../controllers/account.controller");
+const {
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
   resetPasswordSchema
 } = require("../validators/auth.validator");
+const {
+  updateProfileSchema,
+  updateMarketingConsentSchema,
+  changePasswordSchema,
+  addressBodySchema,
+  addressPatchSchema,
+  addressIdParamSchema,
+  favoriteProductIdParamSchema
+} = require("../validators/account.validator");
 const validate = require("../middlewares/validate.middleware");
 const { requireAuth } = require("../middlewares/auth.middleware");
 const env = require("../config/env");
@@ -41,5 +62,46 @@ router.post("/login", loginLimiter, validate(loginSchema), login);
 router.post("/forgot-password", forgotPasswordLimiter, validate(forgotPasswordSchema), forgotPassword);
 router.post("/reset-password", validate(resetPasswordSchema), resetPassword);
 router.get("/me", requireAuth, getMe);
+router.patch("/me", requireAuth, validate(updateProfileSchema), updateProfile);
+router.patch(
+  "/me/marketing-consent",
+  requireAuth,
+  validate(updateMarketingConsentSchema),
+  updateMarketingConsent
+);
+router.patch("/me/password", requireAuth, validate(changePasswordSchema), changePassword);
+router.post("/me/addresses", requireAuth, validate(addressBodySchema), createAddress);
+router.patch(
+  "/me/addresses/:addressId",
+  requireAuth,
+  validate(addressIdParamSchema, "params"),
+  validate(addressPatchSchema),
+  updateAddress
+);
+router.delete(
+  "/me/addresses/:addressId",
+  requireAuth,
+  validate(addressIdParamSchema, "params"),
+  deleteAddress
+);
+router.patch(
+  "/me/addresses/:addressId/default",
+  requireAuth,
+  validate(addressIdParamSchema, "params"),
+  setDefaultAddress
+);
+router.get("/me/favorites", requireAuth, getFavorites);
+router.post(
+  "/me/favorites/:productId",
+  requireAuth,
+  validate(favoriteProductIdParamSchema, "params"),
+  addFavorite
+);
+router.delete(
+  "/me/favorites/:productId",
+  requireAuth,
+  validate(favoriteProductIdParamSchema, "params"),
+  removeFavorite
+);
 
 module.exports = router;

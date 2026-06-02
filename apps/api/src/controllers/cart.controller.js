@@ -9,10 +9,23 @@ const {
   getEffectiveUnitPrice,
   deriveQuantityFromPurchaseAmount,
   assertQuantityAllowedForProduct,
+  coerceCartWeightQuantityKg,
   PURCHASE_MODE_QUANTITY,
   PURCHASE_MODE_AMOUNT,
   floorPayableIls
 } = require("../services/cart.service");
+const { PRODUCT_UNITS } = require("../constants/product");
+
+const coerceIncomingWeightQuantity = (product, quantity) => {
+  if (
+    typeof quantity !== "number" ||
+    !Number.isFinite(quantity) ||
+    (product.unit !== PRODUCT_UNITS.KG && product.unit !== PRODUCT_UNITS.GRAM)
+  ) {
+    return quantity;
+  }
+  return coerceCartWeightQuantityKg(product, quantity);
+};
 const { isWrapAllowedForUnit, WRAP_PRICE_PER_KG } = require("../constants/product");
 
 const PRODUCT_CART_FIELDS = "price salePrice stockStatus unit allowPurchaseByAmount";
@@ -98,8 +111,9 @@ const mergeIntoAmountLine = (line, addPurchaseAmountIls, unitPrice, product) => 
     unitPrice,
     product
   );
-  assertQuantityAllowedForProduct(product, derivedQty);
-  line.quantity = derivedQty;
+  const quantityKg = coerceIncomingWeightQuantity(product, derivedQty);
+  assertQuantityAllowedForProduct(product, quantityKg, PURCHASE_MODE_AMOUNT);
+  line.quantity = quantityKg;
   line.unitPriceSnapshot = unitPrice;
   line.purchaseMode = PURCHASE_MODE_AMOUNT;
   line.requestedAmountIls = nextRequested;
@@ -138,7 +152,8 @@ const addCartItem = async (req, res, next) => {
         unitPrice,
         product
       );
-      assertQuantityAllowedForProduct(product, derivedQty);
+      const quantityKg = coerceIncomingWeightQuantity(product, derivedQty);
+      assertQuantityAllowedForProduct(product, quantityKg, PURCHASE_MODE_AMOUNT);
 
       if (existingItem) {
         if (!lineIsPurchaseByAmount(existingItem)) {
@@ -156,7 +171,7 @@ const addCartItem = async (req, res, next) => {
       } else {
         cart.items.push({
           product: product._id,
-          quantity: derivedQty,
+          quantity: quantityKg,
           unitPriceSnapshot: unitPrice,
           purchaseMode: PURCHASE_MODE_AMOUNT,
           requestedAmountIls: purchaseAmountIls,
@@ -164,7 +179,8 @@ const addCartItem = async (req, res, next) => {
         });
       }
     } else {
-      assertQuantityAllowedForProduct(product, quantity);
+      const quantityKg = coerceIncomingWeightQuantity(product, quantity);
+      assertQuantityAllowedForProduct(product, quantityKg, PURCHASE_MODE_QUANTITY);
 
       if (existingItem) {
         if (lineIsPurchaseByAmount(existingItem)) {
@@ -175,14 +191,14 @@ const addCartItem = async (req, res, next) => {
             "CART_ADD_QUANTITY_BLOCKED_AMOUNT_LINE"
           );
         }
-        mergeIntoQuantityLine(existingItem, quantity, unitPrice);
+        mergeIntoQuantityLine(existingItem, quantityKg, unitPrice);
         if (wrapRequested !== undefined) {
           existingItem.wrap = wrapAllowed && wrapRequested;
         }
       } else {
         cart.items.push({
           product: product._id,
-          quantity,
+          quantity: quantityKg,
           unitPriceSnapshot: unitPrice,
           purchaseMode: PURCHASE_MODE_QUANTITY,
           requestedAmountIls: undefined,
@@ -253,15 +269,17 @@ const updateCartItemQuantity = async (req, res, next) => {
         unitPrice,
         product
       );
-      assertQuantityAllowedForProduct(product, derivedQty);
-      item.quantity = derivedQty;
+      const quantityKg = coerceIncomingWeightQuantity(product, derivedQty);
+      assertQuantityAllowedForProduct(product, quantityKg, PURCHASE_MODE_AMOUNT);
+      item.quantity = quantityKg;
       item.purchaseMode = PURCHASE_MODE_AMOUNT;
       item.requestedAmountIls = req.body.purchaseAmountIls;
     }
 
     if (typeof req.body.quantity === "number") {
-      assertQuantityAllowedForProduct(product, req.body.quantity);
-      item.quantity = req.body.quantity;
+      const quantityKg = coerceIncomingWeightQuantity(product, req.body.quantity);
+      assertQuantityAllowedForProduct(product, quantityKg, PURCHASE_MODE_QUANTITY);
+      item.quantity = quantityKg;
       item.purchaseMode = PURCHASE_MODE_QUANTITY;
       item.requestedAmountIls = undefined;
     }

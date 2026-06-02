@@ -80,6 +80,9 @@ const formatDate = (value) => {
   return new Date(value).toLocaleString('en-IL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
+const formatConsentStatus = (user) =>
+  user?.marketingConsentWhatsApp ? "Consented (WhatsApp)" : "Not consented";
+
 const ORDER_ITEM_THUMB_PX = 52;
 
 /** @param {unknown} item */
@@ -395,6 +398,15 @@ const AdminOrderDetailsPage = () => {
           <InfoRow label={t("orders:details.customer.name")}>{order.user?.name || '—'}</InfoRow>
           <InfoRow label={t("orders:details.customer.email")}>{order.user?.email || '—'}</InfoRow>
           <InfoRow label={t("orders:details.customer.phone")}>{order.user?.phone || order.customerPhone || '—'}</InfoRow>
+          <InfoRow label={t("orders:details.customer.marketingConsentStatus")}>
+            {formatConsentStatus(order.user)}
+          </InfoRow>
+          <InfoRow label={t("orders:details.customer.marketingConsentDate")}>
+            {formatDate(order.user?.marketingConsentWhatsAppAt)}
+          </InfoRow>
+          <InfoRow label={t("orders:details.customer.marketingConsentSource")}>
+            {order.user?.marketingConsentSource || '—'}
+          </InfoRow>
           <InfoRow label={t("orders:details.customer.orderPlaced")}>{formatDate(order.createdAt)}</InfoRow>
           <InfoRow label={t("orders:details.customer.lastUpdated")}>{formatDate(order.updatedAt)}</InfoRow>
           {order.notes && <InfoRow label={t("orders:details.customer.customerNotes")}>{order.notes}</InfoRow>}
