@@ -620,4 +620,102 @@ describe("Orders", () => {
 
     expect(res.status).toBe(403);
   });
+
+  describe("self pickup fulfillment", () => {
+    it("creates pickup order with zero delivery fee and pay at pickup", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 45 });
+      await seedCart(token, String(product._id));
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          fulfillmentType: "pickup",
+          customerPhone: "0501234567",
+          paymentMethod: "pay_at_pickup"
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.fulfillmentType).toBe("pickup");
+      expect(res.body.data.order.deliveryFee).toBe(0);
+      expect(res.body.data.order.total).toBe(45);
+      expect(res.body.data.order.paymentMethod).toBe("pay_at_pickup");
+      expect(res.body.data.order.paymentStatus).toBe("pending_payment");
+    });
+
+    it("creates pickup order with credit card and no address required", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 30 });
+      await seedCart(token, String(product._id));
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          fulfillmentType: "pickup",
+          customerPhone: "0501234567",
+          paymentMethod: "credit_card"
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.fulfillmentType).toBe("pickup");
+      expect(res.body.data.order.deliveryFee).toBe(0);
+      expect(res.body.data.order.total).toBe(30);
+      expect(res.body.data.order.paymentMethod).toBe("credit_card");
+    });
+
+    it("rejects bank transfer on pickup orders", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 20 });
+      await seedCart(token, String(product._id));
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          fulfillmentType: "pickup",
+          customerPhone: "0501234567",
+          paymentMethod: "bank_transfer"
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it("still requires address fields for delivery orders", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 20 });
+      await seedCart(token, String(product._id));
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          fulfillmentType: "delivery",
+          customerPhone: "0501234567",
+          paymentMethod: "credit_card"
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    it("defaults fulfillmentType to delivery for legacy payloads", async () => {
+      const user = await createCustomerUser();
+      const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+      const product = await createProduct({ price: 20 });
+      await seedCart(token, String(product._id));
+
+      const res = await request(getApp())
+        .post(apiUrl("/orders"))
+        .set("Authorization", `Bearer ${token}`)
+        .send(baseOrderPayload);
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.fulfillmentType).toBe("delivery");
+    });
+  });
 });

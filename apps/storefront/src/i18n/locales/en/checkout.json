@@ -7,6 +7,12 @@
   "continueShopping": "Continue shopping",
   "deliveryAddress": "Delivery address",
   "deliveryDetails": "Delivery details",
+  "fulfillmentTypeLabel": "How you'll receive your order *",
+  "fulfillmentDelivery": "Delivery",
+  "fulfillmentPickup": "Self pickup",
+  "pickupAddressHint": "Pick up at the store — no delivery address needed.",
+  "fulfillmentSummary": "Fulfillment",
+  "selfPickupSummary": "Self pickup",
   "saveDetailsForNextOrder": "Save details for next order",
   "saveDetailsDeviceHint": "Stored only in this browser on this device.",
   "savedDetailsAutofilled": "Saved details were filled automatically",
@@ -72,7 +78,8 @@
   "paymentMethods": {
     "credit_card": "Credit card",
     "bit": "Bit",
-    "bank_transfer": "Bank transfer"
+    "bank_transfer": "Bank transfer",
+    "pay_at_pickup": "Pay at pickup"
   },
   "bankTransferProofLabel": "Transfer screenshot / receipt (optional)",
   "bankTransferProofHint": "JPEG, PNG, or WebP — up to 3MB. Helps the store verify your payment.",

@@ -25,6 +25,7 @@
     },
     "view": "View",
     "preorder": "Preorder",
+    "pickup": "Self pickup",
     "footer_one": "1 order",
     "footer_other": "{{count}} orders"
   },
@@ -104,6 +105,7 @@
       "total": "Total"
     },
     "delivery": {
+      "fulfillment": "Fulfillment",
       "area": "Area",
       "city": "City",
       "street": "Street",
@@ -141,6 +143,16 @@
     "sent_with_delivery_company": "Sent with courier",
     "delivered": "Delivered",
     "cancelled": "Cancelled"
+  },
+  "fulfillmentTypes": {
+    "delivery": "Delivery",
+    "pickup": "Self pickup"
+  },
+  "paymentMethods": {
+    "credit_card": "Credit card",
+    "bit": "Bit",
+    "bank_transfer": "Bank transfer",
+    "pay_at_pickup": "Pay at pickup"
   },
   "paymentStatuses": {
     "pending_payment": "pending payment",

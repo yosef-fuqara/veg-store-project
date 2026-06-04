@@ -10,7 +10,11 @@ const {
   getInitialPaymentStatus,
   assertOrderStatusTransition,
   assertDeliveryAreaAllowed,
-  assertPreorderTiming
+  assertPreorderTiming,
+  resolveFulfillmentType,
+  isPickupFulfillment,
+  buildPickupDeliveryAddress,
+  assertPaymentMethodForFulfillment
 } = require("../services/order.service");
 const { adminUpdateBankTransferPayment } = require("../services/payment.service");
 const { notifyOrderCreated, notifyOrderStatusChanged } = require("../services/order-notification.service");
@@ -137,12 +141,32 @@ const createOrderFromPreview = async ({
     orderLegalSnapshot = buildOrderLegalSnapshot(req, { acceptedFrom: "checkout" });
   }
 
-  const { deliveryArea } = body;
-  assertDeliveryAreaAllowed(deliveryArea);
+  const fulfillmentType = resolveFulfillmentType(body.fulfillmentType);
+  const consentLang = normalizeConsentLanguage(body.consentLanguage) || "he";
+  assertPaymentMethodForFulfillment(fulfillmentType, body.paymentMethod);
 
   const subtotal = preview.subtotal;
   const wrapTotal = Number(preview.wrapTotal) || 0;
-  const deliveryFee = calculateDeliveryFee(deliveryArea, subtotal);
+
+  let deliveryArea;
+  let deliveryFee;
+  let deliveryAddress;
+
+  if (isPickupFulfillment(fulfillmentType)) {
+    deliveryArea = LOCAL_DELIVERY_AREA;
+    deliveryFee = 0;
+    deliveryAddress = buildPickupDeliveryAddress(consentLang);
+  } else {
+    deliveryArea = body.deliveryArea;
+    assertDeliveryAreaAllowed(deliveryArea);
+    deliveryFee = calculateDeliveryFee(deliveryArea, subtotal);
+    deliveryAddress = buildDeliveryAddressFromBody(
+      deliveryArea,
+      body.deliveryAddress || {},
+      consentLang
+    );
+  }
+
   const total = floorPayableIls(subtotal + wrapTotal + deliveryFee);
 
   const { hasPreorderItems, preferredDeliveryAt } = assertPreorderTiming(
@@ -152,11 +176,6 @@ const createOrderFromPreview = async ({
 
   const items = buildOrderItemsFromPreview(preview.items);
   const paymentStatus = getInitialPaymentStatus(body.paymentMethod);
-  const deliveryAddress = buildDeliveryAddressFromBody(
-    deliveryArea,
-    body.deliveryAddress || {},
-    normalizeConsentLanguage(body.consentLanguage) || "he"
-  );
 
   let bankTransferProofUrl = "";
   let bankTransferProofPublicId = "";
@@ -188,6 +207,7 @@ const createOrderFromPreview = async ({
       wrapTotal,
       deliveryFee,
       total,
+      fulfillmentType,
       deliveryAddress,
       deliveryArea,
       customerPhone: body.customerPhone,

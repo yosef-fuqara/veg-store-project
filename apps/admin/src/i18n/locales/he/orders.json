@@ -25,6 +25,7 @@
     },
     "view": "צפייה",
     "preorder": "הזמנה מראש",
+    "pickup": "איסוף עצמי",
     "footer_one": "הזמנה אחת",
     "footer_two": "{{count}} הזמנות",
     "footer_many": "{{count}} הזמנות",
@@ -106,6 +107,7 @@
       "total": "סה״כ"
     },
     "delivery": {
+      "fulfillment": "אופן קבלה",
       "area": "אזור",
       "city": "עיר",
       "street": "רחוב",
@@ -143,6 +145,16 @@
     "sent_with_delivery_company": "נשלחה עם השליח",
     "delivered": "נמסרה",
     "cancelled": "בוטלה"
+  },
+  "fulfillmentTypes": {
+    "delivery": "משלוח",
+    "pickup": "איסוף עצמי"
+  },
+  "paymentMethods": {
+    "credit_card": "כרטיס אשראי",
+    "bit": "ביט",
+    "bank_transfer": "העברה בנקאית",
+    "pay_at_pickup": "תשלום במקום"
   },
   "paymentStatuses": {
     "pending_payment": "ממתין לתשלום",

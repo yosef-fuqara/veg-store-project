@@ -8,8 +8,15 @@ export const createOrder = async (payload, options = {}) => {
   const file = options.bankTransferProofFile;
   if (file) {
     const formData = new FormData();
-    formData.append("deliveryAddress", JSON.stringify(payload.deliveryAddress));
-    formData.append("deliveryArea", payload.deliveryArea);
+    if (payload.fulfillmentType) {
+      formData.append("fulfillmentType", payload.fulfillmentType);
+    }
+    if (payload.deliveryAddress) {
+      formData.append("deliveryAddress", JSON.stringify(payload.deliveryAddress));
+    }
+    if (payload.deliveryArea) {
+      formData.append("deliveryArea", payload.deliveryArea);
+    }
     formData.append("customerPhone", payload.customerPhone ?? "");
     formData.append("notes", payload.notes ?? "");
     formData.append("paymentMethod", payload.paymentMethod);
@@ -78,8 +85,15 @@ export const createGuestOrder = async (payload, options = {}) => {
     formData.append("items", JSON.stringify(payload.items));
     formData.append("customerName", payload.customerName ?? "");
     if (payload.customerEmail) formData.append("customerEmail", payload.customerEmail);
-    formData.append("deliveryAddress", JSON.stringify(payload.deliveryAddress));
-    formData.append("deliveryArea", payload.deliveryArea);
+    if (payload.fulfillmentType) {
+      formData.append("fulfillmentType", payload.fulfillmentType);
+    }
+    if (payload.deliveryAddress) {
+      formData.append("deliveryAddress", JSON.stringify(payload.deliveryAddress));
+    }
+    if (payload.deliveryArea) {
+      formData.append("deliveryArea", payload.deliveryArea);
+    }
     formData.append("customerPhone", payload.customerPhone ?? "");
     formData.append("notes", payload.notes ?? "");
     formData.append("paymentMethod", payload.paymentMethod);

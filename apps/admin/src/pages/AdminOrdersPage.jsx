@@ -588,6 +588,11 @@ const AdminOrdersPage = () => {
                                   {t('orders:list.preorder')}
                                 </span>
                               )}
+                              {order.fulfillmentType === 'pickup' && (
+                                <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '9999px', background: '#ecfeff', color: '#0e7490', border: '1px solid #a5f3fc', fontSize: '10px', fontWeight: 600 }}>
+                                  {t('orders:list.pickup')}
+                                </span>
+                              )}
                             </div>
                           </td>
                         );

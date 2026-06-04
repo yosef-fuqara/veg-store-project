@@ -18,7 +18,13 @@ const PAYMENT_STATUS = {
 const PAYMENT_METHOD = {
   CREDIT_CARD: "credit_card",
   BIT: "bit",
-  BANK_TRANSFER: "bank_transfer"
+  BANK_TRANSFER: "bank_transfer",
+  PAY_AT_PICKUP: "pay_at_pickup"
 };
 
-module.exports = { ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHOD };
+const FULFILLMENT_TYPE = {
+  DELIVERY: "delivery",
+  PICKUP: "pickup"
+};
+
+module.exports = { ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHOD, FULFILLMENT_TYPE };

@@ -16,6 +16,11 @@
   "bankTransferProofAlt": "צילום מסך של התשלום שהועלה",
   "phone": "טלפון",
   "delivery": "משלוח",
+  "fulfillment": "אופן קבלה",
+  "fulfillmentTypes": {
+    "delivery": "משלוח",
+    "pickup": "איסוף עצמי"
+  },
   "area": "אזור משלוח",
   "preferredAt": "מועד מועדף להכנה/משלוח",
   "preorderBadge": "הזמנה מראש",
@@ -57,7 +62,8 @@
   "paymentMethods": {
     "credit_card": "כרטיס אשראי",
     "bit": "ביט",
-    "bank_transfer": "העברה בנקאית"
+    "bank_transfer": "העברה בנקאית",
+    "pay_at_pickup": "תשלום במקום"
   },
   "paymentStatusMessage": {
     "pending_payment": "ממתין לאישור תשלום.",

@@ -276,8 +276,16 @@ const OrderConfirmationPage = () => {
             {t("delivery")}
           </h2>
           <div style={{ marginTop: '4px' }}>
-            <Row label={t("area")} value={formatOrderDeliveryAreaLabel(order, tCheckout, lang)} />
-            <Row label="" value={deliveryAddress} />
+            <Row
+              label={t("fulfillment")}
+              value={t(`fulfillmentTypes.${order.fulfillmentType === "pickup" ? "pickup" : "delivery"}`)}
+            />
+            {order.fulfillmentType !== "pickup" ? (
+              <>
+                <Row label={t("area")} value={formatOrderDeliveryAreaLabel(order, tCheckout, lang)} />
+                <Row label="" value={deliveryAddress} />
+              </>
+            ) : null}
           </div>
 
           {order.hasPreorderItems && (
@@ -370,10 +378,19 @@ const OrderConfirmationPage = () => {
                 <span>{formatPrice(order.wrapTotal, lang)}</span>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.textSecondary }}>
-              <span>{t("deliveryFee")}</span>
-              <span>{formatPrice(order.deliveryFee, lang)}</span>
-            </div>
+            {order.fulfillmentType === "pickup" ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.textSecondary }}>
+                <span>{t("fulfillment")}</span>
+                <span style={{ fontWeight: 600, color: colors.textPrimary }}>
+                  {t("fulfillmentTypes.pickup")}
+                </span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.textSecondary }}>
+                <span>{t("deliveryFee")}</span>
+                <span>{formatPrice(order.deliveryFee, lang)}</span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700, color: colors.textPrimary, paddingTop: '10px', borderTop: `1px solid ${colors.border}`, marginTop: '4px' }}>
               <span>{t("total")}</span>
               <span>{formatChargedTotal(order.total, lang)}</span>

@@ -10,7 +10,9 @@ import {
   LOCAL_DELIVERY_FEE,
   OUTSIDE_FREE_DELIVERY_MIN,
   OUTSIDE_DELIVERY_FEE,
+  FULFILLMENT_TYPE,
   PAYMENT_METHODS,
+  PAYMENT_METHODS_PICKUP,
   estimateDeliveryFee
 } from "../config/delivery";
 import { useCart } from "../features/cart/CartContext";
@@ -43,7 +45,7 @@ import {
 } from "../utils/vegstorePersistence";
 import { isOutsideConfiguredBusinessHoursNow } from "../utils/businessHoursNotice";
 import { normalizeIsraeliMobile } from "../utils/israeliMobilePhone";
-import { Landmark } from "lucide-react";
+import { Landmark, Store } from "lucide-react";
 import bitMarkSvg from "../assets/payment/bit-mark.svg";
 import cardsMarkSvg from "../assets/payment/cards-mark.svg";
 
@@ -196,6 +198,13 @@ const CheckoutPaymentMethodGraphic = ({ method }) => {
       </span>
     );
   }
+  if (method === "pay_at_pickup") {
+    return (
+      <span style={paymentLeadingGraphicStyle} aria-hidden>
+        <Store size={26} strokeWidth={1.85} color={colors.textSecondary} />
+      </span>
+    );
+  }
   return <span style={{ ...paymentLeadingGraphicStyle, width: "32px" }} aria-hidden />;
 };
 
@@ -214,6 +223,7 @@ const initialForm = {
     notes: ""
   },
   deliveryArea: "",
+  fulfillmentType: FULFILLMENT_TYPE.DELIVERY,
   customerPhone: "",
   notes: "",
   paymentMethod: PAYMENT_METHODS[0].value,
@@ -282,6 +292,10 @@ const mergeCheckoutDraft = (draft) => {
       typeof draft.deliveryArea === "string" ? draft.deliveryArea : ""
     ),
     deliveryArea: typeof draft.deliveryArea === "string" ? draft.deliveryArea : initialForm.deliveryArea,
+    fulfillmentType:
+      draft.fulfillmentType === FULFILLMENT_TYPE.PICKUP
+        ? FULFILLMENT_TYPE.PICKUP
+        : initialForm.fulfillmentType,
     customerName:
       typeof draft.customerName === "string" ? draft.customerName : initialForm.customerName,
     customerEmail:
@@ -363,6 +377,7 @@ function CheckoutOrderSummary({
   wrapTotal,
   deliveryFeeEstimate,
   payableTotal,
+  isPickup,
 }) {
   return (
     <aside
@@ -539,11 +554,20 @@ function CheckoutOrderSummary({
             <span style={{ fontWeight: 500 }}>{formatPrice(wrapTotal, lang)}</span>
           </div>
         ) : null}
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: colors.textSecondary, gap: "12px" }}>
-          <span>{t("deliveryFee")}</span>
-          <span style={{ fontWeight: 500, color: colors.textPrimary }}>{formatPrice(deliveryFeeEstimate, lang)}</span>
-        </div>
-        <span style={{ fontSize: "11px", color: colors.textMuted, lineHeight: 1.4 }}>{t("feeEstimateNote")}</span>
+        {isPickup ? (
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: colors.textSecondary, gap: "12px" }}>
+            <span>{t("fulfillmentSummary")}</span>
+            <span style={{ fontWeight: 600, color: colors.textPrimary }}>{t("selfPickupSummary")}</span>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: colors.textSecondary, gap: "12px" }}>
+              <span>{t("deliveryFee")}</span>
+              <span style={{ fontWeight: 500, color: colors.textPrimary }}>{formatPrice(deliveryFeeEstimate, lang)}</span>
+            </div>
+            <span style={{ fontSize: "11px", color: colors.textMuted, lineHeight: 1.4 }}>{t("feeEstimateNote")}</span>
+          </>
+        )}
         <div
           style={{
             display: "flex",
@@ -668,9 +692,25 @@ const CheckoutPage = () => {
     }
   }, [form.paymentMethod]);
 
+  const isPickup = form.fulfillmentType === FULFILLMENT_TYPE.PICKUP;
+
+  const availablePaymentMethods = useMemo(
+    () => (isPickup ? PAYMENT_METHODS_PICKUP : PAYMENT_METHODS),
+    [isPickup]
+  );
+
+  useEffect(() => {
+    if (availablePaymentMethods.some((m) => m.value === form.paymentMethod)) return;
+    setForm((prev) => ({
+      ...prev,
+      paymentMethod: availablePaymentMethods[0]?.value || PAYMENT_METHODS[0].value
+    }));
+  }, [availablePaymentMethods, form.paymentMethod]);
+
   const checkoutDraftSlice = useMemo(
     () => ({
       v: 1,
+      fulfillmentType: form.fulfillmentType,
       deliveryAddress: form.deliveryAddress,
       deliveryArea: form.deliveryArea,
       customerName: form.customerName,
@@ -681,6 +721,7 @@ const CheckoutPage = () => {
       customRequest: form.customRequest
     }),
     [
+      form.fulfillmentType,
       form.deliveryAddress,
       form.deliveryArea,
       form.customerName,
@@ -702,9 +743,13 @@ const CheckoutPage = () => {
     if (previewLoading || previewError) return;
     if (!preview?.items?.length) return;
     if (!scrollToDelivery) return;
-    const el = document.getElementById("checkout-delivery");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (isNarrow) {
+      window.scrollTo(0, 0);
+    } else {
+      const el = document.getElementById("checkout-delivery");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     }
     navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: {} });
   }, [
@@ -712,6 +757,7 @@ const CheckoutPage = () => {
     previewError,
     preview?.items?.length,
     scrollToDelivery,
+    isNarrow,
     location.pathname,
     location.search,
     navigate,
@@ -749,8 +795,8 @@ const CheckoutPage = () => {
   }, [preview]);
 
   const deliveryFeeEstimate = useMemo(
-    () => estimateDeliveryFee(form.deliveryArea, subtotal, rules),
-    [form.deliveryArea, subtotal, rules]
+    () => (isPickup ? 0 : estimateDeliveryFee(form.deliveryArea, subtotal, rules)),
+    [isPickup, form.deliveryArea, subtotal, rules]
   );
   const rawTotal = subtotal + wrapTotal + deliveryFeeEstimate;
   const payableTotal = Math.floor(rawTotal + Number.EPSILON);
@@ -812,17 +858,19 @@ const CheckoutPage = () => {
         fields.customerEmail = t("guestEmailInvalid");
       }
     }
-    const allowedAreas = new Set(areas.map((a) => a.key));
-    const addressCheck = validateStructuredAddress(
-      form.deliveryAddress,
-      form.deliveryArea,
-      (key) => t(key, { ns: "address" }),
-      { restrictToDeliveryAreas: true, allowedCityKeys: allowedAreas }
-    );
-    Object.assign(fields, addressCheck.fields);
-    if (!form.deliveryArea?.trim()) {
-      fields["deliveryAddress.city"] =
-        fields["deliveryAddress.city"] || t("cityMustSelectFromList", { ns: "address" });
+    if (!isPickup) {
+      const allowedAreas = new Set(areas.map((a) => a.key));
+      const addressCheck = validateStructuredAddress(
+        form.deliveryAddress,
+        form.deliveryArea,
+        (key) => t(key, { ns: "address" }),
+        { restrictToDeliveryAreas: true, allowedCityKeys: allowedAreas }
+      );
+      Object.assign(fields, addressCheck.fields);
+      if (!form.deliveryArea?.trim()) {
+        fields["deliveryAddress.city"] =
+          fields["deliveryAddress.city"] || t("cityMustSelectFromList", { ns: "address" });
+      }
     }
     if (hasPreorderItems) {
       if (!form.preferredDeliveryAt) {
@@ -841,7 +889,10 @@ const CheckoutPage = () => {
     } else if (!normalizeIsraeliMobile(phoneRaw)) {
       fields.customerPhone = t("phoneInvalid");
     }
-    if (!form.paymentMethod || !PAYMENT_METHODS.some((m) => m.value === form.paymentMethod)) {
+    if (
+      !form.paymentMethod ||
+      !availablePaymentMethods.some((m) => m.value === form.paymentMethod)
+    ) {
       fields.paymentMethod = t("paymentMethodRequired");
     }
     if (showGuestLegalConsent && !acceptTerms) {
@@ -883,16 +934,7 @@ const CheckoutPage = () => {
     setSubmitting(true);
 
     const payload = {
-      deliveryAddress: {
-        street: form.deliveryAddress.street,
-        houseNumber: form.deliveryAddress.houseNumber,
-        building: form.deliveryAddress.building,
-        apartment: form.deliveryAddress.apartment,
-        floor: form.deliveryAddress.floor,
-        entrance: form.deliveryAddress.entrance,
-        notes: form.deliveryAddress.notes
-      },
-      deliveryArea: form.deliveryArea,
+      fulfillmentType: form.fulfillmentType,
       customerPhone: normalizeIsraeliMobile((form.customerPhone ?? "").trim()),
       notes: form.notes,
       paymentMethod: form.paymentMethod,
@@ -906,6 +948,19 @@ const CheckoutPage = () => {
       payload.preferredDeliveryAt = new Date(form.preferredDeliveryAt).toISOString();
     }
     if (form.customRequest) payload.customRequest = form.customRequest;
+
+    if (!isPickup) {
+      payload.deliveryAddress = {
+        street: form.deliveryAddress.street,
+        houseNumber: form.deliveryAddress.houseNumber,
+        building: form.deliveryAddress.building,
+        apartment: form.deliveryAddress.apartment,
+        floor: form.deliveryAddress.floor,
+        entrance: form.deliveryAddress.entrance,
+        notes: form.deliveryAddress.notes
+      };
+      payload.deliveryArea = form.deliveryArea;
+    }
 
     try {
       let order;
@@ -931,7 +986,7 @@ const CheckoutPage = () => {
               : null
         });
       }
-      if (saveForNextOrder) {
+      if (saveForNextOrder && !isPickup) {
         saveSavedDeliveryDetails(deliveryDetailsForPersistence(form));
         setHasSavedOnDevice(true);
       }
@@ -1106,6 +1161,7 @@ const CheckoutPage = () => {
           wrapTotal={wrapTotal}
           deliveryFeeEstimate={deliveryFeeEstimate}
           payableTotal={payableTotal}
+          isPickup={isPickup}
         />
 
         <form
@@ -1178,6 +1234,56 @@ const CheckoutPage = () => {
               {t("deliveryDetails")}
             </h3>
 
+            <fieldset style={{ border: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+              <legend style={{ fontSize: "14px", fontWeight: 600, color: colors.textSecondary, marginBottom: "2px", padding: 0 }}>
+                {t("fulfillmentTypeLabel")}
+              </legend>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isNarrow ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
+                  gap: "10px",
+                }}
+              >
+                {[
+                  { value: FULFILLMENT_TYPE.DELIVERY, label: t("fulfillmentDelivery") },
+                  { value: FULFILLMENT_TYPE.PICKUP, label: t("fulfillmentPickup") },
+                ].map((option) => {
+                  const selected = form.fulfillmentType === option.value;
+                  return (
+                    <label
+                      key={option.value}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        minHeight: "48px",
+                        padding: "10px 14px",
+                        borderRadius: "10px",
+                        cursor: "pointer",
+                        border: `1.5px solid ${selected ? colors.primary : colors.border}`,
+                        background: selected ? colors.primarySurface : colors.surface,
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: colors.textPrimary,
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="fulfillmentType"
+                        value={option.value}
+                        checked={selected}
+                        onChange={updateField("fulfillmentType")}
+                        style={{ flexShrink: 0, width: "18px", height: "18px", accentColor: colors.primary }}
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            {!isPickup ? (
             <StructuredAddressInput
               value={form.deliveryAddress}
               deliveryArea={form.deliveryArea}
@@ -1192,8 +1298,13 @@ const CheckoutPage = () => {
               showDeliveryHelper
               deliveryRules={rules}
             />
+            ) : (
+              <p style={{ margin: 0, fontSize: "14px", color: colors.textSecondary, lineHeight: 1.5 }}>
+                {t("pickupAddressHint")}
+              </p>
+            )}
 
-            {showAutofilledBanner && (
+            {showAutofilledBanner && !isPickup && (
               <p
                 role="status"
                 style={{
@@ -1219,6 +1330,7 @@ const CheckoutPage = () => {
                 paddingTop: "4px",
               }}
             >
+              {!isPickup ? (
               <label
                 style={{
                   display: "flex",
@@ -1254,7 +1366,8 @@ const CheckoutPage = () => {
                   </span>
                 </span>
               </label>
-              {hasSavedOnDevice && (
+              ) : null}
+              {hasSavedOnDevice && !isPickup && (
                 <button
                   type="button"
                   onClick={handleClearSavedDelivery}
@@ -1351,7 +1464,7 @@ const CheckoutPage = () => {
                   gap: '12px',
                 }}
               >
-                {PAYMENT_METHODS.map((method) => {
+                {availablePaymentMethods.map((method) => {
                   const selected = form.paymentMethod === method.value;
                   return (
                     <label

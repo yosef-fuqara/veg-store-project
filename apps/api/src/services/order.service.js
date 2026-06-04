@@ -1,9 +1,10 @@
 const { StatusCodes } = require("http-status-codes");
-const { ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHOD } = require("../constants/order");
+const { ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHOD, FULFILLMENT_TYPE } = require("../constants/order");
 const {
   calculateDeliveryFee,
   getDeliveryArea,
-  isAllowedDeliveryArea
+  isAllowedDeliveryArea,
+  LOCAL_DELIVERY_AREA
 } = require("../constants/delivery");
 const AppError = require("../utils/app-error");
 
@@ -39,6 +40,60 @@ const getInitialPaymentStatus = (method) => {
     return PAYMENT_STATUS.BANK_TRANSFER_PENDING;
   }
   return PAYMENT_STATUS.PENDING_PAYMENT;
+};
+
+const resolveFulfillmentType = (value) =>
+  value === FULFILLMENT_TYPE.PICKUP ? FULFILLMENT_TYPE.PICKUP : FULFILLMENT_TYPE.DELIVERY;
+
+const isPickupFulfillment = (fulfillmentType) => fulfillmentType === FULFILLMENT_TYPE.PICKUP;
+
+const PICKUP_ADDRESS_LABELS = {
+  he: "איסוף עצמי",
+  ar: "استلام ذاتي",
+  en: "Self pickup"
+};
+
+/** Snapshot address for self-pickup orders (no customer street required). */
+const buildPickupDeliveryAddress = (lang = "he") => {
+  const short = typeof lang === "string" ? lang.split("-")[0].toLowerCase() : "he";
+  const city = PICKUP_ADDRESS_LABELS[short] || PICKUP_ADDRESS_LABELS.he;
+  return {
+    label: "",
+    city,
+    cityKey: LOCAL_DELIVERY_AREA,
+    cityId: LOCAL_DELIVERY_AREA,
+    citySlug: LOCAL_DELIVERY_AREA,
+    street: "—",
+    houseNumber: "—",
+    building: "",
+    apartment: "",
+    floor: "",
+    entrance: "",
+    notes: "",
+    fullAddress: city
+  };
+};
+
+const assertPaymentMethodForFulfillment = (fulfillmentType, paymentMethod) => {
+  if (isPickupFulfillment(fulfillmentType)) {
+    if (
+      paymentMethod !== PAYMENT_METHOD.CREDIT_CARD &&
+      paymentMethod !== PAYMENT_METHOD.PAY_AT_PICKUP
+    ) {
+      throw new AppError(
+        "Invalid payment method for self pickup",
+        StatusCodes.BAD_REQUEST
+      );
+    }
+    return;
+  }
+  if (
+    paymentMethod !== PAYMENT_METHOD.CREDIT_CARD &&
+    paymentMethod !== PAYMENT_METHOD.BIT &&
+    paymentMethod !== PAYMENT_METHOD.BANK_TRANSFER
+  ) {
+    throw new AppError("Invalid payment method for delivery", StatusCodes.BAD_REQUEST);
+  }
 };
 
 const ORDER_STATUS_TRANSITIONS = {
@@ -119,5 +174,9 @@ module.exports = {
   getInitialPaymentStatus,
   assertOrderStatusTransition,
   assertDeliveryAreaAllowed,
-  assertPreorderTiming
+  assertPreorderTiming,
+  resolveFulfillmentType,
+  isPickupFulfillment,
+  buildPickupDeliveryAddress,
+  assertPaymentMethodForFulfillment
 };

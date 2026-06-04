@@ -7,6 +7,12 @@
   "continueShopping": "متابعة التسوق",
   "deliveryAddress": "عنوان التوصيل",
   "deliveryDetails": "تفاصيل التوصيل",
+  "fulfillmentTypeLabel": "طريقة الاستلام *",
+  "fulfillmentDelivery": "توصيل",
+  "fulfillmentPickup": "استلام ذاتي",
+  "pickupAddressHint": "الاستلام من المتجر — لا حاجة لعنوان توصيل.",
+  "fulfillmentSummary": "الاستلام",
+  "selfPickupSummary": "استلام ذاتي",
   "saveDetailsForNextOrder": "احفظ التفاصيل للطلب القادم",
   "saveDetailsDeviceHint": "يُحفظ فقط في هذا المتصفح على هذا الجهاز.",
   "savedDetailsAutofilled": "تم تعبئة التفاصيل المحفوظة تلقائيًا",
@@ -72,7 +78,8 @@
   "paymentMethods": {
     "credit_card": "بطاقة ائتمان",
     "bit": "Bit",
-    "bank_transfer": "تحويل بنكي"
+    "bank_transfer": "تحويل بنكي",
+    "pay_at_pickup": "الدفع عند الاستلام"
   },
   "bankTransferProofLabel": "لقطة شاشة / إيصال التحويل (اختياري)",
   "bankTransferProofHint": "JPEG أو PNG أو WebP — حتى 3 ميجابايت. يساعد المتجر على التحقق من الدفع.",

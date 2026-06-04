@@ -12,7 +12,12 @@ import {
 } from "../services/orderService";
 import { pickLocalizedProductName } from "../utils/localizedDisplayName";
 import { resolveAdminDeliveryAreaLabel } from "../utils/deliveryAreaLabel";
-import { formatAdminOrderStatusLabel, formatAdminPaymentStatusLabel } from "../utils/adminOrderStatusLabel";
+import {
+  formatAdminOrderStatusLabel,
+  formatAdminPaymentStatusLabel,
+  formatAdminFulfillmentTypeLabel,
+  formatAdminPaymentMethodLabel
+} from "../utils/adminOrderStatusLabel";
 import { useAdminLanguage } from "../i18n/useAdminLanguage";
 import i18n from "../i18n";
 
@@ -622,14 +627,19 @@ const AdminOrderDetailsPage = () => {
         {/* Delivery */}
         <Card>
           <CardTitle>{t("orders:details.cards.delivery")}</CardTitle>
+          <InfoRow label={t("orders:details.delivery.fulfillment")}>
+            {formatAdminFulfillmentTypeLabel(order.fulfillmentType)}
+          </InfoRow>
+          {order.fulfillmentType !== "pickup" ? (
           <InfoRow label={t("orders:details.delivery.area")}>{resolveAdminDeliveryAreaLabel(order, deliveryAreaCatalog?.areas)}</InfoRow>
-          {addr.city ? <InfoRow label={t("orders:details.delivery.city")}>{addr.city}</InfoRow> : null}
-          {addr.street ? <InfoRow label={t("orders:details.delivery.street")}>{addr.street}</InfoRow> : null}
-          {houseNo ? <InfoRow label={t("orders:details.delivery.houseNumber")}>{houseNo}</InfoRow> : null}
-          {addr.apartment ? <InfoRow label={t("orders:details.delivery.apartment")}>{addr.apartment}</InfoRow> : null}
-          {addr.floor ? <InfoRow label={t("orders:details.delivery.floor")}>{addr.floor}</InfoRow> : null}
-          {addr.entrance ? <InfoRow label={t("orders:details.delivery.entrance")}>{addr.entrance}</InfoRow> : null}
-          {deliveryAddressLine ? <InfoRow label={t("orders:details.delivery.address")}>{deliveryAddressLine}</InfoRow> : null}
+          ) : null}
+          {order.fulfillmentType !== "pickup" && addr.city ? <InfoRow label={t("orders:details.delivery.city")}>{addr.city}</InfoRow> : null}
+          {order.fulfillmentType !== "pickup" && addr.street ? <InfoRow label={t("orders:details.delivery.street")}>{addr.street}</InfoRow> : null}
+          {order.fulfillmentType !== "pickup" && houseNo ? <InfoRow label={t("orders:details.delivery.houseNumber")}>{houseNo}</InfoRow> : null}
+          {order.fulfillmentType !== "pickup" && addr.apartment ? <InfoRow label={t("orders:details.delivery.apartment")}>{addr.apartment}</InfoRow> : null}
+          {order.fulfillmentType !== "pickup" && addr.floor ? <InfoRow label={t("orders:details.delivery.floor")}>{addr.floor}</InfoRow> : null}
+          {order.fulfillmentType !== "pickup" && addr.entrance ? <InfoRow label={t("orders:details.delivery.entrance")}>{addr.entrance}</InfoRow> : null}
+          {order.fulfillmentType !== "pickup" && deliveryAddressLine ? <InfoRow label={t("orders:details.delivery.address")}>{deliveryAddressLine}</InfoRow> : null}
           {order.deliveryAddress?.label && <InfoRow label={t("orders:details.delivery.addressLabel")}>{order.deliveryAddress.label}</InfoRow>}
           {order.preferredDeliveryAt && (
             <InfoRow label={t("orders:details.delivery.preferredDelivery")}>{formatDate(order.preferredDeliveryAt)}</InfoRow>
@@ -678,7 +688,7 @@ const AdminOrderDetailsPage = () => {
               <div style={{ fontSize: '13px', fontWeight: 500, color: colors.textSecondary }}>{t("orders:details.payment.paymentStatus")}</div>
               <Pill value={order.paymentStatus} palette={PAYMENT_STATUS_STYLES} kind="payment" />
               <div style={{ fontSize: '12px', color: colors.textMuted }}>
-                {t("orders:details.payment.methodPrefix")} {order.paymentMethod || '—'}
+                {t("orders:details.payment.methodPrefix")} {formatAdminPaymentMethodLabel(order.paymentMethod)}
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px' }}>
                 <select

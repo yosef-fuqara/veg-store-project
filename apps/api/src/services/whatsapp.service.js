@@ -155,14 +155,35 @@ function formatOrderLineName(line, order) {
   return localized || line?.name || "-";
 }
 
+const PAYMENT_METHOD_NOTIFICATION_LABELS = {
+  credit_card: "כרטיס אשראי",
+  bit: "ביט",
+  bank_transfer: "העברה בנקאית",
+  pay_at_pickup: "תשלום במקום"
+};
+
+const fulfillmentNotificationLabel = (order) =>
+  order?.fulfillmentType === "pickup" ? "איסוף עצמי" : "משלוח";
+
+const paymentNotificationLabel = (order) => {
+  const key = order?.paymentMethod;
+  if (key && PAYMENT_METHOD_NOTIFICATION_LABELS[key]) {
+    return PAYMENT_METHOD_NOTIFICATION_LABELS[key];
+  }
+  return key || "-";
+};
+
 const buildOrderMessage = (order, user) => {
   const orderId = String(order?._id || "");
   const customerName = user?.name || order?.customerName || "-";
   const customerPhone = order?.customerPhone || user?.phone || "-";
-  const area = resolveDeliveryAreaLabel(order?.deliveryArea, order?.deliveryAddress?.city, "he");
-  const addressLine = formatDeliveryAddressLine(order?.deliveryAddress);
+  const isPickup = order?.fulfillmentType === "pickup";
+  const area = isPickup
+    ? fulfillmentNotificationLabel(order)
+    : resolveDeliveryAreaLabel(order?.deliveryArea, order?.deliveryAddress?.city, "he");
+  const addressLine = isPickup ? null : formatDeliveryAddressLine(order?.deliveryAddress);
   const total = typeof order?.total === "number" ? order.total : 0;
-  const paymentMethod = order?.paymentMethod || "-";
+  const paymentMethod = paymentNotificationLabel(order);
   const orderStatus = order?.orderStatus || "-";
   const adminBaseUrl = env.adminBaseUrl;
   const adminLink = adminBaseUrl ? `${adminBaseUrl.replace(/\/$/, "")}/orders/${orderId}` : "";
@@ -172,7 +193,8 @@ const buildOrderMessage = (order, user) => {
     `Order ID: ${orderId}`,
     `Customer: ${customerName}`,
     `Phone: ${customerPhone}`,
-    `Delivery area: ${area}`,
+    `Fulfillment: ${fulfillmentNotificationLabel(order)}`,
+    ...(isPickup ? [] : [`Delivery area: ${area}`]),
     ...(addressLine ? [`Address: ${addressLine}`] : []),
     `Total: ${total} ILS`,
     `Payment: ${paymentMethod}`,

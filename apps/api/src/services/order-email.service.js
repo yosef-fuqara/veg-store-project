@@ -129,8 +129,11 @@ async function sendAdminOnce(orderId, key, build) {
   await markSent(orderId, key);
 }
 
+const fulfillmentEmailLabel = (order) =>
+  order?.fulfillmentType === "pickup" ? "איסוף עצמי" : "משלוח";
+
 const orderSummaryLine = (order) =>
-  `Order #${order._id} — total ${order.total} ILS — ${order.paymentMethod || ""}`;
+  `Order #${order._id} — ${fulfillmentEmailLabel(order)} — total ${order.total} ILS — ${order.paymentMethod || ""}`;
 
 /** Bank transfer: right after order is created */
 function scheduleBankTransferOrderCreated(orderId) {

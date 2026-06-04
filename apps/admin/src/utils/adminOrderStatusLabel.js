@@ -24,3 +24,23 @@ export function formatAdminPaymentStatusLabel(status) {
   if (translated && translated !== key) return translated;
   return String(status).replaceAll("_", " ");
 }
+
+export function formatAdminFulfillmentTypeLabel(fulfillmentType) {
+  const t = i18n.getFixedT(null, "orders");
+  const key =
+    fulfillmentType === "pickup"
+      ? "fulfillmentTypes.pickup"
+      : "fulfillmentTypes.delivery";
+  const translated = t(key);
+  if (translated && translated !== key) return translated;
+  return fulfillmentType === "pickup" ? "איסוף עצמי" : "משלוח";
+}
+
+export function formatAdminPaymentMethodLabel(method) {
+  if (!method) return "—";
+  const t = i18n.getFixedT(null, "orders");
+  const key = `paymentMethods.${method}`;
+  const translated = t(key);
+  if (translated && translated !== key) return translated;
+  return String(method).replaceAll("_", " ");
+}

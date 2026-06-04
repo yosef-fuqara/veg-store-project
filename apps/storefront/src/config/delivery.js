@@ -105,8 +105,18 @@ export const estimateDeliveryFee = (areaKey, subtotal, rules) => {
   return subtotal >= r.outsideFreeDeliveryMin ? 0 : r.outsideDeliveryFee;
 };
 
+export const FULFILLMENT_TYPE = {
+  DELIVERY: "delivery",
+  PICKUP: "pickup"
+};
+
 export const PAYMENT_METHODS = [
   { value: "credit_card", label: "Credit card" },
   { value: "bit", label: "Bit" },
   { value: "bank_transfer", label: "Bank transfer" }
+];
+
+export const PAYMENT_METHODS_PICKUP = [
+  { value: "credit_card", label: "Credit card" },
+  { value: "pay_at_pickup", label: "Pay at pickup" }
 ];

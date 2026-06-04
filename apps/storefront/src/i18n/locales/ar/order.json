@@ -16,6 +16,11 @@
   "bankTransferProofAlt": "لقطة شاشة للدفع المرفوعة",
   "phone": "الهاتف",
   "delivery": "التوصيل",
+  "fulfillment": "طريقة الاستلام",
+  "fulfillmentTypes": {
+    "delivery": "توصيل",
+    "pickup": "استلام ذاتي"
+  },
   "area": "منطقة التوصيل",
   "preferredAt": "موعد التحضير/التوصيل المفضل",
   "preorderBadge": "طلب مسبق",
@@ -57,7 +62,8 @@
   "paymentMethods": {
     "credit_card": "بطاقة ائتمان",
     "bit": "بيت",
-    "bank_transfer": "تحويل بنكي"
+    "bank_transfer": "تحويل بنكي",
+    "pay_at_pickup": "الدفع عند الاستلام"
   },
   "paymentStatusMessage": {
     "pending_payment": "بانتظار تأكيد الدفع.",

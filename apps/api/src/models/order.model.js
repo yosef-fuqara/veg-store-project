@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHOD } = require("../constants/order");
+const { ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHOD, FULFILLMENT_TYPE } = require("../constants/order");
 
 const deliveryAddressSchema = new mongoose.Schema(
   {
@@ -92,6 +92,11 @@ const orderSchema = new mongoose.Schema(
     wrapTotal: { type: Number, default: 0, min: 0 },
     deliveryFee: { type: Number, required: true, min: 0 },
     total: { type: Number, required: true, min: 0 },
+    fulfillmentType: {
+      type: String,
+      enum: Object.values(FULFILLMENT_TYPE),
+      default: FULFILLMENT_TYPE.DELIVERY
+    },
     deliveryAddress: { type: deliveryAddressSchema, required: true },
     // Not enum-restricted: legacy documents may carry retired area keys; new orders
     // are validated in Joi + order service.

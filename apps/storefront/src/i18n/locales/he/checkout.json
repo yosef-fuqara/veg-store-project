@@ -7,6 +7,12 @@
   "continueShopping": "המשך קניה",
   "deliveryAddress": "כתובת משלוח",
   "deliveryDetails": "פרטי משלוח",
+  "fulfillmentTypeLabel": "אופן קבלה *",
+  "fulfillmentDelivery": "משלוח",
+  "fulfillmentPickup": "איסוף עצמי",
+  "pickupAddressHint": "איסוף מהחנות — אין צורך להזין כתובת משלוח.",
+  "fulfillmentSummary": "קבלה",
+  "selfPickupSummary": "איסוף עצמי",
   "saveDetailsForNextOrder": "שמור את הפרטים להזמנה הבאה",
   "saveDetailsDeviceHint": "נשמר רק בדפדפן זה במכשיר זה.",
   "savedDetailsAutofilled": "הפרטים השמורים מולאו אוטומטית",
@@ -72,7 +78,8 @@
   "paymentMethods": {
     "credit_card": "כרטיס אשראי",
     "bit": "ביט",
-    "bank_transfer": "העברה בנקאית"
+    "bank_transfer": "העברה בנקאית",
+    "pay_at_pickup": "תשלום במקום"
   },
   "bankTransferProofLabel": "צילום מסך / אסמכתא להעברה (אופציונלי)",
   "bankTransferProofHint": "JPEG, PNG או WebP — עד 3MB. עוזר למנהל לאשר את התשלום.",

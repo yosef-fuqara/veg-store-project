@@ -25,6 +25,7 @@
     },
     "view": "عرض",
     "preorder": "طلب مسبق",
+    "pickup": "استلام ذاتي",
     "footer_one": "طلب واحد",
     "footer_other": "{{count}} طلبات"
   },
@@ -104,6 +105,7 @@
       "total": "المجموع"
     },
     "delivery": {
+      "fulfillment": "طريقة الاستلام",
       "area": "المنطقة",
       "city": "المدينة",
       "street": "الشارع",
@@ -141,6 +143,16 @@
     "sent_with_delivery_company": "أُرسل مع شركة التوصيل",
     "delivered": "تم التسليم",
     "cancelled": "ملغى"
+  },
+  "fulfillmentTypes": {
+    "delivery": "توصيل",
+    "pickup": "استلام ذاتي"
+  },
+  "paymentMethods": {
+    "credit_card": "بطاقة ائتمان",
+    "bit": "بيت",
+    "bank_transfer": "تحويل بنكي",
+    "pay_at_pickup": "الدفع عند الاستلام"
   },
   "paymentStatuses": {
     "pending_payment": "بانتظار الدفع",

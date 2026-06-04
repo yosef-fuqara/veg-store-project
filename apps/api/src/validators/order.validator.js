@@ -1,5 +1,10 @@
 const Joi = require("joi");
-const { ORDER_STATUS, PAYMENT_METHOD, PAYMENT_STATUS } = require("../constants/order");
+const {
+  ORDER_STATUS,
+  PAYMENT_METHOD,
+  PAYMENT_STATUS,
+  FULFILLMENT_TYPE
+} = require("../constants/order");
 const { ALLOWED_DELIVERY_AREA_KEYS } = require("../constants/delivery");
 const { israeliMobileString } = require("./phone.joi");
 
@@ -9,11 +14,10 @@ const orderIdParamSchema = Joi.object({
   id: Joi.string().pattern(objectIdRegex).required()
 });
 
-// City may be derived from delivery area on the server; street + house number are required.
-const deliveryAddressSchema = Joi.object({
+const deliveryAddressFields = {
   label: Joi.string().trim().max(50).allow("").optional(),
   city: Joi.string().trim().max(80).allow("").optional(),
-  street: Joi.string().trim().min(1).max(120).required(),
+  street: Joi.string().trim().max(120).allow("").optional(),
   houseNumber: Joi.string().trim().max(30).allow("").optional(),
   building: Joi.string().trim().max(50).allow("").optional(),
   apartment: Joi.string().trim().max(50).allow("").optional(),
@@ -21,6 +25,12 @@ const deliveryAddressSchema = Joi.object({
   entrance: Joi.string().trim().max(20).allow("").optional(),
   notes: Joi.string().trim().max(500).allow("").optional(),
   fullAddress: Joi.string().trim().max(500).allow("").optional()
+};
+
+// City may be derived from delivery area on the server; street + house number are required for delivery.
+const deliveryAddressSchema = Joi.object({
+  ...deliveryAddressFields,
+  street: Joi.string().trim().min(1).max(120).required()
 })
   .custom((value, helpers) => {
     const house =
@@ -34,6 +44,12 @@ const deliveryAddressSchema = Joi.object({
   .messages({
     "address.houseRequired": "HOUSE_NUMBER_REQUIRED"
   });
+
+const pickupDeliveryAddressSchema = Joi.object(deliveryAddressFields).optional();
+
+const fulfillmentTypeField = Joi.string()
+  .valid(FULFILLMENT_TYPE.DELIVERY, FULFILLMENT_TYPE.PICKUP)
+  .default(FULFILLMENT_TYPE.DELIVERY);
 
 // ISO timestamp only allowed if at least one preorder item is in the cart.
 // Backend validates the actual time threshold (>= minAdvanceHours).
@@ -73,15 +89,30 @@ const optionalConsentFields = {
 };
 
 const createOrderSchema = Joi.object({
-  deliveryAddress: deliveryAddressSchema.required(),
-  deliveryArea: Joi.string()
-    .valid(...ALLOWED_DELIVERY_AREA_KEYS)
-    .required(),
+  fulfillmentType: fulfillmentTypeField,
+  deliveryAddress: Joi.when("fulfillmentType", {
+    is: FULFILLMENT_TYPE.PICKUP,
+    then: pickupDeliveryAddressSchema,
+    otherwise: deliveryAddressSchema.required()
+  }),
+  deliveryArea: Joi.when("fulfillmentType", {
+    is: FULFILLMENT_TYPE.PICKUP,
+    then: Joi.string().trim().max(80).allow("").optional(),
+    otherwise: Joi.string()
+      .valid(...ALLOWED_DELIVERY_AREA_KEYS)
+      .required()
+  }),
   customerPhone: israeliMobileString,
   notes: Joi.string().trim().max(1000).allow("").optional(),
-  paymentMethod: Joi.string()
-    .valid(...Object.values(PAYMENT_METHOD))
-    .required(),
+  paymentMethod: Joi.when("fulfillmentType", {
+    is: FULFILLMENT_TYPE.PICKUP,
+    then: Joi.string()
+      .valid(PAYMENT_METHOD.CREDIT_CARD, PAYMENT_METHOD.PAY_AT_PICKUP)
+      .required(),
+    otherwise: Joi.string()
+      .valid(...Object.values(PAYMENT_METHOD).filter((m) => m !== PAYMENT_METHOD.PAY_AT_PICKUP))
+      .required()
+  }),
   preferredDeliveryAt: Joi.date().iso().optional(),
   customRequest: Joi.string().trim().max(1000).allow("").optional(),
   ...optionalConsentFields
