@@ -5,6 +5,7 @@
   "confirmationTitleOrderRecord": "تفاصيل الطلب",
   "loading": "جار تحميل الطلب...",
   "loadError": "تعذر تحميل الطلب.",
+  "guestOrderViewRequiresLogin": "سجّل الدخول لعرض هذا الطلب مرة أخرى، أو استخدم التأكيد المعروض بعد الدفع.",
   "notFound": "الطلب غير موجود.",
   "home": "الرئيسية",
   "orderId": "رقم الطلب",

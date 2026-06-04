@@ -3,18 +3,25 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCart } from "../features/cart/CartContext";
+import GuestCheckoutProceedButton from "../components/GuestCheckoutProceedButton";
 import { useStoreSettings } from "../features/store/StoreSettingsContext";
 import { formatPrice, formatChargedTotal } from "../utils/formatPrice";
-import { getLocalizedProductName } from "../utils/localizedProduct";
+import { getLocalizedProductName, textDirectionForLang } from "../utils/localizedProduct";
 import {
   formatQtyDisplay,
   formatApproxWeightQuantity,
   formatCartWeightDisplay,
   PURCHASE_AMOUNT_CART_STEP_ILS,
   weightCartQuantityMin,
-  weightCartQuantityStep
+  weightCartQuantityStep,
+  nextValidCartWeightKg
 } from "../utils/cartLineQuantity";
-import { displayPricePerKg, isWeightBasedUnit } from "../utils/storefrontWeight";
+import {
+  displayPricePerKg,
+  isWeightBasedUnit,
+  kgToStoredQuantity,
+  storedQuantityToKg
+} from "../utils/storefrontWeight";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -126,13 +133,23 @@ const CartPage = () => {
             const isAmountLine = item.purchaseMode === 'amount' && item.requestedAmountIls != null;
             const isWeightLine = !isAmountLine && isWeightBasedUnit(unit);
             const allowFrac = isWeightLine;
-            const step = allowFrac ? weightCartQuantityStep(unit) : 1;
-            const minQ = allowFrac ? weightCartQuantityMin(unit) : 1;
+            const weightRules = {
+              minimumOrderWeight: item.productSnapshot?.minimumOrderWeight,
+              weightStep: item.productSnapshot?.weightStep
+            };
+            const step = allowFrac ? weightCartQuantityStep(weightRules) : 1;
+            const minQ = allowFrac ? weightCartQuantityMin(weightRules) : 1;
             const maxQ = allowFrac ? 500 : 100;
+            const currentKg = allowFrac ? storedQuantityToKg(item.quantity, unit) : Number(item.quantity);
+            const atMinWeight = allowFrac && currentKg <= minQ + 1e-9;
             const bumpQty = (delta) => {
-              const n = Number(item.quantity);
-              const nextRaw = allowFrac ? Math.round((n + delta) * 10000) / 10000 : n + delta;
-              const next = Math.min(maxQ, Math.max(minQ, nextRaw));
+              if (allowFrac) {
+                const nextKg = nextValidCartWeightKg(currentKg, delta, weightRules);
+                if (nextKg == null) return;
+                updateItem(item.product, { quantity: kgToStoredQuantity(nextKg, unit) });
+                return;
+              }
+              const next = Math.min(maxQ, Math.max(minQ, currentKg + delta));
               updateItem(item.product, { quantity: next });
             };
             const bumpPurchaseAmount = (delta) => {
@@ -184,7 +201,9 @@ const CartPage = () => {
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: '16px', fontWeight: 600, color: colors.textPrimary }}>
-                        {getLocalizedProductName({ name: item.productSnapshot?.name }, lang) || String(item.product)}
+                        <span dir={textDirectionForLang(lang)}>
+                          {getLocalizedProductName(item, lang)}
+                        </span>
                       </div>
                       {isAmountLine && (
                         <div style={{ fontSize: '12px', color: colors.primary, marginTop: '4px', fontWeight: 600 }}>
@@ -236,7 +255,7 @@ const CartPage = () => {
                       onClick={() =>
                         isAmountLine ? bumpPurchaseAmount(-PURCHASE_AMOUNT_CART_STEP_ILS) : bumpQty(-step)
                       }
-                      disabled={loading || (isAmountLine && atMinPurchaseAmount)}
+                      disabled={loading || (isAmountLine && atMinPurchaseAmount) || (allowFrac && atMinWeight)}
                       style={{ width: '32px', height: '32px', border: 'none', borderInlineEnd: `1px solid ${colors.border}`, background: colors.surface, color: colors.textPrimary, fontSize: '18px', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     >
                       −
@@ -360,14 +379,11 @@ const CartPage = () => {
             </button>
           </div>
         ) : (
-          <Link
-            to="/checkout"
-            state={{ scrollToDelivery: true }}
-            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '10px 24px', borderRadius: '10px', background: colors.primary, color: colors.textInverse, fontSize: '15px', fontWeight: 600, textDecoration: 'none', boxShadow: shadowPrimary }}
-          >
-            {t("cart:proceedToCheckout")}
-            {payableTotal > 0 ? <> ({formatChargedTotal(payableTotal, lang)})</> : null}
-          </Link>
+          <GuestCheckoutProceedButton
+            payableTotal={payableTotal}
+            lang={lang}
+            label={t("cart:proceedToCheckout")}
+          />
         )}
       </div>
     </section>

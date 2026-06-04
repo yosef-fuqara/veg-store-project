@@ -8,6 +8,7 @@ import {
   MapPin,
   Heart,
   MessageCircle,
+  ShieldCheck,
   User,
   Settings
 } from "lucide-react";
@@ -20,6 +21,7 @@ const ICONS = {
   addresses: MapPin,
   favorites: Heart,
   whatsapp: MessageCircle,
+  privacy: ShieldCheck,
   profile: User,
   settings: Settings
 };

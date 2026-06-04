@@ -1,3 +1,4 @@
+import i18n from "../i18n";
 import { stripTechnicalErrorCodes } from "./loginError";
 
 function logApiErrorDetails(error, data, status) {
@@ -15,7 +16,9 @@ function logApiErrorDetails(error, data, status) {
  * Builds a single readable string from an axios error (after API error normalization).
  */
 export function formatApiError(error) {
-  if (!error) return "Unknown error";
+  const t = i18n.t.bind(i18n);
+
+  if (!error) return t("common:apiErrors.unknown");
 
   const res = error.response;
   const data = res?.data;
@@ -36,17 +39,17 @@ export function formatApiError(error) {
   }
 
   if (status) {
-    const text = res.statusText ? ` ${res.statusText}` : "";
-    return `Request failed (HTTP ${status}${text})`;
+    const statusText = res.statusText ? ` ${res.statusText}` : "";
+    return t("common:apiErrors.requestFailed", { status, statusText });
   }
 
   if (error.code === "ERR_NETWORK" || error.message === "Network Error") {
-    return "Network error — check that the API is running and that CORS allows this origin.";
+    return t("common:apiErrors.network");
   }
 
   if (error.code === "ECONNABORTED") {
-    return "Request timed out.";
+    return t("common:apiErrors.timeout");
   }
 
-  return stripTechnicalErrorCodes(error.message) || "Something went wrong.";
+  return stripTechnicalErrorCodes(error.message) || t("common:unknownError");
 }

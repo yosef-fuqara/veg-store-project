@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
+import { LEGAL_ROUTES } from "../config/legalVersions";
 import { useAuth } from "../features/auth/AuthContext";
 import { PasswordFieldWithToggle } from "../components/common/PasswordFieldWithToggle";
 import { normalizeIsraeliMobile } from "../utils/israeliMobilePhone";
@@ -58,9 +59,6 @@ const consentLabelStyle = {
   color: colors.textSecondary
 };
 
-const marketingConsentText =
-  "I agree to receive promotions and offers from the store by WhatsApp. I can unsubscribe at any time.";
-
 const fieldErrorsFromResponse = (err) => {
   const fields = err.response?.data?.details?.fields;
   if (!Array.isArray(fields)) return {};
@@ -92,7 +90,8 @@ const FieldError = ({ message }) => (
 
 const RegisterPage = () => {
   const { register } = useAuth();
-  const { t } = useTranslation('auth');
+  const { t, i18n } = useTranslation(['auth', 'legal']);
+  const consentLanguage = (i18n.language || 'he').split('-')[0];
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -101,7 +100,9 @@ const RegisterPage = () => {
     phone: "",
     email: "",
     password: "",
-    marketingConsentWhatsApp: false
+    acceptTerms: false,
+    clubAndMarketing: false,
+    saveDetailsConsent: false
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
@@ -136,12 +137,20 @@ const RegisterPage = () => {
       setFieldErrors({ phone: t('phoneInvalid') });
       return;
     }
+    if (!form.acceptTerms) {
+      setFieldErrors({ acceptTerms: t('legal:register.requiredLegalError') });
+      return;
+    }
     setSubmitting(true);
     try {
       await register({
         ...form,
         phone: normalizedPhone,
-        marketingConsentWhatsApp: form.marketingConsentWhatsApp
+        acceptTerms: form.acceptTerms,
+        marketingConsent: form.clubAndMarketing,
+        saveDetailsConsent: form.saveDetailsConsent,
+        joinCustomerClub: form.clubAndMarketing,
+        consentLanguage
       });
       navigate(redirectTo, { replace: true });
     } catch (err) {
@@ -191,7 +200,7 @@ const RegisterPage = () => {
               {t('registerTitle')}
             </h2>
             <p style={{ margin: 0, fontSize: '14px', color: colors.textSecondary, lineHeight: 1.5 }}>
-              {t('registerSubtitle', { defaultValue: 'Create your account to start ordering.' })}
+              {t('registerSubtitle')}
             </p>
           </div>
 
@@ -236,25 +245,8 @@ const RegisterPage = () => {
               <FieldError message={fieldErrors.email} />
             </label>
 
-            <label style={consentLabelStyle}>
-              <input
-                type="checkbox"
-                checked={form.marketingConsentWhatsApp}
-                onChange={update("marketingConsentWhatsApp")}
-                style={{
-                  width: "17px",
-                  height: "17px",
-                  marginTop: "1px",
-                  accentColor: colors.primary,
-                  cursor: "pointer",
-                  flexShrink: 0
-                }}
-              />
-              <span>{marketingConsentText}</span>
-            </label>
-
             <label style={labelStyle}>
-              {t('password')}
+              {t('createPassword')}
               <PasswordFieldWithToggle
                 value={form.password}
                 onChange={update('password')}
@@ -268,6 +260,50 @@ const RegisterPage = () => {
               />
               <FieldError message={fieldErrors.password} />
             </label>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
+              <label style={consentLabelStyle}>
+                <input
+                  type="checkbox"
+                  checked={form.acceptTerms}
+                  onChange={update('acceptTerms')}
+                  style={{ width: '18px', height: '18px', marginTop: '1px', accentColor: colors.primary, cursor: 'pointer', flexShrink: 0 }}
+                />
+                <span style={{ color: colors.textPrimary }}>
+                  <Trans
+                    t={t}
+                    i18nKey="register.requiredLegalCheckbox"
+                    ns="legal"
+                    components={{
+                      terms: <Link to={LEGAL_ROUTES.terms} target="_blank" rel="noopener noreferrer" style={{ color: colors.primary, fontWeight: 700 }} />,
+                      privacy: <Link to={LEGAL_ROUTES.privacy} target="_blank" rel="noopener noreferrer" style={{ color: colors.primary, fontWeight: 700 }} />
+                    }}
+                  />
+                  <span aria-hidden style={{ color: colors.error, marginInlineStart: '4px' }}>*</span>
+                </span>
+              </label>
+              <FieldError message={fieldErrors.acceptTerms} />
+
+              <label style={consentLabelStyle}>
+                <input
+                  type="checkbox"
+                  checked={form.clubAndMarketing}
+                  onChange={update('clubAndMarketing')}
+                  style={{ width: '18px', height: '18px', marginTop: '1px', accentColor: colors.primary, cursor: 'pointer', flexShrink: 0 }}
+                />
+                <span>{t('legal:register.clubAndMarketingCheckbox')}</span>
+              </label>
+
+              <label style={consentLabelStyle}>
+                <input
+                  type="checkbox"
+                  checked={form.saveDetailsConsent}
+                  onChange={update('saveDetailsConsent')}
+                  style={{ width: '18px', height: '18px', marginTop: '1px', accentColor: colors.primary, cursor: 'pointer', flexShrink: 0 }}
+                />
+                <span>{t('legal:register.saveDetailsCheckbox')}</span>
+              </label>
+            </div>
 
             <AnimatePresence>
               {error && (

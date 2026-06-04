@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Apple, Beaker, Carrot, Droplets, Flame, LayoutGrid, ShoppingBasket, Sprout, Store } from 'lucide-react';
+import { ReadyStuffedVegetablesIcon } from './icons/ReadyStuffedVegetablesIcon';
 import { CATEGORY_NAV_IDS } from '../utils/categoryFilter';
 
 const colors = {
@@ -40,6 +41,7 @@ const SCROLLBAR_HIDDEN_CSS = `
 const ICONS = {
   fruits: () => <Apple {...navIconProps} />,
   vegetables: () => <Carrot {...navIconProps} />,
+  'ready-stuffed-vegetables': () => <ReadyStuffedVegetablesIcon {...navIconProps} />,
   herbs: () => <Sprout {...navIconProps} />,
   spices: () => <Flame {...navIconProps} />,
   platters: () => <ShoppingBasket {...navIconProps} />,

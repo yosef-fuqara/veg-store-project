@@ -14,7 +14,8 @@ const colors = {
 
 const LANG_OPTIONS = [
   { code: "en", short: "EN", labelKey: "languageSwitcher.english" },
-  { code: "he", short: "HE", labelKey: "languageSwitcher.hebrew" }
+  { code: "he", short: "HE", labelKey: "languageSwitcher.hebrew" },
+  { code: "ar", short: "AR", labelKey: "languageSwitcher.arabic" }
 ];
 
 /**

@@ -3,13 +3,14 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { adminListBackTo } from "../hooks/useListStatusFilter";
 import { useTranslation } from "react-i18next";
 import { getAdminCategories } from "../services/categoryService";
-import { getLocalizedText, pickLocalizedName } from "../utils/localizedDisplayName";
+import { getLocalizedText, missingProductNameLocales, pickLocalizedName } from "../utils/localizedDisplayName";
 import { createProduct, getAdminProducts, updateProduct } from "../services/productService";
 import { useToast } from "../features/toast/ToastContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 
 const UNIT_OPTIONS = ["kg", "gram", "unit", "box"];
 const STOCK_OPTIONS = ["in_stock", "out_of_stock"];
+const MINIMUM_ORDER_WEIGHT_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4];
 
 const emptyName = () => ({ ar: "", he: "", en: "" });
 
@@ -46,6 +47,7 @@ const EMPTY_FORM = {
   minAdvanceHours: 24,
   preparationNotes: "",
   allowPurchaseByAmount: false,
+  minimumOrderWeight: 1,
 };
 
 const VEGSTORE_ADMIN_PRODUCT_DRAFT_KEY = "vegstore_admin_product_draft";
@@ -169,6 +171,9 @@ const ProductFormPage = () => {
           minAdvanceHours: Number.isFinite(current.minAdvanceHours) ? current.minAdvanceHours : 24,
           preparationNotes: current.preparationNotes || "",
           allowPurchaseByAmount: Boolean(current.allowPurchaseByAmount),
+          minimumOrderWeight: MINIMUM_ORDER_WEIGHT_OPTIONS.includes(Number(current.minimumOrderWeight))
+            ? Number(current.minimumOrderWeight)
+            : 1,
         });
         setExistingImageUrl(current.imageUrl || "");
       } else if (categoryList.length) {
@@ -240,6 +245,10 @@ const ProductFormPage = () => {
     setForm((prev) => ({ ...prev, name: { ...prev.name, [locale]: value } }));
   };
 
+  const missingNameLocales = missingProductNameLocales(form.name);
+  const missingLocaleHint = (locale) =>
+    missingNameLocales.includes(locale) ? t("products:form.fields.nameMissingLocale") : undefined;
+
   const handleImageChange = (event) => {
     const file = event.target.files?.[0] || null;
     setImageFile(file);
@@ -276,6 +285,9 @@ const ProductFormPage = () => {
       payload.append("isFeatured", String(form.isFeatured));
       payload.append("isPreorderOnly", String(form.isPreorderOnly));
       payload.append("allowPurchaseByAmount", String(form.allowPurchaseByAmount));
+      if (form.unit === "kg" || form.unit === "gram") {
+        payload.append("minimumOrderWeight", String(form.minimumOrderWeight));
+      }
       if (form.isPreorderOnly) {
         payload.append("minAdvanceHours", String(form.minAdvanceHours || 24));
         if (String(form.preparationNotes).trim()) payload.append("preparationNotes", String(form.preparationNotes));
@@ -418,13 +430,13 @@ const ProductFormPage = () => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <span style={{ fontSize: '13px', fontWeight: 600, color: colors.textSecondary }}>{t('products:form.fields.nameAllLangs')}</span>
-            <Field label={t('products:form.fields.nameAr')}>
+            <Field label={t('products:form.fields.nameAr')} hint={missingLocaleHint("ar")}>
               <input value={form.name.ar} onChange={onNameChange("ar")} required minLength={2} maxLength={120} onFocus={focus("nameAr")} onBlur={blur} style={inputStyle("nameAr")} dir="rtl" />
             </Field>
-            <Field label={t('products:form.fields.nameHe')}>
+            <Field label={t('products:form.fields.nameHe')} hint={missingLocaleHint("he")}>
               <input value={form.name.he} onChange={onNameChange("he")} required minLength={2} maxLength={120} onFocus={focus("nameHe")} onBlur={blur} style={inputStyle("nameHe")} dir="rtl" />
             </Field>
-            <Field label={t('products:form.fields.nameEn')}>
+            <Field label={t('products:form.fields.nameEn')} hint={missingLocaleHint("en")}>
               <input value={form.name.en} onChange={onNameChange("en")} required minLength={2} maxLength={120} onFocus={focus("nameEn")} onBlur={blur} style={inputStyle("nameEn")} dir="ltr" />
             </Field>
           </div>
@@ -482,6 +494,25 @@ const ProductFormPage = () => {
                 {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
               </select>
             </Field>
+
+            {(form.unit === "kg" || form.unit === "gram") && (
+              <Field label={t('products:form.fields.minimumOrderWeight')} hint={t('products:form.fields.minimumOrderWeightHint')}>
+                <select
+                  value={form.minimumOrderWeight}
+                  onChange={onChange("minimumOrderWeight")}
+                  required
+                  onFocus={focus("minimumOrderWeight")}
+                  onBlur={blur}
+                  style={{ ...inputStyle("minimumOrderWeight"), cursor: 'pointer' }}
+                >
+                  {MINIMUM_ORDER_WEIGHT_OPTIONS.map((w) => (
+                    <option key={w} value={w}>
+                      {t('products:form.minimumOrderWeightOption', { weight: w })}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
 
             <Field label={t('products:form.fields.stockStatus')}>
               <select value={form.stockStatus} onChange={onChange("stockStatus")} required onFocus={focus("stockStatus")} onBlur={blur} style={{ ...inputStyle("stockStatus"), cursor: 'pointer' }}>

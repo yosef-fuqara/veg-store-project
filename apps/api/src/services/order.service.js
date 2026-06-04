@@ -12,10 +12,13 @@ const roundHalfUp = (value, decimalPlaces) => {
   return Math.round((Number(value) + Number.EPSILON) * f) / f;
 };
 
+const { toProductNameLocales } = require("../utils/product-name");
+
 const buildOrderItemsFromPreview = (previewItems) =>
   previewItems.map((line) => ({
     product: line.product,
     name: line.name,
+    nameLocales: line.nameLocales || toProductNameLocales(line.name),
     price: line.unitPrice,
     quantity: line.quantity,
     unit: line.unit,

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LayoutGrid, Search } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
+import { ClearableSearchInput } from './common/ClearableSearchInput';
 import {
   STOREFRONT_NAV_HEIGHT,
   STOREFRONT_MOBILE_STICKY_SEARCH_Z,
@@ -52,6 +53,16 @@ export function StickyMobileProductSearch({
   }, []);
 
   const categoryLabel = categoriesButtonLabel ?? t('categories.drawerTitle');
+
+  const searchInputBaseStyle = {
+    border: `1px solid ${colors.border}`,
+    background: colors.surface,
+    color: colors.textPrimary,
+    fontSize: '15px',
+    lineHeight: 1.4,
+    boxShadow: shadow.sm,
+    fontFamily: 'inherit',
+  };
 
   return (
     <>
@@ -117,53 +128,25 @@ export function StickyMobileProductSearch({
             </span>
           </button>
 
-          <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-            <Search
-              aria-hidden
-              size={18}
-              strokeWidth={2}
-              style={{
-                position: 'absolute',
-                insetInlineStart: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: colors.textMuted,
-                pointerEvents: 'none',
-              }}
-            />
-            <input
-              type="search"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder={t('products.searchPlaceholder')}
-              aria-label={t('products.searchPlaceholder')}
-              autoComplete="off"
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = colors.primaryBorder;
-                e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.primarySurface}`;
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = colors.border;
-                e.currentTarget.style.boxShadow = shadow.sm;
-              }}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                paddingBlock: '10px',
-                paddingInlineStart: '40px',
-                paddingInlineEnd: '14px',
-                borderRadius: '10px',
-                border: `1px solid ${colors.border}`,
-                background: colors.surface,
-                color: colors.textPrimary,
-                fontSize: '15px',
-                lineHeight: 1.4,
-                boxShadow: shadow.sm,
-                outline: 'none',
-                textAlign: value ? 'start' : 'center',
-              }}
-            />
-          </div>
+          <ClearableSearchInput
+            value={value}
+            onChange={onChange}
+            placeholder={t('products.searchPlaceholder')}
+            ariaLabel={t('products.searchPlaceholder')}
+            centerPlaceholderWhenEmpty
+            wrapperStyle={{ flex: 1, minWidth: 0 }}
+            searchIconColor={colors.textMuted}
+            clearButtonColor={colors.textMuted}
+            inputStyle={searchInputBaseStyle}
+            onInputFocus={(e) => {
+              e.currentTarget.style.borderColor = colors.primaryBorder;
+              e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.primarySurface}`;
+            }}
+            onInputBlur={(e) => {
+              e.currentTarget.style.borderColor = colors.border;
+              e.currentTarget.style.boxShadow = shadow.sm;
+            }}
+          />
         </div>
       </div>
     </>

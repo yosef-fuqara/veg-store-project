@@ -1,3 +1,5 @@
+import { legacyDeliveryToStructured } from "./structuredAddress";
+
 export const VEGSTORE_CART_KEY = "vegstore_cart";
 export const VEGSTORE_CHECKOUT_DRAFT_KEY = "vegstore_checkout_draft";
 export const VEGSTORE_SAVED_DELIVERY_KEY = "vegstore_saved_delivery";
@@ -20,11 +22,21 @@ export function persistCartFromServerCart(cart) {
       window.localStorage.removeItem(VEGSTORE_CART_KEY);
       return;
     }
-    const lines = items.map((i) => ({
-      product: i.product,
-      quantity: Math.max(0.01, Number(i.quantity) || 1),
-      wrap: Boolean(i.wrap)
-    }));
+    const lines = items.map((i) => {
+      const isAmount = i.purchaseMode === "amount" && i.requestedAmountIls != null;
+      if (isAmount) {
+        return {
+          product: i.product,
+          purchaseAmountIls: Number(i.requestedAmountIls),
+          wrap: Boolean(i.wrap)
+        };
+      }
+      return {
+        product: i.product,
+        quantity: Math.max(0.01, Number(i.quantity) || 1),
+        wrap: Boolean(i.wrap)
+      };
+    });
     window.localStorage.setItem(VEGSTORE_CART_KEY, JSON.stringify(lines));
   } catch {
     /* ignore */
@@ -38,11 +50,20 @@ export function loadPersistedCartLines() {
     if (!Array.isArray(parsed)) return [];
     return parsed
       .filter((l) => l && l.product)
-      .map((l) => ({
-        product: l.product,
-        quantity: Math.max(0.01, Number(l.quantity) || 1),
-        wrap: Boolean(l.wrap)
-      }));
+      .map((l) => {
+        if (typeof l.purchaseAmountIls === "number") {
+          return {
+            product: l.product,
+            purchaseAmountIls: l.purchaseAmountIls,
+            wrap: Boolean(l.wrap)
+          };
+        }
+        return {
+          product: l.product,
+          quantity: Math.max(0.01, Number(l.quantity) || 1),
+          wrap: Boolean(l.wrap)
+        };
+      });
   } catch {
     return [];
   }
@@ -81,32 +102,30 @@ export function clearOrderSuccessStorage() {
 
 const hasNonEmptyString = (value) => typeof value === "string" && value.trim().length > 0;
 
-/** True when persisted saved-delivery payload contains at least one field. */
-export function hasSavedDeliveryDetails(data) {
-  if (!data || typeof data !== "object") return false;
-  if (hasNonEmptyString(data.customerPhone) || hasNonEmptyString(data.deliveryArea)) return true;
-  const addr = data.deliveryAddress;
+const addressHasContent = (addr) => {
   if (!addr || typeof addr !== "object") return false;
   return (
+    hasNonEmptyString(addr.city) ||
+    hasNonEmptyString(addr.cityKey) ||
     hasNonEmptyString(addr.street) ||
+    hasNonEmptyString(addr.houseNumber) ||
     hasNonEmptyString(addr.building) ||
     hasNonEmptyString(addr.apartment) ||
     hasNonEmptyString(addr.notes)
   );
+};
+
+/** True when persisted saved-delivery payload contains at least one field. */
+export function hasSavedDeliveryDetails(data) {
+  if (!data || typeof data !== "object") return false;
+  if (hasNonEmptyString(data.customerPhone) || hasNonEmptyString(data.deliveryArea)) return true;
+  return addressHasContent(data.deliveryAddress);
 }
 
 export function checkoutDraftHasDeliveryContent(draft) {
   if (!draft || typeof draft !== "object") return false;
-  const addr = draft.deliveryAddress;
-  if (addr && typeof addr === "object") {
-    if (
-      hasNonEmptyString(addr.street) ||
-      hasNonEmptyString(addr.building) ||
-      hasNonEmptyString(addr.apartment) ||
-      hasNonEmptyString(addr.notes)
-    ) {
-      return true;
-    }
+  if (addressHasContent(draft.deliveryAddress)) {
+    return true;
   }
   return (
     hasNonEmptyString(draft.deliveryArea) ||
@@ -119,16 +138,26 @@ export function checkoutDraftHasDeliveryContent(draft) {
 
 /** Delivery/contact fields only — never payment or preorder-specific data. */
 export function deliveryDetailsForPersistence(form) {
-  const addr = form?.deliveryAddress && typeof form.deliveryAddress === "object" ? form.deliveryAddress : {};
+  const structured = legacyDeliveryToStructured(
+    form?.deliveryAddress && typeof form.deliveryAddress === "object" ? form.deliveryAddress : {},
+    typeof form?.deliveryArea === "string" ? form.deliveryArea : ""
+  );
   return {
-    v: 1,
+    v: 2,
     customerPhone: typeof form?.customerPhone === "string" ? form.customerPhone.trim() : "",
     deliveryArea: typeof form?.deliveryArea === "string" ? form.deliveryArea : "",
     deliveryAddress: {
-      street: typeof addr.street === "string" ? addr.street.trim() : "",
-      building: typeof addr.building === "string" ? addr.building.trim() : "",
-      apartment: typeof addr.apartment === "string" ? addr.apartment.trim() : "",
-      notes: typeof addr.notes === "string" ? addr.notes.trim() : ""
+      city: structured.city,
+      cityKey: structured.cityKey,
+      cityId: structured.cityId || structured.cityKey,
+      citySlug: structured.citySlug || structured.cityKey,
+      street: structured.street,
+      houseNumber: structured.houseNumber,
+      building: structured.building,
+      apartment: structured.apartment,
+      floor: structured.floor,
+      entrance: structured.entrance,
+      notes: structured.notes
     }
   };
 }
@@ -162,15 +191,15 @@ export function mergeSavedDeliveryIntoForm(saved, base) {
   if (!saved || typeof saved !== "object") return base;
   const addr =
     saved.deliveryAddress && typeof saved.deliveryAddress === "object" ? saved.deliveryAddress : {};
+  const deliveryArea = typeof saved.deliveryArea === "string" ? saved.deliveryArea : base.deliveryArea;
+  const structured = legacyDeliveryToStructured(addr, deliveryArea);
   return {
     ...base,
     deliveryAddress: {
-      street: typeof addr.street === "string" ? addr.street : base.deliveryAddress.street,
-      building: typeof addr.building === "string" ? addr.building : base.deliveryAddress.building,
-      apartment: typeof addr.apartment === "string" ? addr.apartment : base.deliveryAddress.apartment,
-      notes: typeof addr.notes === "string" ? addr.notes : base.deliveryAddress.notes
+      ...base.deliveryAddress,
+      ...structured
     },
-    deliveryArea: typeof saved.deliveryArea === "string" ? saved.deliveryArea : base.deliveryArea,
+    deliveryArea: deliveryArea || structured.cityKey || base.deliveryArea,
     customerPhone:
       typeof saved.customerPhone === "string" ? saved.customerPhone : base.customerPhone
   };

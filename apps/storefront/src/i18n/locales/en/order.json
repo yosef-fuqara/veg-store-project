@@ -5,6 +5,7 @@
   "confirmationTitleOrderRecord": "Order details",
   "loading": "Loading order...",
   "loadError": "Could not load order.",
+  "guestOrderViewRequiresLogin": "Sign in to view this order again, or use the confirmation shown after checkout.",
   "notFound": "Order not found.",
   "home": "Home",
   "orderId": "Order ID",

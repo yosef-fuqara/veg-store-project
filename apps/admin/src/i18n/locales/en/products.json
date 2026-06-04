@@ -81,6 +81,7 @@
       "nameAr": "Arabic (ar)",
       "nameHe": "Hebrew (he)",
       "nameEn": "English (en)",
+      "nameMissingLocale": "Translation missing for this language",
       "description": "Description",
       "descriptionHint": "Optional",
       "price": "Price (₪) *",
@@ -90,6 +91,8 @@
       "allowByAmountHint": "For kg/gram items the server derives weight from the chosen ILS amount. For unit/box, the derived quantity must be a whole number.",
       "category": "Category *",
       "unit": "Unit *",
+      "minimumOrderWeight": "Minimum order weight (kg) *",
+      "minimumOrderWeightHint": "Smallest weight customers can order for kg/gram products. Increments are always 0.5 kg.",
       "stockStatus": "Stock Status *",
       "featured": "Featured product",
       "featuredHint": "Shown prominently on storefront",
@@ -129,6 +132,7 @@
       "created": "Product created successfully.",
       "updated": "Product updated successfully."
     },
+    "minimumOrderWeightOption": "{{weight}} kg",
     "stockOptions": {
       "in_stock": "in stock",
       "out_of_stock": "out of stock"

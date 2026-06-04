@@ -5,6 +5,7 @@ import { getAdminOrders } from "../services/orderService";
 import { formatAdminOrderStatusLabel, formatAdminPaymentStatusLabel } from "../utils/adminOrderStatusLabel";
 import { useAdminLanguage } from "../i18n/useAdminLanguage";
 import { adminListLinkState, useListStatusFilter } from "../hooks/useListStatusFilter";
+import { ClearableSearchInput } from "../components/common/ClearableSearchInput";
 
 const colors = {
   primary:      '#1e6b3c',
@@ -67,8 +68,8 @@ const formatDate = (v) => {
 
 const customerText = (order) => {
   const u = order?.user;
-  if (!u) return '—';
-  return u.name || u.email || u.phone || '—';
+  if (u) return u.name || u.email || u.phone || '—';
+  return order?.customerName || order?.customerPhone || '—';
 };
 
 const shortId = (id) => String(id || '').slice(-6).toUpperCase();
@@ -371,22 +372,16 @@ const AdminOrdersPage = () => {
           </div>
 
           {/* Search */}
-          <div style={{ flex: '1 1 200px', minWidth: 0, position: 'relative' }}>
-            <span style={{ position: 'absolute', insetInlineStart: '12px', top: '50%', transform: 'translateY(-50%)', color: colors.textMuted, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-            </span>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('orders:list.searchPlaceholder')}
-              aria-label={t('orders:list.searchAria')}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              style={searchInputStyle}
-            />
-          </div>
+          <ClearableSearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder={t('orders:list.searchPlaceholder')}
+            ariaLabel={t('orders:list.searchAria')}
+            onInputFocus={() => setSearchFocused(true)}
+            onInputBlur={() => setSearchFocused(false)}
+            wrapperStyle={{ flex: '1 1 200px' }}
+            inputStyle={searchInputStyle}
+          />
         </div>
 
         {/* Table */}

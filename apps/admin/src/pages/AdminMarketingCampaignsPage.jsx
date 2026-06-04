@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MessageCircle, Send, Sparkles } from "lucide-react";
 import {
   getMarketingRecipientsCount,
@@ -6,6 +7,7 @@ import {
   sendMarketingCampaign
 } from "../services/marketingCampaignService";
 import { formatApiError } from "../utils/formatApiError";
+import { useAdminLanguage } from "../i18n/useAdminLanguage";
 
 const colors = {
   primary: "#1e6b3c",
@@ -38,6 +40,8 @@ const baseInputStyle = {
 };
 
 const AdminMarketingCampaignsPage = () => {
+  const { t } = useTranslation(["marketing", "common"]);
+  const { lang } = useAdminLanguage();
   const [form, setForm] = useState({ title: "", message: "" });
   const [recipientCount, setRecipientCount] = useState(0);
   const [preview, setPreview] = useState(null);
@@ -91,11 +95,11 @@ const AdminMarketingCampaignsPage = () => {
 
   const handleSend = async () => {
     if (!preview?.recipientCount) {
-      setError("No recipients available.");
+      setError(t("marketing:campaigns.noRecipients"));
       return;
     }
     const confirmed = window.confirm(
-      `Are you sure you want to send this campaign to ${preview.recipientCount} customers?`
+      t("marketing:campaigns.confirmSend", { count: preview.recipientCount })
     );
     if (!confirmed) {
       return;
@@ -109,8 +113,12 @@ const AdminMarketingCampaignsPage = () => {
         title: form.title.trim(),
         message: form.message.trim()
       });
+      const delivered = campaign.recipientCount - campaign.failedRecipients;
       setSuccess(
-        `WhatsApp campaign sent. Delivered: ${campaign.recipientCount - campaign.failedRecipients}/${campaign.recipientCount}.`
+        t("marketing:campaigns.sendSuccess", {
+          delivered,
+          total: campaign.recipientCount
+        })
       );
       await loadRecipientCount();
     } catch (err) {
@@ -120,14 +128,21 @@ const AdminMarketingCampaignsPage = () => {
     }
   };
 
+  const recipientDisplay = loadingCount
+    ? t("marketing:campaigns.loadingRecipients")
+    : preview?.recipientCount ?? recipientCount;
+
   return (
     <div style={{ maxWidth: "980px" }}>
       <div style={{ marginBottom: "20px" }}>
         <h1 style={{ margin: 0, fontSize: "28px", fontWeight: 800, color: colors.textPrimary, letterSpacing: "-0.3px" }}>
-          Marketing Campaigns
+          {t("marketing:campaigns.title")}
         </h1>
         <p style={{ margin: "6px 0 0", color: colors.textSecondary, fontSize: "14px" }}>
-          Send promotional WhatsApp messages only to customers who opted in to marketing updates.
+          {t("marketing:campaigns.subtitle")}
+        </p>
+        <p style={{ margin: "10px 0 0", color: colors.textMuted, fontSize: "13px", lineHeight: 1.45 }}>
+          {t("marketing:campaigns.consentNotice")}
         </p>
       </div>
 
@@ -142,23 +157,25 @@ const AdminMarketingCampaignsPage = () => {
       >
         <div style={{ display: "grid", gap: "14px" }}>
           <label style={{ fontSize: "13px", color: colors.textSecondary, fontWeight: 600 }}>
-            Campaign title
+            {t("marketing:campaigns.campaignTitle")}
             <input
               value={form.title}
               onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-              placeholder="Weekly fresh arrivals"
+              placeholder={t("marketing:campaigns.campaignTitlePlaceholder")}
               style={{ ...baseInputStyle, marginTop: "6px" }}
+              dir="auto"
             />
           </label>
 
           <label style={{ fontSize: "13px", color: colors.textSecondary, fontWeight: 600 }}>
-            Message body
+            {t("marketing:campaigns.messageBody")}
             <textarea
               value={form.message}
               onChange={(e) => setForm((prev) => ({ ...prev, message: e.target.value }))}
               rows={6}
-              placeholder="Fresh produce just arrived. Order today and enjoy seasonal specials."
+              placeholder={t("marketing:campaigns.messageBodyPlaceholder")}
               style={{ ...baseInputStyle, marginTop: "6px", resize: "vertical", minHeight: "130px" }}
+              dir="auto"
             />
           </label>
 
@@ -178,7 +195,8 @@ const AdminMarketingCampaignsPage = () => {
           >
             <MessageCircle size={16} color={colors.primary} />
             <span>
-              Channel: <strong style={{ color: colors.textPrimary }}>WhatsApp</strong>
+              {t("marketing:campaigns.channel")}:{" "}
+              <strong style={{ color: colors.textPrimary }}>{t("marketing:campaigns.whatsapp")}</strong>
             </span>
           </div>
         </div>
@@ -205,7 +223,7 @@ const AdminMarketingCampaignsPage = () => {
             }}
           >
             <Sparkles size={14} />
-            Preview
+            {t("marketing:campaigns.preview")}
           </button>
           <button
             type="button"
@@ -227,7 +245,7 @@ const AdminMarketingCampaignsPage = () => {
             }}
           >
             <Send size={14} />
-            Send campaign
+            {t("marketing:campaigns.sendCampaign")}
           </button>
         </div>
       </div>
@@ -241,18 +259,16 @@ const AdminMarketingCampaignsPage = () => {
         }}
       >
         <h2 style={{ margin: "0 0 12px", fontSize: "15px", fontWeight: 800, color: colors.textPrimary }}>
-          Campaign preview
+          {t("marketing:campaigns.previewSectionTitle")}
         </h2>
         <div style={{ display: "grid", gap: "8px", marginBottom: "12px" }}>
           <div style={{ color: colors.textSecondary, fontSize: "13px" }}>
-            Total recipients:{" "}
-            <strong style={{ color: colors.textPrimary }}>
-              {loadingCount ? "Loading..." : preview?.recipientCount ?? recipientCount}
-            </strong>
+            {t("marketing:campaigns.totalRecipients")}:{" "}
+            <strong style={{ color: colors.textPrimary }}>{recipientDisplay}</strong>
           </div>
           <div style={{ color: colors.textSecondary, fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
             <MessageCircle size={16} />
-            <strong style={{ color: colors.textPrimary }}>WhatsApp</strong>
+            <strong style={{ color: colors.textPrimary }}>{t("marketing:campaigns.whatsapp")}</strong>
           </div>
         </div>
 
@@ -265,10 +281,13 @@ const AdminMarketingCampaignsPage = () => {
             color: colors.textPrimary,
             fontSize: "14px",
             lineHeight: 1.45,
-            whiteSpace: "pre-wrap"
+            whiteSpace: "pre-wrap",
+            textAlign: "start"
           }}
+          dir="auto"
+          lang={lang}
         >
-          {preview?.previewMessage || "Click Preview to review the final WhatsApp message before sending."}
+          {preview?.previewMessage || t("marketing:campaigns.previewEmpty")}
         </div>
       </div>
 

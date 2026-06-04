@@ -14,11 +14,12 @@ const OUTSIDE_AREA = "eilabun";
 const baseOrderPayload = {
   deliveryAddress: {
     street: "Main",
-    building: "1"
+    houseNumber: "1"
   },
   deliveryArea: OUTSIDE_AREA,
   customerPhone: "0501234567",
-  paymentMethod: "credit_card"
+  paymentMethod: "credit_card",
+  acceptTerms: true
 };
 
 async function seedCart(token, productId, quantity = 1) {

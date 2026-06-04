@@ -1,6 +1,15 @@
 {
+  "clearSearch": "Clear search",
   "retry": "Retry",
   "currencySymbol": "₪",
   "loading": "Loading...",
-  "unknownError": "Something went wrong."
+  "unknownError": "Something went wrong.",
+  "errorBoundaryTitle": "Something went wrong in the UI",
+  "errorBoundaryReload": "Reload page",
+  "apiErrors": {
+    "unknown": "Unknown error",
+    "requestFailed": "Request failed (HTTP {{status}}{{statusText}})",
+    "network": "Network error — check that the API is running and that CORS allows this origin.",
+    "timeout": "Request timed out."
+  }
 }

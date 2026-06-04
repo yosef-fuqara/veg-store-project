@@ -5,10 +5,17 @@ const deliveryAddressSchema = new mongoose.Schema(
   {
     label: { type: String, trim: true, maxlength: 50 },
     city: { type: String, trim: true, required: true },
+    cityKey: { type: String, trim: true },
+    cityId: { type: String, trim: true },
+    citySlug: { type: String, trim: true },
     street: { type: String, trim: true, required: true },
+    houseNumber: { type: String, trim: true },
     building: { type: String, trim: true },
     apartment: { type: String, trim: true },
-    notes: { type: String, trim: true, maxlength: 500 }
+    floor: { type: String, trim: true },
+    entrance: { type: String, trim: true },
+    notes: { type: String, trim: true, maxlength: 500 },
+    fullAddress: { type: String, trim: true, maxlength: 500 }
   },
   { _id: false }
 );
@@ -21,6 +28,11 @@ const orderItemSchema = new mongoose.Schema(
       required: true
     },
     name: { type: String, required: true, trim: true },
+    // Immutable multilingual snapshot captured at order time (legacy orders may omit).
+    nameLocales: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
+    },
     price: { type: Number, required: true, min: 0 },
     quantity: { type: Number, required: true, min: 0.01 },
     unit: { type: String, required: true, trim: true },
@@ -41,14 +53,37 @@ const orderItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Snapshot of consent/legal acceptance at the moment the order was placed.
+const orderLegalSnapshotSchema = new mongoose.Schema(
+  {
+    termsAccepted: { type: Boolean, default: false },
+    termsVersion: { type: String, default: null },
+    privacyVersion: { type: String, default: null },
+    shippingPolicyVersion: { type: String, default: null },
+    cancellationPolicyVersion: { type: String, default: null },
+    customerClubTermsVersion: { type: String, default: null },
+    marketingConsentAtOrderTime: { type: Boolean, default: false },
+    saveDetailsConsentAtOrderTime: { type: Boolean, default: false },
+    customerClubJoinedAtOrderTime: { type: Boolean, default: false },
+    acceptedAt: { type: Date, default: null },
+    acceptedFrom: { type: String, default: null },
+    acceptedLanguage: { type: String, enum: ["he", "ar", "en", null], default: null },
+    ipAddress: { type: String, default: null },
+    userAgent: { type: String, default: null }
+  },
+  { _id: false }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
       index: true
     },
+    customerName: { type: String, trim: true, maxlength: 120 },
+    customerEmail: { type: String, trim: true, lowercase: true, maxlength: 254 },
     items: { type: [orderItemSchema], required: true },
     subtotal: { type: Number, required: true, min: 0 },
     // Aggregated cling-film wrap surcharge across all items. Tracked
@@ -89,7 +124,14 @@ const orderSchema = new mongoose.Schema(
     bankTransferProofUrl: { type: String, trim: true, default: "" },
     bankTransferProofPublicId: { type: String, trim: true, default: "" },
     // Idempotency keys for transactional email (ISO dates stored as values)
-    emailNotifications: { type: mongoose.Schema.Types.Mixed, default: () => ({}) }
+    emailNotifications: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
+    // Immutable snapshot of the legal/consent state captured when the order was
+    // placed. Saved for guest and registered customers alike so we always know
+    // exactly what was agreed at order time.
+    orderLegalSnapshot: {
+      type: orderLegalSnapshotSchema,
+      default: () => ({})
+    }
   },
   { timestamps: true }
 );

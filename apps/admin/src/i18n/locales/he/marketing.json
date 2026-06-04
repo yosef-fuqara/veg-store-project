@@ -1,0 +1,35 @@
+{
+  "campaigns": {
+    "title": "קמפיינים שיווקיים",
+    "subtitle": "שליחת הודעות WhatsApp לקידום מכירות רק ללקוחות שאישרו קבלת עדכונים שיווקיים.",
+    "campaignTitle": "שם הקמפיין",
+    "campaignTitlePlaceholder": "מבצע שבועי — פירות וירקות טריים",
+    "messageBody": "תוכן ההודעה",
+    "messageBodyPlaceholder": "הגיעו מוצרים טריים חדשים. הזמינו היום ותהנו מהטבות עונתיות.",
+    "channel": "ערוץ",
+    "whatsapp": "WhatsApp",
+    "preview": "תצוגה מקדימה",
+    "sendCampaign": "שליחת קמפיין",
+    "previewSectionTitle": "תצוגה מקדימה של הקמפיין",
+    "totalRecipients": "סה״כ נמענים",
+    "loadingRecipients": "טוען…",
+    "previewEmpty": "לחצו על «תצוגה מקדימה» כדי לבדוק את הודעת ה-WhatsApp לפני השליחה.",
+    "noRecipients": "אין נמענים זמינים.",
+    "confirmSend": "האם לשלוח את הקמפיין ל-{{count}} לקוחות?",
+    "sendSuccess": "קמפיין WhatsApp נשלח. נמסרו: {{delivered}}/{{total}}.",
+    "consentNotice": "רק לקוחות עם הסכמה שיווקית פעילה נכללים. ניתן לבטל הרשמה בכל עת."
+  },
+  "customers": {
+    "title": "לקוחות שיווק",
+    "subtitle": "לקוחות שאישרו קבלת מבצעים והטבות ב-WhatsApp.",
+    "exportCsv": "ייצוא CSV",
+    "empty": "עדיין אין לקוחות שנתנו הסכמה.",
+    "loadFailed": "טעינת לקוחות השיווק נכשלה.",
+    "tableHeaders": {
+      "name": "שם",
+      "phone": "טלפון",
+      "consentDate": "תאריך הסכמת WhatsApp",
+      "consentSource": "מקור ההסכמה"
+    }
+  }
+}

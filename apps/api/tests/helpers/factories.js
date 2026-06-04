@@ -103,7 +103,10 @@ async function loginAndGetAccessToken(email, password = DEFAULT_PASSWORD) {
 }
 
 async function registerCustomer(body) {
-  return request(getApp()).post(apiUrl("/auth/register")).send(body);
+  // Terms acceptance is required by the API; default to accepted unless a test
+  // explicitly overrides it (so positive-path register tests keep working).
+  const payload = { acceptTerms: true, ...body };
+  return request(getApp()).post(apiUrl("/auth/register")).send(payload);
 }
 
 async function createAnnouncement(overrides = {}) {

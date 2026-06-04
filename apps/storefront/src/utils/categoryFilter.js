@@ -3,10 +3,20 @@
  * Matches API category slug and multilingual names against known shop groupings.
  */
 
-/** @typedef {'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices' | 'other'} CategoryNavId */
+/** @typedef {'fruits' | 'vegetables' | 'ready-stuffed-vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices' | 'other'} CategoryNavId */
 
 /** @type {CategoryNavId[]} */
-export const CATEGORY_NAV_IDS = ['fruits', 'vegetables', 'herbs', 'spices', 'platters', 'pickles', 'natural-juices', 'other'];
+export const CATEGORY_NAV_IDS = [
+  'fruits',
+  'vegetables',
+  'ready-stuffed-vegetables',
+  'herbs',
+  'spices',
+  'platters',
+  'pickles',
+  'natural-juices',
+  'other',
+];
 
 /** @param {unknown} category */
 export function categoryHaystack(category) {
@@ -30,7 +40,7 @@ export function categoryHaystack(category) {
   return parts.join(' ').toLowerCase();
 }
 
-/** @type {Record<'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices', { slugs: string[], needles: string[] }>} */
+/** @type {Record<'fruits' | 'vegetables' | 'ready-stuffed-vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices', { slugs: string[], needles: string[] }>} */
 const RULES = {
   fruits: {
     slugs: ['fruit', 'fruits', 'פירות', 'פרי'],
@@ -39,6 +49,45 @@ const RULES = {
   vegetables: {
     slugs: ['vegetable', 'vegetables', 'veggie', 'veggies', 'ירקות', 'ירק'],
     needles: ['vegetable', 'vegetables', 'veggie', 'ירקות', 'ירק', 'خضار', 'خضروات'],
+  },
+  'ready-stuffed-vegetables': {
+    slugs: [
+      'ready-stuffed-vegetables',
+      'ready-to-cook-stuffed-vegetables',
+      'ready-stuffed',
+      'mahashi',
+      'stuffed-vegetables',
+      'ממולאים-מוכנים',
+      'ממולאים',
+      'محاشي-جاهزة',
+      'محاشي',
+    ],
+    needles: [
+      'ready-stuffed',
+      'ready stuffed',
+      'stuffed vegetables',
+      'stuffed vegetable',
+      'ready to cook stuffed',
+      'ready-to-cook stuffed',
+      'mahashi',
+      'محاشي',
+      'محاشي جاهزة',
+      'ממולאים',
+      'ממולאים מוכנים',
+      'grape leaves',
+      'rolled grape',
+      'ورق عنب',
+      'עלי גפן',
+      'hollowed zucchini',
+      'zucchini for stuffing',
+      'קישואים למילואים',
+      'קשואים למילואים',
+      'כוסא للحشو',
+      'חציל לממולאים',
+      'for stuffing',
+      'למילוי',
+      'للحشي',
+    ],
   },
   herbs: {
     slugs: ['herb', 'herbs', 'עשבי-תיבול', 'עשבי תיבול'],
@@ -171,7 +220,7 @@ function haystackMatchesRule(hay, rule) {
  * When a DB category slug is not in the storefront slug allowlist, map the category document
  * to one primary nav using the same keyword rules as legacy filtering (single nav; tie-break by order).
  * @param {unknown} category
- * @returns {'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices' | null}
+ * @returns {'fruits' | 'vegetables' | 'ready-stuffed-vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices' | null}
  */
 export function inferPrimaryNavIdFromCategoryRecord(category) {
   const hay = categoryHaystack(category);
@@ -184,11 +233,12 @@ export function inferPrimaryNavIdFromCategoryRecord(category) {
       : "";
   if (slug && isLegacyCombinedHaystack(slug)) return "herbs";
 
-  /** @type {Array<'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices'>} */
+  /** @type {Array<'fruits' | 'vegetables' | 'ready-stuffed-vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices'>} */
   const hits = [];
   for (const navId of /** @type {const} */ ([
     "fruits",
     "vegetables",
+    "ready-stuffed-vegetables",
     "herbs",
     "spices",
     "platters",
@@ -202,6 +252,7 @@ export function inferPrimaryNavIdFromCategoryRecord(category) {
   if (hits.length === 1) return hits[0];
   if (hits.length > 1) {
     const order = /** @type {const} */ ([
+      "ready-stuffed-vegetables",
       "herbs",
       "spices",
       "pickles",
@@ -246,7 +297,8 @@ export function productMatchesCategoryNav(product, navId) {
     if (!hay) return true;
     return (
       !haystackMatchesRule(hay, RULES.fruits)
-      && !haystackMatchesRule(hay, RULES.vegetables)
+      &&       !haystackMatchesRule(hay, RULES.vegetables)
+      && !haystackMatchesRule(hay, RULES['ready-stuffed-vegetables'])
       && !haystackMatchesRule(hay, RULES.herbs)
       && !haystackMatchesRule(hay, RULES.spices)
       && !haystackMatchesRule(hay, RULES.platters)
@@ -255,7 +307,7 @@ export function productMatchesCategoryNav(product, navId) {
     );
   }
 
-  const rule = RULES[/** @type {'fruits' | 'vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices'} */ (navId)];
+  const rule = RULES[/** @type {'fruits' | 'vegetables' | 'ready-stuffed-vegetables' | 'herbs' | 'spices' | 'platters' | 'pickles' | 'natural-juices'} */ (navId)];
   if (!rule) return false;
   if (!hay) return false;
   if (navId === 'spices' && isLegacyCombinedHaystack(hay)) return false;

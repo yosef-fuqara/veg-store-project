@@ -9,6 +9,8 @@ const orderRoutes = require("./order.routes");
 const paymentRoutes = require("./payment.routes");
 const announcementRoutes = require("./announcement.routes");
 const storeSettingsRoutes = require("./store-settings.routes");
+const unsubscribeRoutes = require("./unsubscribe.routes");
+const addressRoutes = require("./address.routes");
 
 const router = express.Router();
 
@@ -22,5 +24,7 @@ router.use("/orders", orderRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/announcements", announcementRoutes);
 router.use("/store-settings", storeSettingsRoutes);
+router.use("/unsubscribe", unsubscribeRoutes);
+router.use("/address", addressRoutes);
 
 module.exports = router;

@@ -1,0 +1,29 @@
+{
+  "brand": "أبو العناس",
+  "adminPanel": "لوحة الإدارة",
+  "admin": "إدارة",
+  "signOut": "تسجيل الخروج",
+  "loadingSession": "جارٍ تحميل الجلسة…",
+  "viewStore": "عرض المتجر",
+  "viewStoreUnavailable": "في الإنتاج يجب تعيين VITE_STOREFRONT_URL لفتح المتجر.",
+  "items": {
+    "products": "المنتجات",
+    "categories": "الفئات",
+    "orders": "الطلبات",
+    "sales": "المبيعات",
+    "popups": "النوافذ المنبثقة",
+    "marketingCampaigns": "الحملات التسويقية",
+    "marketingCustomers": "عملاء التسويق",
+    "storeStatus": "حالة المتجر"
+  },
+  "languageSwitcher": {
+    "label": "اللغة",
+    "english": "English",
+    "hebrew": "עברית",
+    "arabic": "العربية"
+  },
+  "sidebar": {
+    "collapse": "طي الشريط الجانبي",
+    "expand": "توسيع الشريط الجانبي"
+  }
+}

@@ -8,7 +8,7 @@ const MAX_PURCHASE_AMOUNT_ILS = 50000;
 const addCartItemSchema = Joi.alternatives().try(
   Joi.object({
     productId: Joi.string().pattern(objectIdRegex).required(),
-    quantity: Joi.number().min(0.25).max(500).required(),
+    quantity: Joi.number().min(0.5).max(500).required(),
     wrap: Joi.boolean().optional()
   }).unknown(false),
   Joi.object({

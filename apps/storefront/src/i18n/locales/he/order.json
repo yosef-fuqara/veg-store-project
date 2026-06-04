@@ -5,6 +5,7 @@
   "confirmationTitleOrderRecord": "פרטי ההזמנה",
   "loading": "טוען הזמנה...",
   "loadError": "לא ניתן לטעון הזמנה.",
+  "guestOrderViewRequiresLogin": "התחבר כדי לצפות שוב בהזמנה זו, או השתמש באישור שהוצג לאחר התשלום.",
   "notFound": "הזמנה לא נמצאה.",
   "home": "בית",
   "orderId": "מספר הזמנה",

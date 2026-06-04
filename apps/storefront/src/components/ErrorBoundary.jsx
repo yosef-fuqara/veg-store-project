@@ -1,4 +1,5 @@
 import React from "react";
+import i18n from "../i18n";
 
 const colors = {
   bg: "#faf8f5",
@@ -56,7 +57,7 @@ export class ErrorBoundary extends React.Component {
             }}
           >
             <h1 style={{ margin: "0 0 12px", fontSize: "22px", fontWeight: 700, lineHeight: 1.25 }}>
-              Something went wrong in the UI
+              {i18n.t("common:errorBoundaryTitle")}
             </h1>
             <p
               role="alert"
@@ -90,7 +91,7 @@ export class ErrorBoundary extends React.Component {
                 boxShadow: "0 4px 14px rgba(30,107,60,0.30)",
               }}
             >
-              Reload page
+              {i18n.t("common:errorBoundaryReload")}
             </button>
           </div>
         </div>

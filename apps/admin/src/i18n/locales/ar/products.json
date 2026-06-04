@@ -1,0 +1,141 @@
+{
+  "list": {
+    "pageTitle": "المنتجات",
+    "pageSubtitle": "إدارة مخزون الفواكه والخضروات",
+    "addProduct": "إضافة منتج",
+    "manageCategories": "إدارة الفئات",
+    "addCategory": "إضافة فئة",
+    "searchPlaceholder": "بحث في المنتجات…",
+    "searchAria": "بحث في المنتجات",
+    "loadFailed": "تعذّر تحميل المنتجات",
+    "empty": {
+      "title": "لا توجد منتجات",
+      "withSearch": "جرّب تعديل البحث أو التصفية.",
+      "withoutSearch": "أضف أول منتج للبدء."
+    },
+    "tableHeaders": {
+      "actions": "إجراءات",
+      "status": "الحالة",
+      "stock": "المخزون",
+      "price": "السعر",
+      "category": "الفئة",
+      "productName": "اسم المنتج",
+      "image": "الصورة"
+    },
+    "perUnit": "لكل {{unit}}",
+    "actionsMenuAria": "إجراءات لـ {{name}}",
+    "workingAria": "جارٍ العمل…",
+    "menu": {
+      "edit": "تعديل",
+      "freeze": "تجميد",
+      "unfreeze": "إلغاء التجميد",
+      "removeFromCatalog": "إزالة من الكتالوج",
+      "deletedNote": "هذا المنتج مُزال بالفعل من الكتالوج. التجميد والحذف مخفيان لأن الإزالة تمت (حذف ناعم)."
+    },
+    "confirmDelete": "حذف «{{name}}»؟",
+    "toasts": {
+      "frozen": "تم تجميد المنتج.",
+      "unfrozen": "تم إلغاء تجميد المنتج.",
+      "actionFailed": "فشل الإجراء",
+      "deleted": "تم حذف المنتج.",
+      "deleteFailed": "فشل الحذف"
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "frozen": "مجمّد",
+      "deleted": "محذوف"
+    },
+    "stock": {
+      "in": "متوفر",
+      "out": "غير متوفر"
+    },
+    "view": {
+      "gallery": "معرض",
+      "table": "جدول",
+      "toggleAria": "تخطيط قائمة المنتجات"
+    },
+    "drawer": {
+      "title": "تفاصيل المنتج",
+      "close": "إغلاق",
+      "closeAria": "إغلاق تفاصيل المنتج"
+    },
+    "card": {
+      "openDetailsAria": "عرض تفاصيل {{name}}"
+    }
+  },
+  "form": {
+    "titleNew": "إضافة منتج",
+    "titleEdit": "تعديل منتج",
+    "subtitleNew": "أكمل التفاصيل لإضافة منتج جديد",
+    "subtitleEdit": "حدّث معلومات المنتج أدناه",
+    "sections": {
+      "info": "معلومات المنتج",
+      "classification": "التصنيف",
+      "preorder": "طلب مسبق / طبق مخصص",
+      "imageRequired": "صورة المنتج (مطلوبة)",
+      "imageOptional": "صورة المنتج (اختيارية)"
+    },
+    "fields": {
+      "nameAllLangs": "اسم المنتج (كل اللغات) *",
+      "nameAr": "العربية (ar)",
+      "nameHe": "עברית (he)",
+      "nameEn": "English (en)",
+      "nameMissingLocale": "الترجمة مفقودة لهذه اللغة",
+      "description": "الوصف",
+      "descriptionHint": "اختياري",
+      "price": "السعر (₪) *",
+      "salePrice": "سعر التخفيض (₪)",
+      "salePriceHint": "اختياري — اتركه فارغاً بدون تخفيض",
+      "allowByAmount": "السماح بالشراء بمبلغ مالي (₪)",
+      "allowByAmountHint": "للمنتجات بالكيلو/غرام يحسب الخادم الوزن من المبلغ. للوحدة/صندوق يجب أن تكون الكمية عدداً صحيحاً.",
+      "category": "الفئة *",
+      "unit": "الوحدة *",
+      "minimumOrderWeight": "الحد الأدنى لوزن الطلب (كغ) *",
+      "minimumOrderWeightHint": "أصغر وزن يمكن للعملاء طلبه للمنتجات بالكيلو/غرام. الزيادات دائماً 0.5 كغ.",
+      "stockStatus": "حالة المخزون *",
+      "featured": "منتج مميز",
+      "featuredHint": "يُعرض بشكل بارز في المتجر",
+      "preorderOnly": "طلب مسبق فقط (يتطلب إشعاراً مسبقاً)",
+      "minAdvance": "الحد الأدنى للإشعار المسبق (ساعات) *",
+      "preparationNotes": "ملاحظات التحضير (داخلية)",
+      "preparationNotesHint": "لا تُعرض للعملاء"
+    },
+    "image": {
+      "newSelected": "تم اختيار صورة جديدة",
+      "current": "الصورة الحالية",
+      "pendingUpload": "بانتظار الرفع",
+      "currentReplaceHint": "استبدل باختيار ملف أدناه.",
+      "newAppearsOnStorefront": "ستظهر هذه الصورة في المتجر.",
+      "discardNewImage": "تجاهل الصورة الجديدة",
+      "uploadReplace": "ارفع صورة جديدة لاستبدال الحالية",
+      "selectImage": "اختر صورة",
+      "clickOrDrop": "انقر أو اسحب صورة هنا",
+      "fileTypes": "PNG, JPG, WebP — حسب حدود الخادم",
+      "previewAlt": "معاينة المنتج",
+      "uploadReplacementAria": "رفع صورة بديلة للمنتج",
+      "selectImageAria": "اختيار صورة المنتج"
+    },
+    "buttons": {
+      "submitNew": "إنشاء منتج",
+      "submitEdit": "حفظ التغييرات",
+      "saving": "جارٍ الحفظ…",
+      "cancel": "إلغاء"
+    },
+    "errors": {
+      "loadFailed": "تعذّر تحميل بيانات النموذج",
+      "productNotFound": "المنتج غير موجود",
+      "imageRequired": "صورة المنتج مطلوبة",
+      "saveFailed": "فشل حفظ المنتج"
+    },
+    "toasts": {
+      "created": "تم إنشاء المنتج بنجاح.",
+      "updated": "تم تحديث المنتج بنجاح."
+    },
+    "minimumOrderWeightOption": "{{weight}} كغ",
+    "stockOptions": {
+      "in_stock": "متوفر",
+      "out_of_stock": "غير متوفر"
+    }
+  }
+}

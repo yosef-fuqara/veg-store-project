@@ -19,6 +19,7 @@
   "yes": "Yes",
   "no": "No",
   "search": "Search",
+  "clearSearch": "Clear search",
   "filter": "Filter",
   "allStatuses": "All statuses",
   "actions": "Actions",
@@ -35,5 +36,32 @@
   "somethingWentWrong": "Something went wrong",
   "errorGeneric": "Something went wrong. Please try again.",
   "currencySymbol": "₪",
-  "unnamedProduct": "Unnamed product"
+  "unnamedProduct": "Unnamed product",
+  "productSearchSelect": {
+    "placeholder": "Search for a product or choose from the list",
+    "noResults": "No products found",
+    "loading": "Loading products...",
+    "clearSelection": "Clear product selection",
+    "required": "Please choose a product"
+  },
+  "submit": "Submit",
+  "confirm": "Confirm",
+  "clear": "Clear",
+  "reset": "Reset",
+  "required": "Required",
+  "optional": "Optional",
+  "active": "Active",
+  "inactive": "Inactive",
+  "enabled": "Enabled",
+  "disabled": "Disabled",
+  "success": "Success",
+  "error": "Error",
+  "noData": "No data",
+  "apiErrors": {
+    "unknown": "Unknown error",
+    "rateLimit": "Too many requests. Wait a few minutes and try again.",
+    "requestFailed": "Request failed (HTTP {{status}}{{statusText}})",
+    "network": "Network error — check that the API is running and CORS allows this origin.",
+    "timeout": "Request timed out."
+  }
 }

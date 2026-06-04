@@ -8,7 +8,21 @@ const registerSchema = Joi.object({
   phone: israeliMobileString,
   email: Joi.string().trim().email().required(),
   password: passwordSchema,
-  marketingConsentWhatsApp: Joi.boolean().default(false)
+  // Required acceptance of Terms of Use + Privacy Policy.
+  acceptTerms: Joi.boolean()
+    .valid(true)
+    .required()
+    .messages({
+      "any.only": "TERMS_NOT_ACCEPTED",
+      "any.required": "TERMS_NOT_ACCEPTED",
+      "boolean.base": "TERMS_NOT_ACCEPTED"
+    }),
+  // Legacy flag (kept for backward compatibility) + new structured consents.
+  marketingConsentWhatsApp: Joi.boolean().default(false),
+  marketingConsent: Joi.boolean().default(false),
+  saveDetailsConsent: Joi.boolean().default(false),
+  joinCustomerClub: Joi.boolean().default(false),
+  consentLanguage: Joi.string().valid("he", "ar", "en").optional()
 });
 
 const loginSchema = Joi.object({

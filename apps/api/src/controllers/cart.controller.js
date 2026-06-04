@@ -14,9 +14,10 @@ const {
   PURCHASE_MODE_AMOUNT,
   floorPayableIls
 } = require("../services/cart.service");
+const { snapDerivedWeightKgForAmount } = require("../utils/product-weight");
 const { PRODUCT_UNITS } = require("../constants/product");
 
-const coerceIncomingWeightQuantity = (product, quantity) => {
+const coerceIncomingWeightQuantity = (product, quantity, purchaseMode = PURCHASE_MODE_QUANTITY) => {
   if (
     typeof quantity !== "number" ||
     !Number.isFinite(quantity) ||
@@ -24,11 +25,16 @@ const coerceIncomingWeightQuantity = (product, quantity) => {
   ) {
     return quantity;
   }
-  return coerceCartWeightQuantityKg(product, quantity);
+  const kg = coerceCartWeightQuantityKg(product, quantity);
+  if (purchaseMode === PURCHASE_MODE_AMOUNT) {
+    return snapDerivedWeightKgForAmount(kg, product);
+  }
+  return kg;
 };
 const { isWrapAllowedForUnit, WRAP_PRICE_PER_KG } = require("../constants/product");
 
-const PRODUCT_CART_FIELDS = "price salePrice stockStatus unit allowPurchaseByAmount";
+const PRODUCT_CART_FIELDS =
+  "price salePrice stockStatus unit allowPurchaseByAmount minimumOrderWeight weightStep";
 
 const getOrCreateCart = async (userId) => {
   let cart = await Cart.findOne({ user: userId });
@@ -111,7 +117,7 @@ const mergeIntoAmountLine = (line, addPurchaseAmountIls, unitPrice, product) => 
     unitPrice,
     product
   );
-  const quantityKg = coerceIncomingWeightQuantity(product, derivedQty);
+  const quantityKg = coerceIncomingWeightQuantity(product, derivedQty, PURCHASE_MODE_AMOUNT);
   assertQuantityAllowedForProduct(product, quantityKg, PURCHASE_MODE_AMOUNT);
   line.quantity = quantityKg;
   line.unitPriceSnapshot = unitPrice;
@@ -152,7 +158,7 @@ const addCartItem = async (req, res, next) => {
         unitPrice,
         product
       );
-      const quantityKg = coerceIncomingWeightQuantity(product, derivedQty);
+      const quantityKg = coerceIncomingWeightQuantity(product, derivedQty, PURCHASE_MODE_AMOUNT);
       assertQuantityAllowedForProduct(product, quantityKg, PURCHASE_MODE_AMOUNT);
 
       if (existingItem) {
@@ -269,7 +275,7 @@ const updateCartItemQuantity = async (req, res, next) => {
         unitPrice,
         product
       );
-      const quantityKg = coerceIncomingWeightQuantity(product, derivedQty);
+      const quantityKg = coerceIncomingWeightQuantity(product, derivedQty, PURCHASE_MODE_AMOUNT);
       assertQuantityAllowedForProduct(product, quantityKg, PURCHASE_MODE_AMOUNT);
       item.quantity = quantityKg;
       item.purchaseMode = PURCHASE_MODE_AMOUNT;

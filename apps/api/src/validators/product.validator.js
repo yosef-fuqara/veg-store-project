@@ -1,5 +1,9 @@
 const Joi = require("joi");
 const { PRODUCT_UNITS, PRODUCT_STOCK_STATUS } = require("../constants/product");
+const {
+  ALLOWED_MINIMUM_ORDER_WEIGHTS,
+  DEFAULT_WEIGHT_STEP
+} = require("../constants/product-weight");
 
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
@@ -32,6 +36,10 @@ const createProductSchema = Joi.object({
     .optional(),
   isFeatured: Joi.boolean().optional(),
   allowPurchaseByAmount: Joi.boolean().optional(),
+  minimumOrderWeight: Joi.number()
+    .valid(...ALLOWED_MINIMUM_ORDER_WEIGHTS)
+    .optional(),
+  weightStep: Joi.number().valid(DEFAULT_WEIGHT_STEP).optional(),
   isPreorderOnly: Joi.boolean().optional(),
   minAdvanceHours: Joi.number().integer().min(0).max(720).optional(),
   preparationNotes: Joi.string().trim().max(1000).allow("").optional()
@@ -57,6 +65,10 @@ const updateProductSchema = Joi.object({
     .optional(),
   isFeatured: Joi.boolean().optional(),
   allowPurchaseByAmount: Joi.boolean().optional(),
+  minimumOrderWeight: Joi.number()
+    .valid(...ALLOWED_MINIMUM_ORDER_WEIGHTS)
+    .optional(),
+  weightStep: Joi.number().valid(DEFAULT_WEIGHT_STEP).optional(),
   isPreorderOnly: Joi.boolean().optional(),
   minAdvanceHours: Joi.number().integer().min(0).max(720).optional(),
   preparationNotes: Joi.string().trim().max(1000).allow("").optional()
@@ -71,6 +83,8 @@ const updateProductSchema = Joi.object({
     "stockStatus",
     "isFeatured",
     "allowPurchaseByAmount",
+    "minimumOrderWeight",
+    "weightStep",
     "isPreorderOnly",
     "minAdvanceHours",
     "preparationNotes"

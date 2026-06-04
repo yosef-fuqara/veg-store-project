@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../features/auth/AuthContext";
 import {
@@ -8,69 +8,107 @@ import {
   accountInputStyle,
   accountPrimaryButtonStyle
 } from "../../features/account/accountTheme";
+import StructuredAddressInput from "../../components/StructuredAddressInput";
 import * as accountService from "../../services/accountService";
 import * as orderService from "../../services/orderService";
-import { deliveryAreaOptionLabel } from "../../utils/deliveryAreaDisplay";
+import { formatAddressForDisplay, legacyDeliveryToStructured, validateStructuredAddress } from "../../utils/structuredAddress";
 
-const emptyForm = { label: "", city: "", street: "", building: "", apartment: "", notes: "" };
-
-const formatAddressLine = (addr) =>
-  [addr.label, addr.city, addr.street, addr.building, addr.apartment, addr.notes].filter(Boolean).join(", ");
+const emptyForm = {
+  label: "",
+  city: "",
+  cityKey: "",
+  street: "",
+  houseNumber: "",
+  building: "",
+  apartment: "",
+  floor: "",
+  entrance: "",
+  notes: ""
+};
 
 const AccountAddressesPage = () => {
-  const { t, i18n } = useTranslation(["account", "checkout"]);
+  const { t, i18n } = useTranslation(["account", "address"]);
   const { user, updateUser } = useAuth();
   const lang = (i18n.language || "he").split("-")[0];
   const [areas, setAreas] = useState([]);
+  const [localAreaKey, setLocalAreaKey] = useState("");
   const [form, setForm] = useState(emptyForm);
+  const [deliveryArea, setDeliveryArea] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     orderService
       .getDeliveryAreas()
-      .then((data) => setAreas(data?.areas ?? []))
+      .then((data) => {
+        setAreas(data?.areas ?? []);
+        if (data?.localAreaKey) setLocalAreaKey(data.localAreaKey);
+      })
       .catch(() => setAreas([]));
   }, []);
 
   const addresses = user?.addresses || [];
+  const allowedKeys = useMemo(() => new Set(areas.map((a) => a.key)), [areas]);
 
   const resetForm = () => {
     setForm(emptyForm);
+    setDeliveryArea("");
     setEditingId(null);
     setShowForm(false);
+    setFieldErrors({});
   };
 
   const startEdit = (addr) => {
     setEditingId(addr.id);
+    const structured = legacyDeliveryToStructured(addr, addr.cityKey || addr.city || "");
     setForm({
       label: addr.label || "",
-      city: addr.city || "",
-      street: addr.street || "",
-      building: addr.building || "",
-      apartment: addr.apartment || "",
-      notes: addr.notes || ""
+      ...structured
     });
+    setDeliveryArea(structured.cityKey || "");
     setShowForm(true);
+  };
+
+  const handleAddressChange = (next, meta = {}) => {
+    setForm((f) => ({ ...f, ...next }));
+    if (meta.deliveryArea) setDeliveryArea(meta.deliveryArea);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
     setError("");
     setMessage("");
-    if (!form.city?.trim() || !form.street?.trim()) return;
+    setFieldErrors({});
+
+    const check = validateStructuredAddress(form, deliveryArea, (key) => t(key, { ns: "address" }), {
+      restrictToDeliveryAreas: areas.length > 0,
+      allowedCityKeys: allowedKeys
+    });
+    if (!check.ok) {
+      setFieldErrors(check.fields);
+      return;
+    }
+
     setBusy(true);
     try {
+      const key = check.cityKey || deliveryArea;
       const payload = {
         label: form.label.trim(),
-        city: form.city.trim(),
-        street: form.street.trim(),
-        building: form.building.trim(),
-        apartment: form.apartment.trim(),
-        notes: form.notes.trim()
+        city: check.normalized.city,
+        cityKey: key,
+        cityId: key,
+        citySlug: key,
+        street: check.normalized.street,
+        houseNumber: check.normalized.houseNumber,
+        building: check.normalized.building,
+        apartment: check.normalized.apartment,
+        floor: check.normalized.floor,
+        entrance: check.normalized.entrance,
+        notes: check.normalized.notes
       };
       const next = editingId
         ? await accountService.updateAddress(editingId, payload)
@@ -114,6 +152,8 @@ const AccountAddressesPage = () => {
     }
   };
 
+  const accountInputStyleFn = () => accountInputStyle;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div>
@@ -144,35 +184,15 @@ const AccountAddressesPage = () => {
             {t("account:addresses.label")}
             <input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} style={accountInputStyle} maxLength={50} />
           </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "14px", color: accountColors.textSecondary }}>
-            {t("account:addresses.city")}
-            <select value={form.city} required onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} style={accountInputStyle}>
-              <option value="">{t("account:addresses.cityPlaceholder")}</option>
-              {areas.map((area) => (
-                <option key={area.key} value={area.key}>
-                  {deliveryAreaOptionLabel(area, lang, t)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "14px", color: accountColors.textSecondary }}>
-            {t("account:addresses.street")}
-            <input value={form.street} required onChange={(e) => setForm((f) => ({ ...f, street: e.target.value }))} style={accountInputStyle} maxLength={120} />
-          </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "14px", color: accountColors.textSecondary }}>
-              {t("account:addresses.building")}
-              <input value={form.building} onChange={(e) => setForm((f) => ({ ...f, building: e.target.value }))} style={accountInputStyle} maxLength={50} />
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "14px", color: accountColors.textSecondary }}>
-              {t("account:addresses.apartment")}
-              <input value={form.apartment} onChange={(e) => setForm((f) => ({ ...f, apartment: e.target.value }))} style={accountInputStyle} maxLength={50} />
-            </label>
-          </div>
-          <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "14px", color: accountColors.textSecondary }}>
-            {t("account:addresses.notes")}
-            <textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} style={{ ...accountInputStyle, resize: "vertical" }} rows={2} maxLength={500} />
-          </label>
+          <StructuredAddressInput
+            value={form}
+            deliveryArea={deliveryArea}
+            deliveryAreas={areas}
+            localAreaKey={localAreaKey}
+            errors={fieldErrors}
+            onChange={handleAddressChange}
+            inputStyle={accountInputStyleFn}
+          />
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             <button type="submit" disabled={busy} style={{ ...accountPrimaryButtonStyle, opacity: busy ? 0.7 : 1 }}>
               {t("account:addresses.save")}
@@ -199,7 +219,10 @@ const AccountAddressesPage = () => {
                         {t("account:addresses.default")}
                       </span>
                     ) : null}
-                    <p style={{ margin: 0, fontSize: "15px", color: accountColors.textPrimary, lineHeight: 1.5 }}>{formatAddressLine(addr)}</p>
+                    <p style={{ margin: 0, fontSize: "15px", color: accountColors.textPrimary, lineHeight: 1.5 }}>
+                      {addr.label ? `${addr.label} — ` : ""}
+                      {formatAddressForDisplay(addr, lang)}
+                    </p>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>

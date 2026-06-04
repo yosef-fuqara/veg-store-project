@@ -142,24 +142,18 @@ function toWaApiDigits(input) {
   return digitsOnly.length ? digitsOnly : null;
 }
 
-const formatDeliveryAddressLine = (deliveryAddress) => {
-  const addr = deliveryAddress || {};
-  const parts = [
-    addr.street,
-    addr.building,
-    addr.apartment,
-    addr.label,
-    addr.notes
-  ].filter(Boolean);
-  const city = addr.city;
-  if (city && parts.length) {
-    return `${parts.join(", ")}, ${city}`;
-  }
-  if (city) {
-    return city;
-  }
-  return parts.length ? parts.join(", ") : "";
-};
+const { formatDeliveryAddressLine } = require("../utils/structured-address");
+const { getLocalizedProductName, normalizeLang } = require("../utils/product-name");
+
+function orderDisplayLanguage(order) {
+  return normalizeLang(order?.orderLegalSnapshot?.acceptedLanguage) || "he";
+}
+
+function formatOrderLineName(line, order) {
+  const lang = orderDisplayLanguage(order);
+  const localized = getLocalizedProductName(line, lang, { warnInDev: false });
+  return localized || line?.name || "-";
+}
 
 const buildOrderMessage = (order, user) => {
   const orderId = String(order?._id || "");
@@ -187,7 +181,7 @@ const buildOrderMessage = (order, user) => {
   const itemLines = (order?.items || [])
     .slice(0, 4)
     .map(
-      (line) => `${line.name} x${line.quantity}${line.unit ? ` ${line.unit}` : ""}`
+      (line) => `${formatOrderLineName(line, order)} x${line.quantity}${line.unit ? ` ${line.unit}` : ""}`
     );
   if (itemLines.length) {
     lines.push(`Items: ${itemLines.join("; ")}`);
@@ -199,7 +193,7 @@ const buildOrderMessage = (order, user) => {
   if (wrapTotal > 0) {
     const wrappedItems = (order.items || [])
       .filter((line) => line?.wrap)
-      .map((line) => `${line.name} x${line.quantity}${line.unit ? ` ${line.unit}` : ""}`);
+      .map((line) => `${formatOrderLineName(line, order)} x${line.quantity}${line.unit ? ` ${line.unit}` : ""}`);
     lines.push(`Wrap fees: ${wrapTotal} ILS`);
     if (wrappedItems.length) {
       lines.push(`Wrap (cling-film): ${wrappedItems.join(", ")}`);

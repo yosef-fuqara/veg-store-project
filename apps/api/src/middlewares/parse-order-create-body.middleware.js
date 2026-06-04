@@ -11,8 +11,15 @@ const parseOrderCreateBody = (req, _res, next) => {
     if (addr && typeof addr === "string") {
       req.body.deliveryAddress = JSON.parse(addr);
     }
+    const items = req.body?.items;
+    if (items && typeof items === "string") {
+      req.body.items = JSON.parse(items);
+    }
     if (req.body?.preferredDeliveryAt === "") {
       delete req.body.preferredDeliveryAt;
+    }
+    if (req.body?.customerEmail === "") {
+      delete req.body.customerEmail;
     }
   } catch {
     return next(

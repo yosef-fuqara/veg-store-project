@@ -13,10 +13,11 @@ const { PAYMENT_METHOD } = require("../../src/constants/order");
 const addressOrderBase = {
   deliveryAddress: {
     street: "Herzl",
-    building: "1"
+    houseNumber: "1"
   },
   deliveryArea: "eilabun",
-  customerPhone: "0501234567"
+  customerPhone: "0501234567",
+  acceptTerms: true
 };
 
 async function seedCart(token, productId) {

@@ -8,14 +8,34 @@ export const login = async ({ email, password }) => {
   };
 };
 
-export const register = async ({ name, phone, email, password, marketingConsentWhatsApp }) => {
-  const { data } = await apiClient.post("/auth/register", {
+export const register = async ({
+  name,
+  phone,
+  email,
+  password,
+  acceptTerms,
+  marketingConsent,
+  marketingConsentWhatsApp,
+  saveDetailsConsent,
+  joinCustomerClub,
+  consentLanguage
+}) => {
+  const marketing = marketingConsent === true || marketingConsentWhatsApp === true;
+  const body = {
     name,
     phone,
     email,
     password,
-    marketingConsentWhatsApp: marketingConsentWhatsApp === true
-  });
+    acceptTerms: acceptTerms === true,
+    marketingConsent: marketing,
+    marketingConsentWhatsApp: marketing,
+    saveDetailsConsent: saveDetailsConsent === true,
+    joinCustomerClub: joinCustomerClub === true
+  };
+  if (consentLanguage) {
+    body.consentLanguage = consentLanguage;
+  }
+  const { data } = await apiClient.post("/auth/register", body);
   return {
     user: data.data.user,
     accessToken: data.data.tokens.accessToken

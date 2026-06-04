@@ -10,10 +10,11 @@ import {
   updateAdminOrderPaymentStatus,
   updateAdminOrderStatus
 } from "../services/orderService";
-import { getLocalizedText } from "../utils/localizedDisplayName";
+import { pickLocalizedProductName } from "../utils/localizedDisplayName";
 import { resolveAdminDeliveryAreaLabel } from "../utils/deliveryAreaLabel";
 import { formatAdminOrderStatusLabel, formatAdminPaymentStatusLabel } from "../utils/adminOrderStatusLabel";
 import { useAdminLanguage } from "../i18n/useAdminLanguage";
+import i18n from "../i18n";
 
 const ORDER_STATUS_OPTIONS = [
   "new", "confirmed", "sent_with_delivery_company", "delivered", "cancelled"
@@ -75,13 +76,31 @@ const formatChargedCurrency = (value) => {
   }).format(whole);
 };
 
-const formatDate = (value) => {
-  if (!value) return '—';
-  return new Date(value).toLocaleString('en-IL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const adminDateLocale = (lang) => {
+  if (lang === "he") return "he-IL";
+  if (lang === "ar") return "ar-IL";
+  return "en-IL";
 };
 
-const formatConsentStatus = (user) =>
-  user?.marketingConsentWhatsApp ? "Consented (WhatsApp)" : "Not consented";
+const formatDate = (value) => {
+  if (!value) return "—";
+  const lang = String(i18n.language || "en").split("-")[0];
+  return new Date(value).toLocaleString(adminDateLocale(lang), {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+};
+
+const formatConsentStatus = (user, t) =>
+  user?.marketingConsentWhatsApp
+    ? t("orders:details.customer.marketingConsentYes")
+    : t("orders:details.customer.marketingConsentNo");
+
+const formatBool = (value, t) =>
+  value ? t("orders:details.consent.yes") : t("orders:details.consent.no");
 
 const ORDER_ITEM_THUMB_PX = 52;
 
@@ -108,7 +127,7 @@ const orderItemRowKey = (item, lang, idx) => {
     if (id != null && id !== "") return `${String(id)}-${idx}`;
   }
   const raw = /** @type {{ name?: unknown; nameLocales?: unknown }} */ (item);
-  return `${getLocalizedText(raw.nameLocales ?? raw.name, lang)}-${idx}`;
+  return `${pickLocalizedProductName(raw, lang)}-${idx}`;
 };
 
 const OrderItemThumbnail = ({ src, noImageLabel }) => {
@@ -322,13 +341,24 @@ const AdminOrderDetailsPage = () => {
     );
   }
 
-  const deliveryAddress = [
-    order.deliveryAddress?.city,
-    order.deliveryAddress?.street,
-    order.deliveryAddress?.building && `${t("orders:details.delivery.buildingPrefix")} ${order.deliveryAddress.building}`,
-    order.deliveryAddress?.apartment && `${t("orders:details.delivery.apartmentPrefix")} ${order.deliveryAddress.apartment}`,
-    order.deliveryAddress?.notes,
-  ].filter(Boolean).join(', ');
+  const addr = order.deliveryAddress || {};
+  const houseNo = addr.houseNumber || addr.building;
+  const deliveryAddressLine =
+    addr.fullAddress ||
+    [
+      addr.city,
+      addr.street,
+      houseNo && `${t("orders:details.delivery.housePrefix")} ${houseNo}`,
+      addr.apartment && `${t("orders:details.delivery.apartmentPrefix")} ${addr.apartment}`,
+      addr.floor && `${t("orders:details.delivery.floorPrefix")} ${addr.floor}`,
+      addr.entrance && `${t("orders:details.delivery.entrancePrefix")} ${addr.entrance}`,
+      addr.building &&
+        addr.building !== houseNo &&
+        `${t("orders:details.delivery.buildingPrefix")} ${addr.building}`,
+      addr.notes
+    ]
+      .filter(Boolean)
+      .join(", ");
 
   return (
     <div style={{ maxWidth: '840px' }}>
@@ -395,11 +425,11 @@ const AdminOrderDetailsPage = () => {
         {/* Customer info */}
         <Card>
           <CardTitle>{t("orders:details.cards.customer")}</CardTitle>
-          <InfoRow label={t("orders:details.customer.name")}>{order.user?.name || '—'}</InfoRow>
-          <InfoRow label={t("orders:details.customer.email")}>{order.user?.email || '—'}</InfoRow>
+          <InfoRow label={t("orders:details.customer.name")}>{order.user?.name || order.customerName || '—'}</InfoRow>
+          <InfoRow label={t("orders:details.customer.email")}>{order.user?.email || order.customerEmail || '—'}</InfoRow>
           <InfoRow label={t("orders:details.customer.phone")}>{order.user?.phone || order.customerPhone || '—'}</InfoRow>
           <InfoRow label={t("orders:details.customer.marketingConsentStatus")}>
-            {formatConsentStatus(order.user)}
+            {formatConsentStatus(order.user, t)}
           </InfoRow>
           <InfoRow label={t("orders:details.customer.marketingConsentDate")}>
             {formatDate(order.user?.marketingConsentWhatsAppAt)}
@@ -411,6 +441,91 @@ const AdminOrderDetailsPage = () => {
           <InfoRow label={t("orders:details.customer.lastUpdated")}>{formatDate(order.updatedAt)}</InfoRow>
           {order.notes && <InfoRow label={t("orders:details.customer.customerNotes")}>{order.notes}</InfoRow>}
           {order.customRequest && <InfoRow label={t("orders:details.customer.customRequest")}>{order.customRequest}</InfoRow>}
+        </Card>
+
+        {/* Consent & legal */}
+        <Card>
+          <CardTitle>{t("orders:details.cards.consent")}</CardTitle>
+
+          <div style={{ fontSize: '12px', fontWeight: 700, color: colors.textSecondary, margin: '4px 0 6px' }}>
+            {t("orders:details.consent.snapshotTitle")}
+          </div>
+          <InfoRow label={t("orders:details.consent.termsAccepted")}>
+            {formatBool(order.orderLegalSnapshot?.termsAccepted, t)}
+          </InfoRow>
+          <InfoRow label={t("orders:details.consent.acceptedAt")}>
+            {formatDate(order.orderLegalSnapshot?.acceptedAt)}
+          </InfoRow>
+          <InfoRow label={t("orders:details.consent.acceptedLanguage")}>
+            {order.orderLegalSnapshot?.acceptedLanguage || '—'}
+          </InfoRow>
+          <InfoRow label={t("orders:details.consent.acceptedFrom")}>
+            {order.orderLegalSnapshot?.acceptedFrom || '—'}
+          </InfoRow>
+          <InfoRow label={t("orders:details.consent.termsVersion")}>
+            {order.orderLegalSnapshot?.termsVersion || '—'}
+          </InfoRow>
+          <InfoRow label={t("orders:details.consent.privacyVersion")}>
+            {order.orderLegalSnapshot?.privacyVersion || '—'}
+          </InfoRow>
+          <InfoRow label={t("orders:details.consent.shippingVersion")}>
+            {order.orderLegalSnapshot?.shippingPolicyVersion || '—'}
+          </InfoRow>
+          <InfoRow label={t("orders:details.consent.cancellationVersion")}>
+            {order.orderLegalSnapshot?.cancellationPolicyVersion || '—'}
+          </InfoRow>
+          <InfoRow label={t("orders:details.consent.marketingAtOrder")}>
+            {formatBool(order.orderLegalSnapshot?.marketingConsentAtOrderTime, t)}
+          </InfoRow>
+          <InfoRow label={t("orders:details.consent.saveDetailsAtOrder")}>
+            {formatBool(order.orderLegalSnapshot?.saveDetailsConsentAtOrderTime, t)}
+          </InfoRow>
+          <InfoRow label={t("orders:details.consent.clubJoinedAtOrder")}>
+            {formatBool(order.orderLegalSnapshot?.customerClubJoinedAtOrderTime, t)}
+          </InfoRow>
+
+          {order.user ? (
+            <>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: colors.textSecondary, margin: '12px 0 6px' }}>
+                {t("orders:details.consent.accountTitle")}
+              </div>
+              <InfoRow label={t("orders:details.consent.marketingConsent")}>
+                {formatBool(order.user?.marketing?.consent ?? order.user?.marketingConsentWhatsApp, t)}
+              </InfoRow>
+              <InfoRow label={t("orders:details.consent.marketingConsentDate")}>
+                {formatDate(order.user?.marketing?.consentAt || order.user?.marketingConsentWhatsAppAt)}
+              </InfoRow>
+              <InfoRow label={t("orders:details.consent.unsubscribed")}>
+                {formatBool(Boolean(order.user?.marketing?.unsubscribedAt), t)}
+              </InfoRow>
+              {order.user?.marketing?.unsubscribedAt ? (
+                <>
+                  <InfoRow label={t("orders:details.consent.unsubscribeDate")}>
+                    {formatDate(order.user?.marketing?.unsubscribedAt)}
+                  </InfoRow>
+                  <InfoRow label={t("orders:details.consent.unsubscribeSource")}>
+                    {order.user?.marketing?.unsubscribeSource || '—'}
+                  </InfoRow>
+                </>
+              ) : null}
+              <InfoRow label={t("orders:details.consent.savedDetails")}>
+                {formatBool(order.user?.savedDetails?.saveForNextOrder, t)}
+              </InfoRow>
+              <InfoRow label={t("orders:details.consent.clubJoined")}>
+                {formatBool(order.user?.customerClub?.joined, t)}
+              </InfoRow>
+              {order.user?.customerClub?.joined ? (
+                <>
+                  <InfoRow label={t("orders:details.consent.clubJoinedDate")}>
+                    {formatDate(order.user?.customerClub?.joinedAt)}
+                  </InfoRow>
+                  <InfoRow label={t("orders:details.consent.clubStatus")}>
+                    {order.user?.customerClub?.status || '—'}
+                  </InfoRow>
+                </>
+              ) : null}
+            </>
+          ) : null}
         </Card>
 
         {/* Items */}
@@ -444,7 +559,7 @@ const AdminOrderDetailsPage = () => {
                         noImageLabel={t("orders:details.itemsTable.noImage")}
                       />
                       <div style={{ minWidth: 0, flex: 1, lineHeight: 1.35 }}>
-                        <span>{getLocalizedText(/** @type {{ name?: unknown; nameLocales?: unknown }} */ (item).nameLocales ?? item.name, lang)}</span>
+                        <span>{pickLocalizedProductName(item, lang)}</span>
                         {item.isPreorderOnly && (
                           <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', fontWeight: 600, background: colors.warningBg, color: colors.warning, border: `1px solid ${colors.warningBorder}` }}>
                             {t("orders:details.itemBadges.preorder")}
@@ -508,7 +623,13 @@ const AdminOrderDetailsPage = () => {
         <Card>
           <CardTitle>{t("orders:details.cards.delivery")}</CardTitle>
           <InfoRow label={t("orders:details.delivery.area")}>{resolveAdminDeliveryAreaLabel(order, deliveryAreaCatalog?.areas)}</InfoRow>
-          {deliveryAddress && <InfoRow label={t("orders:details.delivery.address")}>{deliveryAddress}</InfoRow>}
+          {addr.city ? <InfoRow label={t("orders:details.delivery.city")}>{addr.city}</InfoRow> : null}
+          {addr.street ? <InfoRow label={t("orders:details.delivery.street")}>{addr.street}</InfoRow> : null}
+          {houseNo ? <InfoRow label={t("orders:details.delivery.houseNumber")}>{houseNo}</InfoRow> : null}
+          {addr.apartment ? <InfoRow label={t("orders:details.delivery.apartment")}>{addr.apartment}</InfoRow> : null}
+          {addr.floor ? <InfoRow label={t("orders:details.delivery.floor")}>{addr.floor}</InfoRow> : null}
+          {addr.entrance ? <InfoRow label={t("orders:details.delivery.entrance")}>{addr.entrance}</InfoRow> : null}
+          {deliveryAddressLine ? <InfoRow label={t("orders:details.delivery.address")}>{deliveryAddressLine}</InfoRow> : null}
           {order.deliveryAddress?.label && <InfoRow label={t("orders:details.delivery.addressLabel")}>{order.deliveryAddress.label}</InfoRow>}
           {order.preferredDeliveryAt && (
             <InfoRow label={t("orders:details.delivery.preferredDelivery")}>{formatDate(order.preferredDeliveryAt)}</InfoRow>

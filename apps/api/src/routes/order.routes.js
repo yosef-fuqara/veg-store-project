@@ -1,6 +1,8 @@
 const express = require("express");
 const {
   createOrder,
+  guestCheckoutPreview,
+  createGuestOrder,
   getDeliveryAreas,
   listMyOrders,
   getMyOrder,
@@ -18,6 +20,8 @@ const parseOrderCreateBody = require("../middlewares/parse-order-create-body.mid
 const {
   orderIdParamSchema,
   createOrderSchema,
+  guestCheckoutPreviewSchema,
+  createGuestOrderSchema,
   updateOrderStatusSchema,
   adminOrderListQuerySchema,
   updateOrderPaymentStatusSchema
@@ -27,6 +31,20 @@ const router = express.Router();
 
 // Public — allowed delivery areas and pricing rules for the storefront.
 router.get("/delivery-areas", getDeliveryAreas);
+
+router.post(
+  "/guest/preview",
+  validate(guestCheckoutPreviewSchema),
+  guestCheckoutPreview
+);
+router.post(
+  "/guest",
+  upload.single("bankTransferProof"),
+  handleUploadErrors,
+  parseOrderCreateBody,
+  validate(createGuestOrderSchema),
+  createGuestOrder
+);
 
 router.get(
   "/admin/all",

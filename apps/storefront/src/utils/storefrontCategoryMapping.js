@@ -8,6 +8,7 @@
  * |--------------------|------------------------|-----------------------------------|
  * | fruits             | פירות                  | fruits, fruit                     |
  * | vegetables         | ירקות                  | vegetables, vegetable           |
+ * | ready-stuffed-vegetables | ממולאים מוכנים   | ready-stuffed-vegetables, mahashi |
  * | herbs              | עשבי תיבול             | herbs, herb, fresh-herbs          |
  * | spices             | תבלינים                | spices, spice                     |
  * | platters           | מגשי פירות…            | platters, platter               |
@@ -37,6 +38,7 @@ import {
 export const PRIMARY_NAV_IDS = /** @type {const} */ ([
   "fruits",
   "vegetables",
+  "ready-stuffed-vegetables",
   "herbs",
   "spices",
   "platters",
@@ -62,6 +64,17 @@ export const BACKEND_SLUGS_BY_NAV = {
     "veggies",
     "seed-vegetables",
     "ירקות",
+  ],
+  "ready-stuffed-vegetables": [
+    "ready-stuffed-vegetables",
+    "ready-to-cook-stuffed-vegetables",
+    "ready-stuffed",
+    "mahashi",
+    "stuffed-vegetables",
+    "ממולאים-מוכנים",
+    "ממולאים",
+    "محاشي-جاهزة",
+    "محاشي",
   ],
   herbs: ["herb", "herbs", "fresh-herbs", "עשבי-תיבול"],
   spices: ["spice", "spices", "baharat", "תבלינים"],

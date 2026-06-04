@@ -1,0 +1,456 @@
+{
+  "meta": {
+    "lastUpdatedLabel": "Last updated",
+    "lastUpdated": "June 4, 2026",
+    "lawPrevailsHeading": "Relationship to the law",
+    "lawPrevails": "If there is any contradiction between the content of this page and mandatory legal requirements, the law will prevail.",
+    "cautiousNote": "This page is provided for general information and convenience and does not constitute legal advice or a claim of full legal compliance.",
+    "contactHeading": "Contact us",
+    "contactBody": "Store: abu alanas Fruits & Vegetables. Website operator: mostafa ziadneh. Phone: 0543486348.",
+    "backHome": "Back to home"
+  },
+  "footer": {
+    "title": "Information & policies",
+    "terms": "Terms of Use",
+    "privacy": "Privacy Policy",
+    "shipping": "Shipping Policy",
+    "cancellation": "Cancellations & Returns",
+    "accessibility": "Accessibility Statement",
+    "customerClub": "Customer Club",
+    "unsubscribe": "Unsubscribe / Preferences"
+  },
+  "pages": {
+    "terms": {
+      "title": "Terms of Use and Store Policy",
+      "intro": "These Terms apply to the use of the abu alanas Fruits & Vegetables website, operated by mostafa ziadneh. The website is used for ordering fruits, vegetables, food products, and related products.",
+      "sections": [
+        {
+          "heading": "1. General",
+          "body": [
+            "The website is operated by mostafa ziadneh (the \"Store\"). Store name: abu alanas Fruits & Vegetables. Contact: 0543486348.",
+            "These terms apply to browsing, using the site, creating an account, joining the customer club, and placing orders.",
+            "Continued use of the site means you accept the current terms.",
+            "The store may update these terms from time to time. The current version published on the site is the binding version."
+          ]
+        },
+        {
+          "heading": "2. Eligibility to Use the Website",
+          "body": [
+            "You must be legally permitted to place orders and to enter into a transaction.",
+            "Where age-restricted products or services are relevant, use is intended for users aged 18 and over.",
+            "You must provide correct and up-to-date details, including name, phone number, delivery address and contact details."
+          ]
+        },
+        {
+          "heading": "3. Account and guest checkout",
+          "body": [
+            "You may place an order as a guest or with an account, where both options are offered.",
+            "If you create an account, you are responsible for keeping your login details secure.",
+            "The store may block or cancel an account or order in cases of misuse, fraud, false details, payment failure, or violation of these terms."
+          ]
+        },
+        {
+          "heading": "4. Products",
+          "body": [
+            "Product images are for illustration only.",
+            "The Store does not present itself as a kosher-certified store, and the website should not be relied upon as a source of kosher certification. Customers who require kosher information about a specific product should check the manufacturer's labeling on the product, if available, or contact the Store before placing an order.",
+            "Fresh produce may vary in size, color, shape, ripeness, weight and appearance.",
+            "For products sold by weight, the final supplied weight may reasonably differ from the estimated weight, and the final charge or refund reflects the actual supply where the system supports it.",
+            "Product availability may change, and the store is not obligated to supply products that are unavailable.",
+            "If a product is unavailable, the store may contact you and suggest a replacement. If you do not approve a replacement, the unavailable product will not be charged, or will be refunded if already charged."
+          ]
+        },
+        {
+          "heading": "5. Prices and promotions",
+          "body": [
+            "Prices include VAT where applicable.",
+            "Prices may change from time to time.",
+            "The binding price is the price shown at the relevant order confirmation / payment stage, unless there is an obvious error.",
+            "Promotions are valid only during the stated period or until stock runs out.",
+            "Promotions are not combined unless explicitly stated, and coupon or discount-code conditions may apply."
+          ]
+        },
+        {
+          "heading": "6. Orders",
+          "body": [
+            "Submitting an order does not always constitute final approval of the order.",
+            "An order is confirmed only after payment / order approval and store confirmation where relevant.",
+            "The store may cancel or change an order due to stock issues, delivery limitations, payment failure, incorrect details, technical error, suspected misuse, or legal/business reasons.",
+            "Computer and system records may serve as evidence of order actions and consents."
+          ]
+        },
+        {
+          "heading": "7. Payment",
+          "body": [
+            "The store does not store your full credit card number or CVV.",
+            "Where online payment is available, payments are handled by an external secure payment provider.",
+            "A payment failure may prevent completion of the order.",
+            "Only the payment methods actually supported by the store are offered at checkout."
+          ]
+        },
+        {
+          "heading": "8. Service messages",
+          "body": [
+            "The store may send you service and order messages related to your active orders.",
+            "Examples: order confirmation, payment confirmation, delivery updates, missing item updates, replacement coordination, cancellation/refund updates, and pickup/delivery coordination.",
+            "These are service messages and are not marketing messages."
+          ]
+        },
+        {
+          "heading": "9. Prohibited use",
+          "body": ["You may not:"],
+          "items": [
+            "Use the site for any unlawful purpose.",
+            "Provide false information.",
+            "Engage in fraud.",
+            "Interfere with the operation of the website.",
+            "Scrape or crawl the site without permission.",
+            "Copy content or design without permission.",
+            "Send spam.",
+            "Violate the privacy of others.",
+            "Place commercial resale or wholesale orders unless approved by the store."
+          ]
+        },
+        {
+          "heading": "10. Intellectual property",
+          "body": [
+            "The site design, content, logo, product texts, images, icons and software belong to the store or its licensors.",
+            "You may not copy, reproduce, distribute or make commercial use of them without written permission."
+          ]
+        },
+        {
+          "heading": "11. Limitation of liability",
+          "body": [
+            "The store works to keep the site accurate and available, but errors, downtime, stock differences and technical issues may occur.",
+            "To the extent permitted by law, the store is not responsible for indirect damages, except where liability cannot be excluded by law."
+          ]
+        },
+        {
+          "heading": "12. Customer responsibility",
+          "body": [
+            "Please check your order details before submitting.",
+            "Please be available to receive the delivery.",
+            "Please inspect your order after receiving it and report any issue promptly."
+          ]
+        }
+      ]
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "intro": "This policy explains what information {{storeName}} collects, how it is used, and the choices you have.",
+      "sections": [
+        {
+          "heading": "1. Information we collect",
+          "body": ["Depending on how you use the site, we may collect:"],
+          "items": [
+            "Name.",
+            "Phone number.",
+            "Address.",
+            "Email, if provided.",
+            "Order details.",
+            "Delivery notes.",
+            "Payment status (but not your full credit card number or CVV).",
+            "Saved addresses, if you approved saving them.",
+            "Account details, if you registered.",
+            "Marketing consent status.",
+            "Customer-club status, if you joined.",
+            "IP address.",
+            "Browser / user agent.",
+            "Language preference.",
+            "Technical usage data.",
+            "Cookies / local storage, where used."
+          ]
+        },
+        {
+          "heading": "2. How we use your information",
+          "body": ["We use the information for purposes such as:"],
+          "items": [
+            "Processing your orders.",
+            "Delivery.",
+            "Customer service.",
+            "Payment handling.",
+            "Fraud and security prevention.",
+            "Saving your details for future orders, only if you approved.",
+            "Customer-club benefits, if you joined.",
+            "Marketing, only if you explicitly approved.",
+            "Meeting legal and accounting obligations."
+          ]
+        },
+        {
+          "heading": "3. Sharing with third parties",
+          "body": ["We may share information, as needed, with:"],
+          "items": [
+            "The store administrators.",
+            "Delivery providers.",
+            "Payment providers.",
+            "WhatsApp / SMS providers.",
+            "Email providers.",
+            "Hosting and database providers.",
+            "Technical service providers.",
+            "Legal / accounting providers, where needed."
+          ]
+        },
+        {
+          "heading": "4. Your rights",
+          "body": ["Subject to applicable law, you may:"],
+          "items": [
+            "Request access to your personal data.",
+            "Request correction of your data.",
+            "Request deletion where possible.",
+            "Request to unsubscribe from marketing.",
+            "Request deletion of your saved delivery details.",
+            "Note that some data may be retained when required for legal, accounting or order records."
+          ]
+        },
+        {
+          "heading": "5. Marketing",
+          "body": [
+            "Marketing messages require separate, explicit consent.",
+            "You can unsubscribe from marketing at any time.",
+            "Unsubscribing from marketing does not stop service / order messages."
+          ]
+        },
+        {
+          "heading": "6. Guest checkout",
+          "body": [
+            "Guest order data is still stored to handle the order and to meet legal / accounting needs.",
+            "Guest checkout does not automatically mean joining the customer club or agreeing to marketing."
+          ]
+        },
+        {
+          "heading": "7. Customer club",
+          "body": [
+            "Joining the customer club is optional, unless otherwise required.",
+            "Customer-club data may be used for benefits, coupons, order history and personalized offers, only according to your consent settings."
+          ]
+        }
+      ]
+    },
+    "shipping": {
+      "title": "Shipping Policy",
+      "intro": "This policy describes how deliveries from {{storeName}} work.",
+      "sections": [
+        {
+          "heading": "1. Delivery areas and fees",
+          "body": [
+            "Delivery is available to the areas listed at checkout.",
+            "Delivery fees and any minimum order are shown at checkout and may vary by area and order value.",
+            "Same-day delivery is offered only where store settings support it.",
+            "A pickup option is available only where the store offers it."
+          ]
+        },
+        {
+          "heading": "2. Delivery times",
+          "body": [
+            "Estimated delivery times are shown where relevant and are estimates only.",
+            "Delays may occur due to traffic, weather, holidays, high demand, security events, force majeure, stock issues, or operational issues."
+          ]
+        },
+        {
+          "heading": "3. Your responsibilities",
+          "body": [
+            "Please provide a correct address and phone number.",
+            "Please be available during the delivery window.",
+            "If you are not available, delivery may be delayed, cancelled, or require an additional delivery fee.",
+            "If the address you provided is wrong, you may bear extra costs."
+          ]
+        },
+        {
+          "heading": "4. Leaving an order and fresh products",
+          "body": [
+            "If you ask us to leave the order near the door, building, a neighbor or a public place, responsibility for the order after placement may pass to you, unless the store acted negligently.",
+            "Because produce is fresh, a delay after delivery or placement may affect quality, so please collect your order quickly.",
+            "Please inspect the order upon receipt."
+          ]
+        }
+      ]
+    },
+    "cancellation": {
+      "title": "Cancellations, Returns and Refunds",
+      "intro": "Because we sell fresh and perishable products, this policy explains when an order can be cancelled and how issues are handled.",
+      "sections": [
+        {
+          "heading": "1. Perishable products",
+          "body": [
+            "Fresh fruits, vegetables and food products are perishable.",
+            "Cancellation is usually possible before picking, packing, preparing or delivery has started.",
+            "Once picking, packing, preparing or delivery has started, cancellation may not always be possible because the products are fresh and perishable."
+          ]
+        },
+        {
+          "heading": "2. If something is wrong",
+          "body": [
+            "If a product arrived damaged, missing, spoiled or incorrect, please contact the store as soon as possible — preferably within 24 hours — and include a photo where possible.",
+            "Depending on the case, the store may offer a replacement, store credit, a partial refund, or a full refund."
+          ]
+        },
+        {
+          "heading": "3. Refunds",
+          "body": [
+            "If you were charged for a product that was not supplied, you will be refunded or credited.",
+            "Refunds are issued to the original payment method where possible.",
+            "The store may ask for proof, a photo, or your order number."
+          ]
+        },
+        {
+          "heading": "4. Limitations",
+          "body": [
+            "If an issue was caused by incorrect details you provided, your unavailability, or your request to leave the order somewhere, the store may not be responsible for all costs.",
+            "This policy is subject to applicable law."
+          ]
+        }
+      ]
+    },
+    "accessibility": {
+      "title": "Accessibility Statement",
+      "intro": "We work to make the website accessible as much as possible according to Israeli Standard 5568 and WCAG 2.0 AA guidelines, according to the nature of the service. If you encounter an accessibility issue, please contact us and we will review and address it.",
+      "sections": [
+        {
+          "heading": "What we work on",
+          "body": ["As part of our ongoing effort, we work on:"],
+          "items": [
+            "Keyboard navigation across the main flows.",
+            "Reasonable color contrast for text and key elements.",
+            "Alternative text for meaningful images.",
+            "Responsive layout and mobile support."
+          ]
+        },
+        {
+          "heading": "Ongoing effort",
+          "body": [
+            "Accessibility is an ongoing effort, and some parts may not yet be fully accessible.",
+            "This statement does not claim a formal accessibility audit has been completed."
+          ]
+        },
+        {
+          "heading": "Contact for accessibility",
+          "body": [
+            "If you encounter a difficulty, please contact us at 0543486348 and we will work to review and address your request."
+          ]
+        }
+      ]
+    },
+    "customerClub": {
+      "title": "Customer Club Terms",
+      "intro": "These terms govern membership in the {{storeName}} customer club.",
+      "sections": [
+        {
+          "heading": "1. General",
+          "body": [
+            "The customer club is operated by the store.",
+            "Joining the club is optional, unless store settings state otherwise.",
+            "The club terms may be updated, and the current version published on the site is the binding version."
+          ]
+        },
+        {
+          "heading": "2. Joining the club",
+          "body": [
+            "You may join through account registration, a checkout checkbox, or your account area, where implemented.",
+            "Required details may include name, phone, email, date of birth (if used), and order history.",
+            "We do not require unnecessary sensitive data.",
+            "Club membership is personal and cannot be transferred."
+          ]
+        },
+        {
+          "heading": "3. Benefits",
+          "body": [
+            "The store may offer benefits, coupons, discounts, birthday benefits, personalized offers, early access, or repeat-order benefits.",
+            "Benefits may change, expire, or be limited.",
+            "Benefits may be subject to stock, dates, minimum purchase, delivery area, or other conditions.",
+            "Discounts are not combined unless explicitly stated, and images in offers are for illustration only."
+          ]
+        },
+        {
+          "heading": "4. Coupons and benefits",
+          "body": ["Coupons and benefits may be subject to conditions, including:"],
+          "items": [
+            "Coupons may be personal.",
+            "Coupons may have expiration dates.",
+            "Coupons may be single-use.",
+            "Coupons may not apply to delivery fees unless stated.",
+            "Lost, expired or used coupons may not be restored unless the store decides otherwise.",
+            "The store may cancel coupons in case of misuse."
+          ]
+        },
+        {
+          "heading": "5. Marketing consent",
+          "body": [
+            "Joining the customer club does not automatically mean consent to marketing.",
+            "Marketing consent is given separately through a clear marketing-consent checkbox.",
+            "Customer-club operational messages and marketing messages are kept separate."
+          ]
+        },
+        {
+          "heading": "6. Leaving the club",
+          "body": [
+            "You may request to leave the customer club at any time.",
+            "Leaving the club may cancel unused benefits.",
+            "Some order data may remain for legal, accounting or order records.",
+            "You may separately unsubscribe from marketing."
+          ]
+        },
+        {
+          "heading": "7. Misuse",
+          "body": [
+            "The store may block or cancel membership in cases of fraud, false details, misuse of coupons, violation of these terms, or harmful behavior."
+          ]
+        }
+      ]
+    }
+  },
+  "unsubscribe": {
+    "title": "Unsubscribe / Marketing Preferences",
+    "intro": "Use this page to stop receiving marketing messages. This affects marketing and promotional messages only.",
+    "serviceNotice": "Unsubscribing affects marketing messages only. You may still receive service messages related to active orders (such as order confirmation and delivery updates).",
+    "phoneLabel": "Phone number",
+    "emailLabel": "Email (if available)",
+    "phoneOrEmailRequired": "Please enter a phone number or email.",
+    "submit": "Unsubscribe from marketing",
+    "submitting": "Processing...",
+    "success": "You have been unsubscribed from marketing messages. You may still receive service messages related to active orders.",
+    "error": "Something went wrong. Please try again.",
+    "keywordsNote": "You can also unsubscribe by replying \u201cSTOP\u201d to a marketing WhatsApp/SMS message."
+  },
+  "consent": {
+    "requiredLegalCheckbox": "I have read and agree to the <terms>Terms of Use</terms>, <privacy>Privacy Policy</privacy>, <shipping>Shipping Policy</shipping>, and <cancellation>Cancellation/Returns Policy</cancellation>.",
+    "requiredLegalError": "You must agree to the terms and policies before placing the order.",
+    "saveDetailsCheckbox": "I agree to save my delivery details for future orders. I can request deletion at any time.",
+    "clubAndMarketingCheckbox": "I would like to join the customer club and agree to receive marketing offers and updates via WhatsApp and/or SMS. I understand that I can unsubscribe at any time by replying \u201cSTOP\u201d or through my account/unsubscribe page.",
+    "serviceNotice": "I understand that the store may send me service/order messages, such as order confirmation, delivery updates, missing item updates, replacements, and delivery coordination. These messages are not marketing messages.",
+    "sectionTitle": "Consent and preferences"
+  },
+  "register": {
+    "requiredLegalCheckbox": "I have read and agree to the <terms>Terms of Use</terms> and <privacy>Privacy Policy</privacy>.",
+    "requiredLegalError": "You must agree to the Terms of Use and Privacy Policy.",
+    "clubAndMarketingCheckbox": "I would like to join the customer club and agree to receive marketing offers and updates via WhatsApp and/or SMS.",
+    "saveDetailsCheckbox": "I agree to save addresses and delivery details for future orders."
+  },
+  "account": {
+    "title": "Privacy and Marketing Preferences",
+    "subtitle": "Manage your marketing consent, customer club membership, and saved details.",
+    "marketingTitle": "Marketing messages",
+    "marketingStatusOn": "Marketing messages: enabled",
+    "marketingStatusOff": "Marketing messages: disabled",
+    "marketingToggle": "Receive marketing updates via WhatsApp and/or SMS",
+    "marketingHint": "You can turn this off at any time. It does not affect order/service messages.",
+    "marketingConsentDate": "Consent updated: {{date}}",
+    "clubTitle": "Customer club",
+    "clubStatusJoined": "You are a customer club member.",
+    "clubStatusNotJoined": "You are not a customer club member.",
+    "clubJoinedDate": "Joined: {{date}}",
+    "joinClub": "Join the customer club",
+    "leaveClub": "Leave the customer club",
+    "clubLeaveNote": "Leaving the club may cancel unused benefits. Some order data is retained for legal/accounting records.",
+    "savedDetailsTitle": "Saved delivery details",
+    "savedDetailsOn": "Saving delivery details is enabled.",
+    "savedDetailsOff": "Saving delivery details is disabled.",
+    "deleteSavedDetails": "Delete my saved delivery details",
+    "deleteSavedDetailsNote": "This removes your saved addresses. Past orders keep their own records.",
+    "deletionTitle": "Account / data deletion",
+    "deletionBody": "To request deletion of your account or personal data, please contact us at 0543486348. Some data may be retained where required for legal, accounting or order records.",
+    "requestDeletion": "Request data deletion",
+    "deletionRequested": "Your request was received. We will contact you. Some data may be retained as required by law.",
+    "saved": "Your preferences were saved.",
+    "saveError": "Could not save your preferences."
+  }
+}

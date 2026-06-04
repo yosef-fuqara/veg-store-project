@@ -106,8 +106,8 @@ const formatDateTime = (v) => {
 
 const customerName = (order) => {
   const u = order?.user;
-  if (!u) return "—";
-  return u.name || u.email || "—";
+  if (u) return u.name || u.email || "—";
+  return order?.customerName || "—";
 };
 
 const customerPhone = (order) => {

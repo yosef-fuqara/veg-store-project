@@ -1,0 +1,21 @@
+{
+  "city": "עיר / כפר *",
+  "cityPlaceholder": "בחרו עיר או כפר מהרשימה",
+  "searchCity": "חפשו עיר או כפר",
+  "street": "רחוב *",
+  "houseNumber": "מספר בית *",
+  "building": "בניין (לא חובה)",
+  "apartment": "דירה (לא חובה)",
+  "floor": "קומה (לא חובה)",
+  "entrance": "כניסה (לא חובה)",
+  "notes": "הערות לשליח (לא חובה)",
+  "streetPlaceholder": "הזינו שם רחוב",
+  "noCitiesFound": "לא נמצאו תוצאות",
+  "deliveryUnavailable": "המשלוח לעיר זו אינו זמין כרגע.",
+  "cityMustSelectFromList": "יש לבחור עיר או כפר מתוך הרשימה",
+  "cityRequired": "יש לבחור עיר או כפר מתוך הרשימה",
+  "streetRequired": "יש להזין רחוב",
+  "houseNumberRequired": "יש להזין מספר בית",
+  "deliveryAreaHelper": "בועיינה נוג׳ידאת (מקומי): משלוח חינם מעל ₪{{localMin}}, אחרת ₪{{localFee}}.\nאזורים נוספים: משלוח חינם מעל ₪{{outsideMin}}, אחרת ₪{{outsideFee}}.",
+  "localAreaBadge": "אזור מקומי"
+}

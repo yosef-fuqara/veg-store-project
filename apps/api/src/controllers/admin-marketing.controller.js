@@ -5,10 +5,13 @@ const AppError = require("../utils/app-error");
 const { USER_ROLES } = require("../constants/roles");
 const { sendTransactionalWhatsAppToCustomer } = require("../services/whatsapp.service");
 const { buildMarketingWhatsAppMessage } = require("../utils/marketing-whatsapp-message");
+const { marketingEligibleQuery } = require("../utils/marketing-eligibility");
 
+// Only customers with active marketing consent (and not unsubscribed) receive
+// marketing. Combines the legacy flag with the structured marketing subdocument.
 const RECIPIENT_FILTER = {
   role: USER_ROLES.CUSTOMER,
-  marketingConsentWhatsApp: true
+  ...marketingEligibleQuery()
 };
 
 const MARKETING_CHANNEL = "whatsapp";

@@ -1,9 +1,10 @@
 import {
   formatKgDisplay,
   isWeightBasedUnit,
-  storedQuantityToKg,
-  KG_STEP,
-  KG_MIN,
+  isValidProductWeightKg,
+  resolveProductWeightRules,
+  snapWeightKgUp,
+  storedQuantityToKg
 } from "./storefrontWeight";
 
 /** Display quantity for classic cart lines (whole units or short fractions). */
@@ -38,10 +39,33 @@ export function formatApproxWeightQuantity(quantity, unit) {
 export const PURCHASE_AMOUNT_CART_STEP_ILS = 5;
 
 /** Quantity step in kg for cart +/- on weight lines. */
-export function weightCartQuantityStep(_unit) {
-  return KG_STEP;
+export function weightCartQuantityStep(productOrUnit) {
+  if (productOrUnit && typeof productOrUnit === "object") {
+    return resolveProductWeightRules(productOrUnit).weightStep;
+  }
+  return 0.5;
 }
 
-export function weightCartQuantityMin(_unit) {
-  return KG_MIN;
+export function weightCartQuantityMin(productOrUnit) {
+  if (productOrUnit && typeof productOrUnit === "object") {
+    return resolveProductWeightRules(productOrUnit).minimumOrderWeight;
+  }
+  return 1;
+}
+
+/**
+ * Next valid kg after +/- step; returns null if below minimum (caller may remove line).
+ * @param {number} currentKg
+ * @param {number} delta — typically ±weightStep
+ * @param {{ minimumOrderWeight?: number; weightStep?: number }} product
+ */
+export function nextValidCartWeightKg(currentKg, delta, product) {
+  const { minimumOrderWeight, weightStep } = resolveProductWeightRules(product);
+  const nextRaw = Math.round((Number(currentKg) + delta) * 10000) / 10000;
+  if (nextRaw < minimumOrderWeight - 1e-9) return null;
+  if (!isValidProductWeightKg(nextRaw, product)) {
+    const snapped = snapWeightKgUp(nextRaw, product);
+    return isValidProductWeightKg(snapped, product) ? snapped : null;
+  }
+  return nextRaw;
 }

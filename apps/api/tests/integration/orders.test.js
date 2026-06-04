@@ -22,11 +22,12 @@ const OUTSIDE_AREA = "eilabun";
 const baseOrderPayload = {
   deliveryAddress: {
     street: "Main",
-    building: "1"
+    houseNumber: "1"
   },
   deliveryArea: OUTSIDE_AREA,
   customerPhone: "0501234567",
-  paymentMethod: "credit_card"
+  paymentMethod: "credit_card",
+  acceptTerms: true
 };
 
 async function seedCart(token, productId, quantity = 1) {
@@ -58,6 +59,89 @@ describe("Orders", () => {
 
     const cart = await request(getApp()).get(apiUrl("/cart")).set("Authorization", `Bearer ${token}`);
     expect(cart.body.data.cart.items.length).toBe(0);
+  });
+
+  it("allows logged-in order without checkout legal checkbox (account acceptance)", async () => {
+    const user = await createCustomerUser();
+    const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
+    const product = await createProduct({ price: 20 });
+    await seedCart(token, String(product._id));
+
+    const { acceptTerms, ...withoutTerms } = baseOrderPayload;
+    const res = await request(getApp())
+      .post(apiUrl("/orders"))
+      .set("Authorization", `Bearer ${token}`)
+      .send(withoutTerms);
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.order.orderLegalSnapshot.acceptedFrom).toBe("logged_in_user");
+  });
+
+  it("blocks guest order when required terms are not accepted", async () => {
+    const product = await createProduct({ price: 25 });
+    const productId = String(product._id);
+    const { acceptTerms, ...withoutTerms } = baseOrderPayload;
+
+    const res = await request(getApp())
+      .post(apiUrl("/orders/guest"))
+      .send({
+        ...withoutTerms,
+        customerName: "Guest Shopper",
+        items: [{ product: productId, quantity: 1 }]
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("saves legal snapshot and marketing consent on order", async () => {
+    const product = await createProduct({ price: 25 });
+    const productId = String(product._id);
+
+    const res = await request(getApp())
+      .post(apiUrl("/orders/guest"))
+      .set("x-app-language", "ar")
+      .send({
+        ...baseOrderPayload,
+        marketingConsent: true,
+        consentLanguage: "ar",
+        customerName: "Guest Shopper",
+        items: [{ product: productId, quantity: 1 }]
+      });
+
+    expect(res.status).toBe(201);
+    const snap = res.body.data.order.orderLegalSnapshot;
+    expect(snap.termsAccepted).toBe(true);
+    expect(snap.termsVersion).toBeTruthy();
+    expect(snap.marketingConsentAtOrderTime).toBe(true);
+    expect(snap.acceptedLanguage).toBe("ar");
+  });
+
+  it("creates guest order without auth and null user", async () => {
+    const product = await createProduct({ price: 25 });
+    const productId = String(product._id);
+
+    const previewRes = await request(getApp())
+      .post(apiUrl("/orders/guest/preview"))
+      .send({ items: [{ product: productId, quantity: 2 }] });
+
+    expect(previewRes.status).toBe(200);
+    expect(previewRes.body.data.checkout.subtotal).toBe(50);
+
+    const res = await request(getApp())
+      .post(apiUrl("/orders/guest"))
+      .send({
+        ...baseOrderPayload,
+        customerName: "Guest Shopper",
+        customerEmail: "guest@example.com",
+        items: [{ product: productId, quantity: 2 }]
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.order.user).toBeNull();
+    expect(res.body.data.order.customerName).toBe("Guest Shopper");
+    expect(res.body.data.order.customerEmail).toBe("guest@example.com");
+    expect(res.body.data.order.subtotal).toBe(50);
+    expect(res.body.data.order.items.length).toBe(1);
   });
 
   it("admin can create order from storefront checkout (bit)", async () => {
@@ -141,7 +225,7 @@ describe("Orders", () => {
       const product = await createProduct({ price: 20 });
       await seedCart(token, String(product._id));
 
-      const deliveryAddress = JSON.stringify({ street: "Main", building: "1" });
+      const deliveryAddress = JSON.stringify({ street: "Main", houseNumber: "1" });
       const res = await request(getApp())
         .post(apiUrl("/orders"))
         .set("Authorization", `Bearer ${token}`)
@@ -150,6 +234,7 @@ describe("Orders", () => {
         .field("customerPhone", "0501234567")
         .field("paymentMethod", "credit_card")
         .field("notes", "")
+        .field("acceptTerms", "true")
         .attach("bankTransferProof", tinyPngBuffer, "proof.png");
 
       expect(res.status).toBe(400);
@@ -162,7 +247,7 @@ describe("Orders", () => {
       const product = await createProduct({ price: 20 });
       await seedCart(token, String(product._id));
 
-      const deliveryAddress = JSON.stringify({ street: "Main", building: "1" });
+      const deliveryAddress = JSON.stringify({ street: "Main", houseNumber: "1" });
       const res = await request(getApp())
         .post(apiUrl("/orders"))
         .set("Authorization", `Bearer ${token}`)
@@ -171,6 +256,7 @@ describe("Orders", () => {
         .field("customerPhone", "0501234567")
         .field("paymentMethod", "bank_transfer")
         .field("notes", "")
+        .field("acceptTerms", "true")
         .attach("bankTransferProof", tinyPngBuffer, "proof.png");
 
       expect(res.status).toBe(201);
@@ -444,6 +530,13 @@ describe("Orders", () => {
     expect(detail.status).toBe(200);
     expect(detail.body.data.order.orderStatus).toBe(ORDER_STATUS.NEW);
     const firstLine = detail.body.data.order.items[0];
+    expect(firstLine.nameLocales).toEqual(
+      expect.objectContaining({
+        ar: expect.any(String),
+        he: expect.any(String),
+        en: expect.any(String)
+      })
+    );
     expect(firstLine.product).toMatchObject({
       imageUrl: product.imageUrl
     });

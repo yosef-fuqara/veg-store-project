@@ -61,6 +61,9 @@ const markSent = async (orderId, key) => {
 };
 
 const getCustomerEmail = async (order) => {
+  if (!order?.user) {
+    return typeof order?.customerEmail === "string" ? order.customerEmail.trim() : "";
+  }
   const user = await User.findById(order.user).select("email").lean();
   return user?.email || "";
 };

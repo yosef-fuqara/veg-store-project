@@ -13,6 +13,7 @@ import {
 } from "../utils/localizedDisplayName";
 import { useAdminLanguage } from "../i18n/useAdminLanguage";
 import { adminListLinkState, useListStatusFilter } from "../hooks/useListStatusFilter";
+import { ClearableSearchInput } from "../components/common/ClearableSearchInput";
 
 const colors = {
   primary:      '#1e6b3c',
@@ -923,22 +924,16 @@ const AdminProductsPage = () => {
           </div>
 
           {/* Search */}
-          <div className="admin-products-toolbar__search">
-            <span style={{ position: 'absolute', insetInlineStart: '12px', top: '50%', transform: 'translateY(-50%)', color: colors.textMuted, pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-            </span>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('products:list.searchPlaceholder')}
-              aria-label={t('products:list.searchAria')}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              style={searchInputStyle}
-            />
-          </div>
+          <ClearableSearchInput
+            className="admin-products-toolbar__search"
+            value={search}
+            onChange={setSearch}
+            placeholder={t('products:list.searchPlaceholder')}
+            ariaLabel={t('products:list.searchAria')}
+            onInputFocus={() => setSearchFocused(true)}
+            onInputBlur={() => setSearchFocused(false)}
+            inputStyle={searchInputStyle}
+          />
         </div>
 
         <div className={`admin-products-filter-chip${statusFilter !== 'all' ? ' is-visible' : ''}`}>

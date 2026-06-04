@@ -1,0 +1,21 @@
+{
+  "city": "المدينة / القرية *",
+  "cityPlaceholder": "اختاروا المدينة أو القرية من القائمة",
+  "searchCity": "ابحثوا عن مدينة أو قرية",
+  "street": "الشارع *",
+  "houseNumber": "رقم البيت *",
+  "building": "المبنى (اختياري)",
+  "apartment": "الشقة (اختياري)",
+  "floor": "الطابق (اختياري)",
+  "entrance": "المدخل (اختياري)",
+  "notes": "ملاحظات للمندوب (اختياري)",
+  "streetPlaceholder": "أدخلوا اسم الشارع",
+  "noCitiesFound": "لم يتم العثور على نتائج",
+  "deliveryUnavailable": "التوصيل إلى هذه المدينة غير متاح حاليًا.",
+  "cityMustSelectFromList": "يجب اختيار المدينة أو القرية من القائمة",
+  "cityRequired": "يجب اختيار المدينة أو القرية من القائمة",
+  "streetRequired": "يجب إدخال الشارع",
+  "houseNumberRequired": "يجب إدخال رقم البيت",
+  "deliveryAreaHelper": "بُعينة-نُجيدات (محلي): توصيل مجاني فوق ₪{{localMin}}، وإلا ₪{{localFee}}.\nمناطق أخرى: توصيل مجاني فوق ₪{{outsideMin}}، وإلا ₪{{outsideFee}}.",
+  "localAreaBadge": "منطقة محلية"
+}

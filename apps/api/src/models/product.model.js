@@ -1,5 +1,10 @@
 const mongoose = require("mongoose");
 const { PRODUCT_UNITS, PRODUCT_STOCK_STATUS } = require("../constants/product");
+const {
+  ALLOWED_MINIMUM_ORDER_WEIGHTS,
+  DEFAULT_MINIMUM_ORDER_WEIGHT,
+  DEFAULT_WEIGHT_STEP
+} = require("../constants/product-weight");
 
 const productSchema = new mongoose.Schema(
   {
@@ -85,6 +90,16 @@ const productSchema = new mongoose.Schema(
     allowPurchaseByAmount: {
       type: Boolean,
       default: false
+    },
+    minimumOrderWeight: {
+      type: Number,
+      enum: ALLOWED_MINIMUM_ORDER_WEIGHTS,
+      default: DEFAULT_MINIMUM_ORDER_WEIGHT
+    },
+    weightStep: {
+      type: Number,
+      default: DEFAULT_WEIGHT_STEP,
+      enum: [DEFAULT_WEIGHT_STEP]
     },
     isActive: {
       type: Boolean,

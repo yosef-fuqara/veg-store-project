@@ -45,6 +45,9 @@ import AccountFavoritesPage from "../pages/account/AccountFavoritesPage";
 import AccountWhatsAppPage from "../pages/account/AccountWhatsAppPage";
 import AccountProfilePage from "../pages/account/AccountProfilePage";
 import AccountSettingsPage from "../pages/account/AccountSettingsPage";
+import AccountPrivacyPage from "../pages/account/AccountPrivacyPage";
+import LegalDocPage from "../pages/legal/LegalDocPage";
+import UnsubscribePage from "../pages/legal/UnsubscribePage";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -864,10 +867,17 @@ const App = () => {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/cart" element={<RequireAuth><CartPage /></RequireAuth>} />
-        <Route path="/checkout" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/orders" element={<Navigate to="/account/orders" replace />} />
-        <Route path="/orders/:id" element={<RequireAuth><OrderConfirmationPage /></RequireAuth>} />
+        <Route path="/orders/:id" element={<OrderConfirmationPage />} />
+        <Route path="/terms" element={<LegalDocPage pageKey="terms" />} />
+        <Route path="/privacy" element={<LegalDocPage pageKey="privacy" />} />
+        <Route path="/shipping-policy" element={<LegalDocPage pageKey="shipping" />} />
+        <Route path="/cancellation-policy" element={<LegalDocPage pageKey="cancellation" />} />
+        <Route path="/accessibility" element={<LegalDocPage pageKey="accessibility" />} />
+        <Route path="/customer-club" element={<LegalDocPage pageKey="customerClub" />} />
+        <Route path="/unsubscribe" element={<UnsubscribePage />} />
         <Route
           path="/account"
           element={(
@@ -881,6 +891,7 @@ const App = () => {
           <Route path="addresses" element={<AccountAddressesPage />} />
           <Route path="favorites" element={<AccountFavoritesPage />} />
           <Route path="whatsapp" element={<AccountWhatsAppPage />} />
+          <Route path="privacy" element={<AccountPrivacyPage />} />
           <Route path="profile" element={<AccountProfilePage />} />
           <Route path="settings" element={<AccountSettingsPage />} />
         </Route>

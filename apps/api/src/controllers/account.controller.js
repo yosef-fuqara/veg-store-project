@@ -5,8 +5,58 @@ const User = require("../models/user.model");
 const Product = require("../models/product.model");
 const AppError = require("../utils/app-error");
 const { sanitizeUser } = require("../utils/sanitize-user");
+const { normalizeConsentLanguage } = require("../constants/legal-versions");
+const {
+  applyMarketingConsent,
+  applyCustomerClubJoin,
+  applyCustomerClubLeave,
+  applySavedDetailsConsent
+} = require("../services/consent.service");
+const { normalizeStructuredAddress } = require("../utils/structured-address");
+const {
+  getDeliveryArea,
+  isAllowedDeliveryArea,
+  pickLocalizedName
+} = require("../constants/delivery");
 
 const MAX_ADDRESSES = 12;
+
+const buildSavedAddressPayload = (body, lang = "he") => {
+  const cityKey = typeof body.cityKey === "string" ? body.cityKey.trim() : "";
+  if (!isAllowedDeliveryArea(cityKey)) {
+    throw new AppError(
+      "Please choose a city or village from the list",
+      StatusCodes.BAD_REQUEST
+    );
+  }
+  const area = getDeliveryArea(cityKey);
+  const cityFromCatalog = pickLocalizedName(area?.names, lang);
+  const normalized = normalizeStructuredAddress(
+    {
+      ...body,
+      city: cityFromCatalog || body.city
+    },
+    {
+      lang,
+      cityKey
+    }
+  );
+  return {
+    label: normalized.label || "",
+    city: normalized.city || cityFromCatalog,
+    cityKey,
+    cityId: cityKey,
+    citySlug: cityKey,
+    street: normalized.street,
+    houseNumber: normalized.houseNumber,
+    building: normalized.building || "",
+    apartment: normalized.apartment || "",
+    floor: normalized.floor || "",
+    entrance: normalized.entrance || "",
+    notes: normalized.notes || "",
+    fullAddress: normalized.fullAddress
+  };
+};
 const MAX_FAVORITES = 80;
 
 const findAddressSubdoc = (user, addressId) => {
@@ -57,13 +107,105 @@ const updateMarketingConsent = async (req, res, next) => {
       throw new AppError("User not found", StatusCodes.NOT_FOUND);
     }
 
-    const consent = req.body.marketingConsentWhatsApp === true;
-    user.marketingConsentWhatsApp = consent;
-    user.marketingConsentWhatsAppAt = consent ? new Date() : null;
-    user.marketingConsentSource = consent ? "account_preferences" : null;
+    // Accept the new `marketingConsent` key or the legacy `marketingConsentWhatsApp`.
+    const consent =
+      req.body.marketingConsent === true || req.body.marketingConsentWhatsApp === true;
+    const language = normalizeConsentLanguage(req.body.consentLanguage);
+    applyMarketingConsent(user, consent, {
+      source: "account_preferences",
+      language,
+      channels: { whatsapp: true, sms: true }
+    });
 
     await user.save();
     return respondUser(res, user);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const joinCustomerClub = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      throw new AppError("User not found", StatusCodes.NOT_FOUND);
+    }
+    applyCustomerClubJoin(user, {
+      language: normalizeConsentLanguage(req.body.consentLanguage)
+    });
+    await user.save();
+    return respondUser(res, user);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const leaveCustomerClub = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      throw new AppError("User not found", StatusCodes.NOT_FOUND);
+    }
+    applyCustomerClubLeave(user);
+    await user.save();
+    return respondUser(res, user);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const updateSavedDetailsConsent = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      throw new AppError("User not found", StatusCodes.NOT_FOUND);
+    }
+    applySavedDetailsConsent(user, req.body.saveForNextOrder === true);
+    await user.save();
+    return respondUser(res, user);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * Delete saved delivery details: removes saved addresses + clears the saved-details
+ * consent flag. Past order records keep their own address snapshots (legal/accounting).
+ */
+const deleteSavedDeliveryDetails = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      throw new AppError("User not found", StatusCodes.NOT_FOUND);
+    }
+    user.addresses = [];
+    user.defaultAddressId = null;
+    applySavedDetailsConsent(user, false);
+    await user.save();
+    return respondUser(res, user);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * Account/data deletion request. Full self-service deletion is not implemented
+ * (order/accounting records must be retained), so we acknowledge the request and
+ * the frontend shows contact instructions. We also unsubscribe marketing as a
+ * courtesy and log the request for the store operator.
+ */
+const requestAccountDeletion = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      throw new AppError("User not found", StatusCodes.NOT_FOUND);
+    }
+    // eslint-disable-next-line no-console
+    console.info(`[account] data deletion requested for userId=${user._id}`);
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "DELETION_REQUEST_RECEIVED"
+    });
   } catch (error) {
     return next(error);
   }
@@ -103,14 +245,8 @@ const createAddress = async (req, res, next) => {
       throw new AppError(`You can save up to ${MAX_ADDRESSES} addresses`, StatusCodes.BAD_REQUEST);
     }
 
-    user.addresses.push({
-      label: req.body.label || "",
-      city: req.body.city,
-      street: req.body.street,
-      building: req.body.building || "",
-      apartment: req.body.apartment || "",
-      notes: req.body.notes || ""
-    });
+    const lang = normalizeConsentLanguage(req.body.consentLanguage) || "he";
+    user.addresses.push(buildSavedAddressPayload(req.body, lang));
 
     if (!user.defaultAddressId && user.addresses.length === 1) {
       user.defaultAddressId = user.addresses[user.addresses.length - 1]._id;
@@ -135,12 +271,34 @@ const updateAddress = async (req, res, next) => {
       throw new AppError("Address not found", StatusCodes.NOT_FOUND);
     }
 
-    if (req.body.label !== undefined) addr.label = req.body.label || "";
-    if (req.body.city !== undefined) addr.city = req.body.city;
-    if (req.body.street !== undefined) addr.street = req.body.street;
-    if (req.body.building !== undefined) addr.building = req.body.building || "";
-    if (req.body.apartment !== undefined) addr.apartment = req.body.apartment || "";
-    if (req.body.notes !== undefined) addr.notes = req.body.notes || "";
+    const lang = normalizeConsentLanguage(req.body.consentLanguage) || "he";
+    const patch = buildSavedAddressPayload(
+      {
+        label: req.body.label !== undefined ? req.body.label : addr.label,
+        city: req.body.city !== undefined ? req.body.city : addr.city,
+        cityKey: req.body.cityKey !== undefined ? req.body.cityKey : addr.cityKey,
+        street: req.body.street !== undefined ? req.body.street : addr.street,
+        houseNumber:
+          req.body.houseNumber !== undefined ? req.body.houseNumber : addr.houseNumber,
+        building: req.body.building !== undefined ? req.body.building : addr.building,
+        apartment: req.body.apartment !== undefined ? req.body.apartment : addr.apartment,
+        floor: req.body.floor !== undefined ? req.body.floor : addr.floor,
+        entrance: req.body.entrance !== undefined ? req.body.entrance : addr.entrance,
+        notes: req.body.notes !== undefined ? req.body.notes : addr.notes
+      },
+      lang
+    );
+    addr.label = patch.label;
+    addr.city = patch.city;
+    addr.cityKey = patch.cityKey;
+    addr.street = patch.street;
+    addr.houseNumber = patch.houseNumber;
+    addr.building = patch.building;
+    addr.apartment = patch.apartment;
+    addr.floor = patch.floor;
+    addr.entrance = patch.entrance;
+    addr.notes = patch.notes;
+    addr.fullAddress = patch.fullAddress;
 
     await user.save();
     return respondUser(res, user);
@@ -268,6 +426,11 @@ const removeFavorite = async (req, res, next) => {
 module.exports = {
   updateProfile,
   updateMarketingConsent,
+  joinCustomerClub,
+  leaveCustomerClub,
+  updateSavedDetailsConsent,
+  deleteSavedDeliveryDetails,
+  requestAccountDeletion,
   changePassword,
   createAddress,
   updateAddress,

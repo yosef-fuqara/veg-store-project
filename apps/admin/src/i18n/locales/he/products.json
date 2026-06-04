@@ -81,6 +81,7 @@
       "nameAr": "ערבית (ar)",
       "nameHe": "עברית (he)",
       "nameEn": "אנגלית (en)",
+      "nameMissingLocale": "חסרה תרגום לשפה זו",
       "description": "תיאור",
       "descriptionHint": "אופציונלי",
       "price": "מחיר (₪) *",
@@ -90,6 +91,8 @@
       "allowByAmountHint": "עבור פריטים בק\"ג/גרם השרת מחשב משקל לפי הסכום שנבחר. עבור יחידה/קופסה הכמות חייבת להיות מספר שלם.",
       "category": "קטגוריה *",
       "unit": "יחידת מידה *",
+      "minimumOrderWeight": "משקל מינימלי להזמנה (ק״ג) *",
+      "minimumOrderWeightHint": "המשקל הקטן ביותר שלקוחות יכולים להזמין למוצרי ק״ג/גרם. הקפיצה תמיד 0.5 ק״ג.",
       "stockStatus": "סטטוס מלאי *",
       "featured": "מוצר מומלץ",
       "featuredHint": "מוצג בצורה בולטת בחנות",
@@ -129,6 +132,7 @@
       "created": "המוצר נוצר בהצלחה.",
       "updated": "המוצר עודכן בהצלחה."
     },
+    "minimumOrderWeightOption": "{{weight}} ק״ג",
     "stockOptions": {
       "in_stock": "במלאי",
       "out_of_stock": "אזל מהמלאי"

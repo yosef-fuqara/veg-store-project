@@ -6,8 +6,8 @@ import { formatPrice } from "../utils/formatPrice";
 import {
   AMOUNT_PRESETS_ILS,
   COUNT_QUANTITY_PRESETS,
-  WEIGHT_KG_PRESETS,
   buildAddToCartPayload,
+  estimateKgFromAmount,
   estimateLineTotal,
   getPurchaseConfig
 } from "../utils/productPurchase";
@@ -90,20 +90,24 @@ const ProductCardPurchasePanel = ({
     config,
     buyMode,
     { weightKgInput, countInput, amountInput },
-    displayPrice
+    displayPrice,
+    product
   );
   const lineTotal = estimateLineTotal(
     config,
     buyMode,
     { weightKgInput, countInput, amountInput },
-    displayPrice
+    displayPrice,
+    product
   );
 
   const parsedAmount = Number(amountInput);
-  const estimatedKgStr =
-    buyMode === "amount" && parsedAmount > 0 && pricePerKg > 0
-      ? formatApproxWeightQuantity(parsedAmount / pricePerKg, "kg")
+  const estimatedKg =
+    buyMode === "amount" && parsedAmount > 0
+      ? estimateKgFromAmount(parsedAmount, displayPrice, product)
       : null;
+  const estimatedKgStr =
+    estimatedKg != null ? formatApproxWeightQuantity(estimatedKg, "kg") : null;
 
   const canConfirm = Boolean(payload) && !orderingDisabled && !adding;
 
@@ -225,8 +229,14 @@ const ProductCardPurchasePanel = ({
                   <span style={{ fontSize: compact ? "10px" : "11px", fontWeight: 600, color: colors.textMuted }}>
                     {t("weightQuantityLabel")}
                   </span>
+                  <p style={{ margin: 0, fontSize: compact ? "10px" : "11px", color: colors.textSecondary, lineHeight: 1.35 }}>
+                    {t("minimumOrderWeight", {
+                      weight: formatKgDisplay(config.minimumOrderWeight),
+                      unit: kgLabel
+                    })}
+                  </p>
                   <div style={{ display: "flex", gap: compact ? 4 : 6, flexWrap: "wrap" }}>
-                    {WEIGHT_KG_PRESETS.map((chip) => {
+                    {config.weightPresets.map((chip) => {
                       const label = `${formatKgDisplay(chip)} ${kgLabel}`;
                       const active = weightKgInput === String(chip);
                       return (

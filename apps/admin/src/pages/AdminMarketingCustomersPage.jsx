@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Download, RefreshCw, Users } from "lucide-react";
 import { getMarketingCustomers } from "../services/marketingCustomerService";
+import { useAdminLanguage } from "../i18n/useAdminLanguage";
 
 const colors = {
   primary: "#1e6b3c",
@@ -17,34 +19,24 @@ const colors = {
   errorBorder: "#fecaca"
 };
 
-const formatDate = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString("en-IL", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+const localeForLang = (lang) => {
+  if (lang === "he") return "he-IL";
+  if (lang === "ar") return "ar-IL";
+  return "en-IL";
 };
 
 const csvEscape = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
 
-const toCsv = (rows) => {
-  const header = ["Name", "Phone", "WhatsApp Consent Date", "Consent Source"];
+const downloadCsv = (rows, headers) => {
   const lines = rows.map((row) => [
     row.name || "",
     row.phone || "",
     row.marketingConsentWhatsAppAt ? new Date(row.marketingConsentWhatsAppAt).toISOString() : "",
     row.marketingConsentSource || ""
   ]);
-  return [header, ...lines].map((line) => line.map(csvEscape).join(",")).join("\n");
-};
-
-const downloadCsv = (rows) => {
-  const blob = new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([[headers, ...lines].map((line) => line.map(csvEscape).join(",")).join("\n")], {
+    type: "text/csv;charset=utf-8;"
+  });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -71,9 +63,39 @@ const iconButtonBase = {
 };
 
 const AdminMarketingCustomersPage = () => {
+  const { t } = useTranslation(["marketing", "common"]);
+  const { lang } = useAdminLanguage();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const formatDate = useMemo(
+    () => (value) => {
+      if (!value) return t("common:dash");
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return t("common:dash");
+      return date.toLocaleString(localeForLang(lang), {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    },
+    [lang, t]
+  );
+
+  const tableHeaders = useMemo(
+    () => [
+      t("marketing:customers.tableHeaders.name"),
+      t("marketing:customers.tableHeaders.phone"),
+      t("marketing:customers.tableHeaders.consentDate"),
+      t("marketing:customers.tableHeaders.consentSource")
+    ],
+    [t]
+  );
+
+  const csvHeaders = tableHeaders;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,11 +104,11 @@ const AdminMarketingCustomersPage = () => {
       const data = await getMarketingCustomers();
       setCustomers(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.userMessage || "Failed to load marketing customers.");
+      setError(err.userMessage || t("marketing:customers.loadFailed"));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     load();
@@ -99,20 +121,20 @@ const AdminMarketingCustomersPage = () => {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", marginBottom: "22px", flexWrap: "wrap" }}>
         <div>
           <h1 style={{ margin: 0, fontSize: "28px", fontWeight: 800, color: colors.textPrimary, letterSpacing: "-0.3px" }}>
-            Marketing Customers
+            {t("marketing:customers.title")}
           </h1>
           <p style={{ margin: "6px 0 0", color: colors.textSecondary, fontSize: "14px" }}>
-            Customers who opted in to receive promotions and offers by WhatsApp.
+            {t("marketing:customers.subtitle")}
           </p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           <button type="button" onClick={load} disabled={loading} style={{ ...iconButtonBase, opacity: loading ? 0.75 : 1 }}>
             <RefreshCw size={14} />
-            {loading ? "Refreshing..." : "Refresh"}
+            {loading ? t("common:refreshing") : t("common:refresh")}
           </button>
           <button
             type="button"
-            onClick={() => downloadCsv(customers)}
+            onClick={() => downloadCsv(customers, csvHeaders)}
             disabled={!hasData}
             style={{
               ...iconButtonBase,
@@ -123,7 +145,7 @@ const AdminMarketingCustomersPage = () => {
             }}
           >
             <Download size={14} />
-            Export CSV
+            {t("marketing:customers.exportCsv")}
           </button>
         </div>
       </div>
@@ -138,14 +160,14 @@ const AdminMarketingCustomersPage = () => {
         {!hasData && !loading ? (
           <div style={{ padding: "26px 18px", color: colors.textMuted, fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
             <Users size={16} />
-            No customers have opted in yet.
+            {t("marketing:customers.empty")}
           </div>
         ) : (
           <div style={{ width: "100%", overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "560px" }}>
               <thead>
                 <tr>
-                  {["Name", "Phone", "WhatsApp Consent Date", "Consent Source"].map((label) => (
+                  {tableHeaders.map((label) => (
                     <th
                       key={label}
                       style={{
@@ -166,10 +188,10 @@ const AdminMarketingCustomersPage = () => {
               <tbody>
                 {customers.map((customer) => (
                   <tr key={customer._id} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
-                    <td style={{ padding: "12px 14px", fontSize: "14px", color: colors.textPrimary }}>{customer.name || "—"}</td>
-                    <td style={{ padding: "12px 14px", fontSize: "14px", color: colors.textPrimary }}>{customer.phone || "—"}</td>
+                    <td style={{ padding: "12px 14px", fontSize: "14px", color: colors.textPrimary }}>{customer.name || t("common:dash")}</td>
+                    <td style={{ padding: "12px 14px", fontSize: "14px", color: colors.textPrimary }}>{customer.phone || t("common:dash")}</td>
                     <td style={{ padding: "12px 14px", fontSize: "13px", color: colors.textSecondary }}>{formatDate(customer.marketingConsentWhatsAppAt)}</td>
-                    <td style={{ padding: "12px 14px", fontSize: "13px", color: colors.textSecondary }}>{customer.marketingConsentSource || "—"}</td>
+                    <td style={{ padding: "12px 14px", fontSize: "13px", color: colors.textSecondary }}>{customer.marketingConsentSource || t("common:dash")}</td>
                   </tr>
                 ))}
               </tbody>

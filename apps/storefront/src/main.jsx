@@ -10,6 +10,7 @@ import { AuthProvider } from "./features/auth/AuthContext";
 import { CartProvider } from "./features/cart/CartContext";
 import { CartVisualFeedbackProvider } from "./features/cart/CartVisualFeedbackContext";
 import { CartDrawerProvider } from "./features/cart/CartDrawerContext";
+import { GuestAccountPromptProvider } from "./features/cart/GuestAccountPromptContext";
 import { StoreSettingsProvider } from "./features/store/StoreSettingsContext";
 
 createRoot(document.getElementById("root")).render(
@@ -20,11 +21,13 @@ createRoot(document.getElementById("root")).render(
         <AuthProvider>
           <StoreSettingsProvider>
             <CartProvider>
-              <CartVisualFeedbackProvider>
-                <CartDrawerProvider>
-                  <App />
-                </CartDrawerProvider>
-              </CartVisualFeedbackProvider>
+              <CartDrawerProvider>
+                <GuestAccountPromptProvider>
+                  <CartVisualFeedbackProvider>
+                    <App />
+                  </CartVisualFeedbackProvider>
+                </GuestAccountPromptProvider>
+              </CartDrawerProvider>
             </CartProvider>
           </StoreSettingsProvider>
         </AuthProvider>

@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { LEGAL_ROUTES } from "../config/legalVersions";
 import {
   ALLOWED_DELIVERY_AREAS as FALLBACK_AREAS,
   LOCAL_DELIVERY_AREA as FALLBACK_LOCAL_AREA,
@@ -20,10 +21,13 @@ import StoreClosedSection from "../components/StoreClosedSection";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import * as cartService from "../services/cartService";
 import * as orderService from "../services/orderService";
+import { getAccessToken } from "../services/authStorage";
+import { guestLinesFromCartItems } from "../utils/guestCart";
 import { formatPrice, formatChargedTotal } from "../utils/formatPrice";
 import { formatQtyDisplay, formatApproxWeightQuantity } from "../utils/cartLineQuantity";
-import { deliveryAreaOptionLabel } from "../utils/deliveryAreaDisplay";
-import { getLocalizedProductName } from "../utils/localizedProduct";
+import StructuredAddressInput from "../components/StructuredAddressInput";
+import { legacyDeliveryToStructured, validateStructuredAddress } from "../utils/structuredAddress";
+import { getLocalizedProductName, textDirectionForLang } from "../utils/localizedProduct";
 import {
   checkoutDraftHasDeliveryContent,
   clearOrderSuccessStorage,
@@ -31,6 +35,7 @@ import {
   deliveryDetailsForPersistence,
   hasSavedDeliveryDetails,
   loadCheckoutDraft,
+  loadPersistedCartLines,
   loadSavedDeliveryDetails,
   mergeSavedDeliveryIntoForm,
   saveSavedDeliveryDetails,
@@ -195,7 +200,19 @@ const CheckoutPaymentMethodGraphic = ({ method }) => {
 };
 
 const initialForm = {
-  deliveryAddress: { street: "", building: "", apartment: "", notes: "" },
+  customerName: "",
+  customerEmail: "",
+  deliveryAddress: {
+    city: "",
+    cityKey: "",
+    street: "",
+    houseNumber: "",
+    building: "",
+    apartment: "",
+    floor: "",
+    entrance: "",
+    notes: ""
+  },
   deliveryArea: "",
   customerPhone: "",
   notes: "",
@@ -251,13 +268,24 @@ const mergeCheckoutDraft = (draft) => {
       : {};
   return {
     ...initialForm,
-    deliveryAddress: {
-      street: typeof addr.street === "string" ? addr.street : initialForm.deliveryAddress.street,
-      building: typeof addr.building === "string" ? addr.building : initialForm.deliveryAddress.building,
-      apartment: typeof addr.apartment === "string" ? addr.apartment : initialForm.deliveryAddress.apartment,
-      notes: typeof addr.notes === "string" ? addr.notes : initialForm.deliveryAddress.notes
-    },
+    deliveryAddress: legacyDeliveryToStructured(
+      {
+        street: typeof addr.street === "string" ? addr.street : "",
+        building: typeof addr.building === "string" ? addr.building : "",
+        apartment: typeof addr.apartment === "string" ? addr.apartment : "",
+        floor: typeof addr.floor === "string" ? addr.floor : "",
+        entrance: typeof addr.entrance === "string" ? addr.entrance : "",
+        notes: typeof addr.notes === "string" ? addr.notes : "",
+        houseNumber: typeof addr.houseNumber === "string" ? addr.houseNumber : "",
+        city: typeof addr.city === "string" ? addr.city : ""
+      },
+      typeof draft.deliveryArea === "string" ? draft.deliveryArea : ""
+    ),
     deliveryArea: typeof draft.deliveryArea === "string" ? draft.deliveryArea : initialForm.deliveryArea,
+    customerName:
+      typeof draft.customerName === "string" ? draft.customerName : initialForm.customerName,
+    customerEmail:
+      typeof draft.customerEmail === "string" ? draft.customerEmail : initialForm.customerEmail,
     customerPhone:
       typeof draft.customerPhone === "string" ? draft.customerPhone : initialForm.customerPhone,
     notes: typeof draft.notes === "string" ? draft.notes : initialForm.notes,
@@ -283,17 +311,23 @@ const fieldErrorsFromResponse = (err) => {
 
 /** Visual / logical order of fields for “first error” scroll (matches form layout). */
 const CHECKOUT_FIELD_SCROLL_ORDER = [
+  "customerName",
+  "customerEmail",
+  "deliveryAddress.city",
   "deliveryAddress.street",
+  "deliveryAddress.houseNumber",
   "deliveryAddress.building",
+  "deliveryAddress.entrance",
+  "deliveryAddress.floor",
   "deliveryAddress.apartment",
   "deliveryAddress.notes",
-  "deliveryArea",
   "preferredDeliveryAt",
   "customRequest",
   "customerPhone",
   "notes",
   "paymentMethod",
   "bankTransferProof",
+  "acceptTerms",
 ];
 
 const getFirstFieldErrorKey = (errors) => {
@@ -319,14 +353,229 @@ const Skeleton = ({ height = 44, width = '100%' }) => (
   />
 );
 
+/** Order lines + totals; rendered before the checkout form (top on mobile, sidebar on desktop). */
+function CheckoutOrderSummary({
+  isNarrow,
+  t,
+  items,
+  lang,
+  subtotal,
+  wrapTotal,
+  deliveryFeeEstimate,
+  payableTotal,
+}) {
+  return (
+    <aside
+      id="checkout-order-summary"
+      aria-labelledby="checkout-order-summary-title"
+      style={{
+        background: colors.surface,
+        border: `1px solid ${colors.border}`,
+        borderRadius: isNarrow ? "12px" : "14px",
+        padding: isNarrow ? "16px" : "24px",
+        position: isNarrow ? "static" : "sticky",
+        top: isNarrow ? "auto" : "80px",
+        minWidth: 0,
+        width: "100%",
+        boxSizing: "border-box",
+        boxShadow: shadowSm,
+        order: isNarrow ? 1 : 2,
+      }}
+    >
+      <h3
+        id="checkout-order-summary-title"
+        style={{
+          margin: isNarrow ? "0 0 12px" : "0 0 20px",
+          fontSize: isNarrow ? "17px" : "18px",
+          lineHeight: isNarrow ? "24px" : "28px",
+          fontWeight: 600,
+          color: colors.textPrimary,
+        }}
+      >
+        {t("orderSummary")}
+      </h3>
+
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {items.map((item) => {
+          const thumbUrl = checkoutLineImageUrl(item);
+          const displayName = getLocalizedProductName(item, lang);
+          const isAmountLine = item.purchaseMode === "amount" && item.requestedAmountIls != null;
+          const detailLine = isAmountLine ? (
+            item.unit === "kg" || item.unit === "gram" ? (
+              t("cart:purchaseByAmountLineDetail", {
+                unitPrice: formatPrice(item.unitPrice, lang),
+                unitLabel: t(`home:units.${item.unit}`),
+                weight: formatApproxWeightQuantity(item.quantity, item.unit),
+              })
+            ) : (
+              t("cart:purchaseByAmountNote", {
+                amount: formatPrice(item.requestedAmountIls, lang),
+              })
+            )
+          ) : (
+            <>
+              {t("cart:quantity")} {formatQtyDisplay(item.quantity)} · {formatPrice(item.unitPrice, lang)}
+            </>
+          );
+          return (
+            <div
+              key={String(item.product)}
+              style={{
+                padding: isNarrow ? "10px 0" : "14px 0",
+                borderBottom: `1px solid ${colors.border}`,
+                display: "flex",
+                gap: isNarrow ? "10px" : "12px",
+                alignItems: "flex-start",
+              }}
+            >
+              <div
+                style={{
+                  width: isNarrow ? 48 : 56,
+                  height: isNarrow ? 48 : 56,
+                  borderRadius: "10px",
+                  background: colors.surfaceRaised,
+                  border: `1px solid ${colors.border}`,
+                  flexShrink: 0,
+                  overflow: "hidden",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {thumbUrl ? (
+                  <img
+                    src={thumbUrl}
+                    alt=""
+                    draggable={false}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  />
+                ) : null}
+              </div>
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                  <div
+                    dir={textDirectionForLang(lang)}
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: colors.textPrimary,
+                      lineHeight: 1.4,
+                      textAlign: "start",
+                      wordBreak: "break-word",
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {displayName}
+                    {item.isPreorderOnly ? " ⏱" : ""}
+                    {item.wrap ? (
+                      <span
+                        style={{
+                          marginInlineStart: "6px",
+                          padding: "1px 6px",
+                          borderRadius: "9999px",
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          background: colors.successSurface,
+                          color: colors.success,
+                          border: `1px solid ${colors.successBorder}`,
+                          verticalAlign: "middle",
+                        }}
+                      >
+                        {t("wrapBadge")}
+                      </span>
+                    ) : null}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      color: colors.textPrimary,
+                      flexShrink: 0,
+                      textAlign: "end",
+                    }}
+                  >
+                    {formatPrice(item.lineTotal, lang)}
+                  </span>
+                </div>
+                <div style={{ fontSize: "13px", color: colors.textSecondary, lineHeight: 1.45, textAlign: "start" }}>
+                  {detailLine}
+                </div>
+                {item.wrap && Number(item.wrapFee) > 0 ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                      fontSize: "12px",
+                      color: colors.success,
+                      marginTop: "2px",
+                    }}
+                  >
+                    <span>↳ {t("wrapFees")}</span>
+                    <span>+{formatPrice(item.wrapFee, lang)}</span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div
+        style={{
+          marginTop: isNarrow ? "12px" : "16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: isNarrow ? "6px" : "8px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: colors.textSecondary, gap: "12px" }}>
+          <span>{t("subtotal")}</span>
+          <span style={{ fontWeight: 500, color: colors.textPrimary }}>{formatPrice(subtotal, lang)}</span>
+        </div>
+        {wrapTotal > 0 ? (
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: colors.success, gap: "12px" }}>
+            <span>{t("wrapFees")}</span>
+            <span style={{ fontWeight: 500 }}>{formatPrice(wrapTotal, lang)}</span>
+          </div>
+        ) : null}
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: colors.textSecondary, gap: "12px" }}>
+          <span>{t("deliveryFee")}</span>
+          <span style={{ fontWeight: 500, color: colors.textPrimary }}>{formatPrice(deliveryFeeEstimate, lang)}</span>
+        </div>
+        <span style={{ fontSize: "11px", color: colors.textMuted, lineHeight: 1.4 }}>{t("feeEstimateNote")}</span>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: isNarrow ? "17px" : "16px",
+            fontWeight: 700,
+            color: colors.textPrimary,
+            paddingTop: isNarrow ? "10px" : "12px",
+            borderTop: `1px solid ${colors.border}`,
+            marginTop: isNarrow ? "6px" : "8px",
+            gap: "12px",
+          }}
+        >
+          <span>{t("total")}</span>
+          <span>{formatChargedTotal(payableTotal, lang)}</span>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshCart } = useCart();
   const { user } = useAuth();
+  const isGuestCheckout = !getAccessToken();
+  const isLoggedIn = Boolean(user) || !isGuestCheckout;
+  const showGuestLegalConsent = !isLoggedIn;
   const { settings, loading: storeSettingsLoading, canOrderNow } = useStoreSettings();
   const [, setCheckoutDraft] = useLocalStorage(VEGSTORE_CHECKOUT_DRAFT_KEY, null);
-  const { t, i18n } = useTranslation(["checkout", "cart", "home", "storeClosed"]);
+  const { t, i18n } = useTranslation(["checkout", "cart", "home", "storeClosed", "legal", "address"]);
   const lang = (i18n.language || "he").split("-")[0];
   const isNarrow = useIsNarrowCheckout();
 
@@ -353,6 +602,7 @@ const CheckoutPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [focused, setFocused] = useState(null);
   const [bankTransferProofFile, setBankTransferProofFile] = useState(null);
   const [businessHoursNoticeOpen, setBusinessHoursNoticeOpen] = useState(false);
@@ -372,10 +622,22 @@ const CheckoutPage = () => {
       setPreviewLoading(true);
       setPreviewError("");
       try {
-        const [checkout, deliveryInfo] = await Promise.all([
-          cartService.prepareCheckout(),
-          orderService.getDeliveryAreas().catch(() => null)
-        ]);
+        const deliveryInfoPromise = orderService.getDeliveryAreas().catch(() => null);
+        let checkout;
+        if (getAccessToken()) {
+          checkout = await cartService.prepareCheckout();
+        } else {
+          const lines = guestLinesFromCartItems(loadPersistedCartLines());
+          if (!lines.length) {
+            if (!cancelled) {
+              setPreview(null);
+              setPreviewLoading(false);
+            }
+            return;
+          }
+          checkout = await orderService.guestCheckoutPreview(lines);
+        }
+        const deliveryInfo = await deliveryInfoPromise;
         if (cancelled) return;
         setPreview(checkout);
         if (deliveryInfo?.areas?.length) setAreas(deliveryInfo.areas);
@@ -411,6 +673,8 @@ const CheckoutPage = () => {
       v: 1,
       deliveryAddress: form.deliveryAddress,
       deliveryArea: form.deliveryArea,
+      customerName: form.customerName,
+      customerEmail: form.customerEmail,
       customerPhone: form.customerPhone,
       notes: form.notes,
       preferredDeliveryAt: form.preferredDeliveryAt,
@@ -419,6 +683,8 @@ const CheckoutPage = () => {
     [
       form.deliveryAddress,
       form.deliveryArea,
+      form.customerName,
+      form.customerEmail,
       form.customerPhone,
       form.notes,
       form.preferredDeliveryAt,
@@ -489,9 +755,12 @@ const CheckoutPage = () => {
   const rawTotal = subtotal + wrapTotal + deliveryFeeEstimate;
   const payableTotal = Math.floor(rawTotal + Number.EPSILON);
 
-  const updateAddress = (key) => (event) => {
-    const value = event.target.value;
-    setForm((prev) => ({ ...prev, deliveryAddress: { ...prev.deliveryAddress, [key]: value } }));
+  const handleStructuredAddressChange = (nextAddress, meta = {}) => {
+    setForm((prev) => ({
+      ...prev,
+      deliveryAddress: nextAddress,
+      deliveryArea: meta.deliveryArea ?? prev.deliveryArea
+    }));
   };
   const updateField = (key) => (event) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
@@ -533,12 +802,27 @@ const CheckoutPage = () => {
 
   const validateClientSide = () => {
     const fields = {};
-    const street = (form.deliveryAddress.street ?? "").trim();
-    if (!street) {
-      fields["deliveryAddress.street"] = t("streetEmpty");
+    if (isGuestCheckout) {
+      const name = (form.customerName ?? "").trim();
+      if (!name) {
+        fields.customerName = t("guestNameEmpty");
+      }
+      const emailRaw = (form.customerEmail ?? "").trim();
+      if (emailRaw && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) {
+        fields.customerEmail = t("guestEmailInvalid");
+      }
     }
-    if (!form.deliveryArea) {
-      fields.deliveryArea = t("deliveryAreaRequired");
+    const allowedAreas = new Set(areas.map((a) => a.key));
+    const addressCheck = validateStructuredAddress(
+      form.deliveryAddress,
+      form.deliveryArea,
+      (key) => t(key, { ns: "address" }),
+      { restrictToDeliveryAreas: true, allowedCityKeys: allowedAreas }
+    );
+    Object.assign(fields, addressCheck.fields);
+    if (!form.deliveryArea?.trim()) {
+      fields["deliveryAddress.city"] =
+        fields["deliveryAddress.city"] || t("cityMustSelectFromList", { ns: "address" });
     }
     if (hasPreorderItems) {
       if (!form.preferredDeliveryAt) {
@@ -559,6 +843,9 @@ const CheckoutPage = () => {
     }
     if (!form.paymentMethod || !PAYMENT_METHODS.some((m) => m.value === form.paymentMethod)) {
       fields.paymentMethod = t("paymentMethodRequired");
+    }
+    if (showGuestLegalConsent && !acceptTerms) {
+      fields.acceptTerms = t("legal:consent.requiredLegalError");
     }
     if (form.paymentMethod === "bank_transfer" && bankTransferProofFile) {
       const maxBytes = 3 * 1024 * 1024;
@@ -596,24 +883,54 @@ const CheckoutPage = () => {
     setSubmitting(true);
 
     const payload = {
-      deliveryAddress: { ...form.deliveryAddress },
+      deliveryAddress: {
+        street: form.deliveryAddress.street,
+        houseNumber: form.deliveryAddress.houseNumber,
+        building: form.deliveryAddress.building,
+        apartment: form.deliveryAddress.apartment,
+        floor: form.deliveryAddress.floor,
+        entrance: form.deliveryAddress.entrance,
+        notes: form.deliveryAddress.notes
+      },
       deliveryArea: form.deliveryArea,
       customerPhone: normalizeIsraeliMobile((form.customerPhone ?? "").trim()),
       notes: form.notes,
-      paymentMethod: form.paymentMethod
+      paymentMethod: form.paymentMethod,
+      saveDetailsConsent: saveForNextOrder,
+      consentLanguage: lang
     };
+    if (showGuestLegalConsent) {
+      payload.acceptTerms = acceptTerms;
+    }
     if (hasPreorderItems && form.preferredDeliveryAt) {
       payload.preferredDeliveryAt = new Date(form.preferredDeliveryAt).toISOString();
     }
     if (form.customRequest) payload.customRequest = form.customRequest;
 
     try {
-      const order = await orderService.createOrder(payload, {
-        bankTransferProofFile:
-          form.paymentMethod === "bank_transfer" && bankTransferProofFile
-            ? bankTransferProofFile
-            : null
-      });
+      let order;
+      if (isGuestCheckout) {
+        const guestPayload = {
+          ...payload,
+          customerName: (form.customerName ?? "").trim(),
+          items: guestLinesFromCartItems(loadPersistedCartLines())
+        };
+        const emailTrim = (form.customerEmail ?? "").trim();
+        if (emailTrim) guestPayload.customerEmail = emailTrim;
+        order = await orderService.createGuestOrder(guestPayload, {
+          bankTransferProofFile:
+            form.paymentMethod === "bank_transfer" && bankTransferProofFile
+              ? bankTransferProofFile
+              : null
+        });
+      } else {
+        order = await orderService.createOrder(payload, {
+          bankTransferProofFile:
+            form.paymentMethod === "bank_transfer" && bankTransferProofFile
+              ? bankTransferProofFile
+              : null
+        });
+      }
       if (saveForNextOrder) {
         saveSavedDeliveryDetails(deliveryDetailsForPersistence(form));
         setHasSavedOnDevice(true);
@@ -624,7 +941,10 @@ const CheckoutPage = () => {
       } catch {
         /* cart refresh is best-effort after order */
       }
-      navigate(`/orders/${order._id}`, { replace: true });
+      navigate(`/orders/${order._id}`, {
+        replace: true,
+        state: isGuestCheckout ? { guestOrder: order } : undefined
+      });
     } catch (err) {
       const fields = fieldErrorsFromResponse(err);
       if (Object.keys(fields).length > 0) {
@@ -747,25 +1067,108 @@ const CheckoutPage = () => {
   }
 
   return (
-    <section style={pageStyle}>
+    <section
+      style={{
+        ...pageStyle,
+        padding: isNarrow ? "24px 16px" : pageStyle.padding,
+      }}
+    >
       <BusinessHoursNoticeModal
         open={businessHoursNoticeOpen}
         onConfirm={handleBusinessHoursNoticeConfirm}
         onDismiss={handleBusinessHoursNoticeDismiss}
         confirmDisabled={submitting}
       />
-      <h1 style={{ margin: '0 0 32px', fontSize: '30px', fontWeight: 700, color: colors.textPrimary }}>
+      <h1
+        style={{
+          margin: isNarrow ? "0 0 20px" : "0 0 32px",
+          fontSize: isNarrow ? "26px" : "30px",
+          fontWeight: 700,
+          color: colors.textPrimary,
+        }}
+      >
         {t("title")}
       </h1>
 
       <div style={{
         display: 'grid',
         gridTemplateColumns: isNarrow ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(280px, 400px)',
-        gap: isNarrow ? '24px' : '40px',
+        gap: isNarrow ? '16px' : '40px',
         alignItems: 'start',
       }}>
 
-        <form noValidate onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0, width: '100%' }}>
+        <CheckoutOrderSummary
+          isNarrow={isNarrow}
+          t={t}
+          items={preview.items}
+          lang={lang}
+          subtotal={subtotal}
+          wrapTotal={wrapTotal}
+          deliveryFeeEstimate={deliveryFeeEstimate}
+          payableTotal={payableTotal}
+        />
+
+        <form
+          noValidate
+          onSubmit={handleSubmit}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '24px',
+            minWidth: 0,
+            width: '100%',
+            order: isNarrow ? 2 : 1,
+          }}
+        >
+
+          {isGuestCheckout ? (
+            <div style={cardSectionStyle}>
+              <h3 style={{ margin: 0, fontSize: '18px', lineHeight: '28px', fontWeight: 600, color: colors.textPrimary }}>
+                {t("guestContactDetails")}
+              </h3>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: isNarrow ? 'minmax(0, 1fr)' : 'repeat(2, minmax(0, 1fr))',
+                  gap: '16px',
+                }}
+              >
+                <label style={{ ...labelStyle, minWidth: 0 }}>
+                  {t("guestNameRequired")}
+                  <input
+                    ref={assignFieldRef("customerName")}
+                    value={form.customerName}
+                    onChange={updateField("customerName")}
+                    maxLength={120}
+                    required
+                    onFocus={focus("customerName")}
+                    onBlur={blur}
+                    style={inputStyle("customerName")}
+                  />
+                  {fieldErr("customerName")}
+                </label>
+                <label style={{ ...labelStyle, minWidth: 0 }}>
+                  {t("guestEmailOptional")}
+                  <input
+                    ref={assignFieldRef("customerEmail")}
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    value={form.customerEmail}
+                    onChange={updateField("customerEmail")}
+                    maxLength={254}
+                    onFocus={focus("customerEmail")}
+                    onBlur={blur}
+                    style={inputStyle("customerEmail")}
+                  />
+                  <span style={{ fontSize: '12px', color: colors.textMuted, lineHeight: 1.45 }}>
+                    {t("guestEmailHelper")}
+                  </span>
+                  {fieldErr("customerEmail")}
+                </label>
+              </div>
+            </div>
+          ) : null}
 
           <div
             id="checkout-delivery"
@@ -775,57 +1178,20 @@ const CheckoutPage = () => {
               {t("deliveryDetails")}
             </h3>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: isNarrow ? 'minmax(0, 1fr)' : 'repeat(2, minmax(0, 1fr))',
-                gap: '16px',
-              }}
-            >
-              <label style={{ ...labelStyle, minWidth: 0 }}>
-                {t("streetRequired")}
-                <input ref={assignFieldRef("deliveryAddress.street")} value={form.deliveryAddress.street} onChange={updateAddress("street")} maxLength={120} required onFocus={focus("deliveryAddress.street")} onBlur={blur} style={inputStyle("deliveryAddress.street")} />
-                {fieldErr("deliveryAddress.street")}
-              </label>
-              <label style={{ ...labelStyle, minWidth: 0 }}>
-                {t("building")}
-                <input ref={assignFieldRef("deliveryAddress.building")} value={form.deliveryAddress.building} onChange={updateAddress("building")} maxLength={50} onFocus={focus("deliveryAddress.building")} onBlur={blur} style={inputStyle("deliveryAddress.building")} />
-                {fieldErr("deliveryAddress.building")}
-              </label>
-              <label style={{ ...labelStyle, minWidth: 0, gridColumn: isNarrow ? undefined : 'span 2' }}>
-                {t("apartment")}
-                <input ref={assignFieldRef("deliveryAddress.apartment")} value={form.deliveryAddress.apartment} onChange={updateAddress("apartment")} maxLength={50} onFocus={focus("deliveryAddress.apartment")} onBlur={blur} style={inputStyle("deliveryAddress.apartment")} />
-                {fieldErr("deliveryAddress.apartment")}
-              </label>
-            </div>
-
-            <label style={labelStyle}>
-              {t("addressNotes")}
-              <textarea ref={assignFieldRef("deliveryAddress.notes")} value={form.deliveryAddress.notes} onChange={updateAddress("notes")} maxLength={500} rows={2} onFocus={focus("deliveryAddress.notes")} onBlur={blur} style={{ ...inputStyle("deliveryAddress.notes"), resize: 'vertical' }} />
-              {fieldErr("deliveryAddress.notes")}
-            </label>
-
-            <label style={labelStyle}>
-              {t("deliveryAreaRequired")}
-              <select ref={assignFieldRef("deliveryArea")} value={form.deliveryArea} onChange={updateField("deliveryArea")} required onFocus={focus("deliveryArea")} onBlur={blur} style={inputStyle("deliveryArea")}>
-                <option value="" disabled>{t("deliveryAreaPlaceholder")}</option>
-                {areas.map((area) => (
-                  <option key={area.key} value={area.key}>
-                    {deliveryAreaOptionLabel(area, lang, t)}
-                    {area.key === localAreaKey ? " ★" : ""}
-                  </option>
-                ))}
-              </select>
-              <span style={{ fontSize: '12px', color: colors.textMuted, display: 'block', whiteSpace: 'pre-line', marginTop: '4px' }}>
-                {t("deliveryAreaHelper", {
-                  localMin: rules.localFreeDeliveryMin,
-                  localFee: rules.localDeliveryFee,
-                  outsideMin: rules.outsideFreeDeliveryMin,
-                  outsideFee: rules.outsideDeliveryFee
-                })}
-              </span>
-              {fieldErr("deliveryArea")}
-            </label>
+            <StructuredAddressInput
+              value={form.deliveryAddress}
+              deliveryArea={form.deliveryArea}
+              deliveryAreas={areas}
+              localAreaKey={localAreaKey}
+              errors={fieldErrors}
+              onChange={handleStructuredAddressChange}
+              inputStyle={inputStyle}
+              assignFieldRef={assignFieldRef}
+              onFieldFocus={focus}
+              onFieldBlur={blur}
+              showDeliveryHelper
+              deliveryRules={rules}
+            />
 
             {showAutofilledBanner && (
               <p
@@ -1056,6 +1422,66 @@ const CheckoutPage = () => {
             </div>
           )}
 
+          {showGuestLegalConsent ? (
+            <div ref={assignFieldRef("acceptTerms")} style={cardSectionStyle}>
+              <h3 style={{ margin: 0, fontSize: '16px', lineHeight: '24px', fontWeight: 600, color: colors.textPrimary }}>
+                {t("legal:consent.sectionTitle")}
+              </h3>
+
+              <label
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  gap: '10px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  color: colors.textSecondary,
+                  margin: 0,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={acceptTerms}
+                  onChange={(e) => {
+                    setAcceptTerms(e.target.checked);
+                    if (e.target.checked) {
+                      setFieldErrors((prev) => {
+                        if (!prev.acceptTerms) return prev;
+                        const next = { ...prev };
+                        delete next.acceptTerms;
+                        return next;
+                      });
+                    }
+                  }}
+                  style={{
+                    flexShrink: 0,
+                    width: '20px',
+                    height: '20px',
+                    marginTop: '1px',
+                    accentColor: colors.primary,
+                    cursor: 'pointer',
+                  }}
+                />
+                <span style={{ lineHeight: 1.5, color: colors.textPrimary }}>
+                  <Trans
+                    t={t}
+                    i18nKey="consent.requiredLegalCheckbox"
+                    ns="legal"
+                    components={{
+                      terms: <Link to={LEGAL_ROUTES.terms} target="_blank" rel="noopener noreferrer" style={{ color: colors.primary, fontWeight: 600 }} />,
+                      privacy: <Link to={LEGAL_ROUTES.privacy} target="_blank" rel="noopener noreferrer" style={{ color: colors.primary, fontWeight: 600 }} />,
+                      shipping: <Link to={LEGAL_ROUTES.shipping} target="_blank" rel="noopener noreferrer" style={{ color: colors.primary, fontWeight: 600 }} />,
+                      cancellation: <Link to={LEGAL_ROUTES.cancellation} target="_blank" rel="noopener noreferrer" style={{ color: colors.primary, fontWeight: 600 }} />,
+                    }}
+                  />
+                  <span aria-hidden style={{ color: colors.error, marginInlineStart: '4px' }}>*</span>
+                </span>
+              </label>
+              {fieldErr("acceptTerms")}
+            </div>
+          ) : null}
+
           {/* Submit error */}
           <AnimatePresence>
             {submitError && (
@@ -1087,132 +1513,6 @@ const CheckoutPage = () => {
             {submitting ? t("placingOrder") : t("placeOrder")}
           </motion.button>
         </form>
-
-        {/* Order summary aside */}
-        <aside style={{
-          background: colors.surface,
-          border: `1px solid ${colors.border}`,
-          borderRadius: '14px',
-          padding: '24px',
-          position: isNarrow ? 'static' : 'sticky',
-          top: isNarrow ? 'auto' : '80px',
-          minWidth: 0,
-          width: '100%',
-          boxSizing: 'border-box',
-          boxShadow: shadowSm,
-        }}>
-          <h3 style={{ margin: '0 0 20px', fontSize: '18px', lineHeight: '28px', fontWeight: 600, color: colors.textPrimary }}>
-            {t("orderSummary")}
-          </h3>
-
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {preview.items.map((item) => {
-              const thumbUrl = checkoutLineImageUrl(item);
-              const displayName = getLocalizedProductName({ name: item.nameLocales ?? item.name }, lang);
-              const isAmountLine = item.purchaseMode === "amount" && item.requestedAmountIls != null;
-              const detailLine = isAmountLine ? (
-                item.unit === "kg" || item.unit === "gram" ? (
-                  t("cart:purchaseByAmountLineDetail", {
-                    unitPrice: formatPrice(item.unitPrice, lang),
-                    unitLabel: t(`home:units.${item.unit}`),
-                    weight: formatApproxWeightQuantity(item.quantity, item.unit)
-                  })
-                ) : (
-                  t("cart:purchaseByAmountNote", {
-                    amount: formatPrice(item.requestedAmountIls, lang)
-                  })
-                )
-              ) : (
-                <>
-                  {t("cart:quantity")} {formatQtyDisplay(item.quantity)} · {formatPrice(item.unitPrice, lang)}
-                </>
-              );
-              return (
-                <div
-                  key={item.product}
-                  style={{
-                    padding: '14px 0',
-                    borderBottom: `1px solid ${colors.border}`,
-                    display: 'flex',
-                    gap: '12px',
-                    alignItems: 'flex-start',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: '10px',
-                      background: colors.surfaceRaised,
-                      border: `1px solid ${colors.border}`,
-                      flexShrink: 0,
-                      overflow: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {thumbUrl ? (
-                      <img
-                        src={thumbUrl}
-                        alt=""
-                        draggable={false}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                      />
-                    ) : null}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: colors.textPrimary, lineHeight: 1.4, textAlign: 'start', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                        {displayName}
-                        {item.isPreorderOnly ? " ⏱" : ""}
-                        {item.wrap && (
-                          <span style={{ marginInlineStart: '6px', padding: '1px 6px', borderRadius: '9999px', fontSize: '11px', fontWeight: 600, background: colors.successSurface, color: colors.success, border: `1px solid ${colors.successBorder}`, verticalAlign: 'middle' }}>
-                            {t("wrapBadge")}
-                          </span>
-                        )}
-                      </div>
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: colors.textPrimary, flexShrink: 0, textAlign: 'end' }}>
-                        {formatPrice(item.lineTotal, lang)}
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '13px', color: colors.textSecondary, lineHeight: 1.45, textAlign: 'start' }}>
-                      {detailLine}
-                    </div>
-                    {item.wrap && Number(item.wrapFee) > 0 && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '12px', color: colors.success, marginTop: '2px' }}>
-                        <span>↳ {t("wrapFees")}</span>
-                        <span>+{formatPrice(item.wrapFee, lang)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.textSecondary, gap: '12px' }}>
-              <span>{t("subtotal")}</span>
-              <span style={{ fontWeight: 500, color: colors.textPrimary }}>{formatPrice(subtotal, lang)}</span>
-            </div>
-            {wrapTotal > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.success, gap: '12px' }}>
-                <span>{t("wrapFees")}</span>
-                <span style={{ fontWeight: 500 }}>{formatPrice(wrapTotal, lang)}</span>
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: colors.textSecondary, gap: '12px' }}>
-              <span>{t("deliveryFee")}</span>
-              <span style={{ fontWeight: 500, color: colors.textPrimary }}>{formatPrice(deliveryFeeEstimate, lang)}</span>
-            </div>
-            <span style={{ fontSize: '11px', color: colors.textMuted, lineHeight: 1.4 }}>{t("feeEstimateNote")}</span>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700, color: colors.textPrimary, paddingTop: '12px', borderTop: `1px solid ${colors.border}`, marginTop: '8px', gap: '12px' }}>
-              <span>{t("total")}</span>
-              <span>{formatChargedTotal(payableTotal, lang)}</span>
-            </div>
-          </div>
-        </aside>
       </div>
     </section>
   );

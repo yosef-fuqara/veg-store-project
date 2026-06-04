@@ -3,11 +3,14 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useCart } from "../features/cart/CartContext";
 import { useCartVisualFeedback } from "../features/cart/CartVisualFeedbackContext";
+import { useGuestAccountPrompt } from "../features/cart/GuestAccountPromptContext";
+import { isGuestCartEmptyForPrompt } from "../utils/guestAccountPromptSession";
 import { formatPrice } from "../utils/formatPrice";
 import {
+  getLocalizedCategoryName,
   getLocalizedProductDescription,
   getLocalizedProductName,
-  getLocalizedText
+  textDirectionForLang
 } from "../utils/localizedProduct";
 import ProductCardPurchasePanel from "./ProductCardPurchasePanel";
 import FavoriteProductButton from "./account/FavoriteProductButton";
@@ -93,12 +96,14 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
   const { t } = useTranslation(["home", "storeClosed"]);
   const { addItem, cart } = useCart();
   const { notifyProductAddedToCart } = useCartVisualFeedback();
+  const { maybeShowGuestAccountPrompt } = useGuestAccountPrompt();
   const addButtonRef = useRef(null);
   const flyImageRef = useRef(null);
   const [adding, setAdding] = useState(false);
 
   const id = product._id;
   const name = getLocalizedProductName(product, lang);
+  const nameDir = textDirectionForLang(lang);
   const imageUrl = typeof product.imageUrl === "string" ? product.imageUrl : "";
   const unit = typeof product.unit === "string" ? product.unit : "";
   const price = Number(product.price);
@@ -114,9 +119,7 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
   const inStock = !isProductUnavailable(product);
   const isPreorder = Boolean(product.isPreorderOnly);
   const minAdvHours = Number(product.minAdvanceHours) || 24;
-  const rawCategoryLabel =
-    product.category?.name ?? (typeof product.category === "string" ? product.category : "");
-  const categoryName = getLocalizedText(rawCategoryLabel, lang);
+  const categoryName = getLocalizedCategoryName(product.category, lang);
   const isFeatured = Boolean(product.isFeatured || product.featured);
 
   const existingLine = useMemo(
@@ -130,6 +133,7 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
 
   const handleConfirmAdd = async (payload) => {
     if (!id) return false;
+    const wasGuestEmptyCart = isGuestCartEmptyForPrompt(cart.items);
     setAdding(true);
     try {
       let ok = false;
@@ -145,6 +149,9 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
             fromRect: flyEl.getBoundingClientRect(),
             imageUrl
           });
+        }
+        if (wasGuestEmptyCart) {
+          maybeShowGuestAccountPrompt();
         }
       }
       return ok;
@@ -225,6 +232,7 @@ const ProductCard = ({ product, lang, orderingDisabled = false, compact = false 
 
   const titleEl = (
     <h3
+      dir={nameDir}
       style={{
         margin: 0,
         fontSize: compact ? "11px" : "16px",

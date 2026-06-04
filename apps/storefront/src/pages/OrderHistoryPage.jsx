@@ -6,7 +6,8 @@ import * as orderService from "../services/orderService";
 import { formatChargedTotal, formatPrice } from "../utils/formatPrice";
 import { formatQtyDisplay, formatApproxWeightQuantity } from "../utils/cartLineQuantity";
 import { formatOrderDeliveryAreaLabel } from "../utils/deliveryAreaDisplay";
-import { getLocalizedText } from "../utils/localizedProduct";
+import { getLocalizedProductName, textDirectionForLang } from "../utils/localizedProduct";
+import { formatAddressForDisplay } from "../utils/structuredAddress";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -92,17 +93,7 @@ const formatDate = (value, lang) => {
   }
 };
 
-const addressText = (address) => {
-  if (!address) return "—";
-  return [
-    address.label,
-    address.city,
-    address.street,
-    address.building,
-    address.apartment,
-    address.notes,
-  ].filter(Boolean).join(", ") || "—";
-};
+const addressText = (address, lang) => formatAddressForDisplay(address, lang);
 
 const OrderHistoryPage = ({ embedded = false }) => {
   const { t, i18n } = useTranslation(["order", "cart", "home"]);
@@ -215,7 +206,7 @@ const OrderHistoryPage = ({ embedded = false }) => {
                   <div style={{ padding: '12px', borderRadius: '10px', background: colors.surfaceRaised }}>
                     <div style={{ fontSize: '12px', fontWeight: 600, color: colors.textMuted, marginBottom: '4px' }}>{t("delivery")}</div>
                     <div style={{ fontSize: '14px', color: colors.textPrimary }}>{formatOrderDeliveryAreaLabel(order, tCheckout, lang)}</div>
-                    <div style={{ fontSize: '13px', color: colors.textSecondary, marginTop: '4px' }}>{addressText(order.deliveryAddress)}</div>
+                    <div style={{ fontSize: '13px', color: colors.textSecondary, marginTop: '4px' }}>{addressText(order.deliveryAddress, lang)}</div>
                   </div>
                   <div style={{ padding: '12px', borderRadius: '10px', background: colors.surfaceRaised }}>
                     <div style={{ fontSize: '12px', fontWeight: 600, color: colors.textMuted, marginBottom: '4px' }}>{t("paymentMethod")}</div>
@@ -238,8 +229,8 @@ const OrderHistoryPage = ({ embedded = false }) => {
                         : Number(item.price) * Number(item.quantity);
                     return (
                       <div key={`${item.product}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', padding: '8px 0' }}>
-                        <span style={{ fontSize: '14px', color: colors.textPrimary }}>
-                          {getLocalizedText(item.name, lang)}
+                        <span dir={textDirectionForLang(lang)} style={{ fontSize: '14px', color: colors.textPrimary }}>
+                          {getLocalizedProductName(item, lang)}
                           {item.purchaseMode === "amount" && item.requestedAmountIls != null ? (
                             <>
                               {" · "}

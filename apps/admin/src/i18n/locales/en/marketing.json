@@ -1,0 +1,35 @@
+{
+  "campaigns": {
+    "title": "Marketing Campaigns",
+    "subtitle": "Send promotional WhatsApp messages only to customers who opted in to marketing updates.",
+    "campaignTitle": "Campaign title",
+    "campaignTitlePlaceholder": "Weekly fresh arrivals",
+    "messageBody": "Message body",
+    "messageBodyPlaceholder": "Fresh produce just arrived. Order today and enjoy seasonal specials.",
+    "channel": "Channel",
+    "whatsapp": "WhatsApp",
+    "preview": "Preview",
+    "sendCampaign": "Send campaign",
+    "previewSectionTitle": "Campaign preview",
+    "totalRecipients": "Total recipients",
+    "loadingRecipients": "Loading…",
+    "previewEmpty": "Click Preview to review the final WhatsApp message before sending.",
+    "noRecipients": "No recipients available.",
+    "confirmSend": "Are you sure you want to send this campaign to {{count}} customers?",
+    "sendSuccess": "WhatsApp campaign sent. Delivered: {{delivered}}/{{total}}.",
+    "consentNotice": "Only customers with active marketing consent are included. Recipients can unsubscribe at any time."
+  },
+  "customers": {
+    "title": "Marketing Customers",
+    "subtitle": "Customers who opted in to receive promotions and offers by WhatsApp.",
+    "exportCsv": "Export CSV",
+    "empty": "No customers have opted in yet.",
+    "loadFailed": "Failed to load marketing customers.",
+    "tableHeaders": {
+      "name": "Name",
+      "phone": "Phone",
+      "consentDate": "WhatsApp Consent Date",
+      "consentSource": "Consent Source"
+    }
+  }
+}

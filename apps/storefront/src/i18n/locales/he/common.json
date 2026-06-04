@@ -1,6 +1,15 @@
 {
+  "clearSearch": "נקה חיפוש",
   "retry": "נסה שוב",
   "currencySymbol": "₪",
   "loading": "טוען...",
-  "unknownError": "משהו השתבש."
+  "unknownError": "משהו השתבש.",
+  "errorBoundaryTitle": "משהו השתבש בתצוגה",
+  "errorBoundaryReload": "רענון העמוד",
+  "apiErrors": {
+    "unknown": "שגיאה לא ידועה",
+    "requestFailed": "הבקשה נכשלה (HTTP {{status}}{{statusText}})",
+    "network": "שגיאת רשת — ודא שה-API פועל וש-CORS מאפשר את המקור.",
+    "timeout": "פג תוקף הבקשה."
+  }
 }

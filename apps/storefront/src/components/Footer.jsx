@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LEGAL_ROUTES } from "../config/legalVersions";
 import { DEVELOPER_CREDIT } from "../config/developerCredit";
 import { Link } from "react-router-dom";
 import AbuAlAnasLogo from "./common/Logo";
@@ -81,7 +82,7 @@ const DeveloperMark = ({ logoSrc, hovered, size = 20 }) => {
 
 const Footer = () => {
   const [creditHovered, setCreditHovered] = useState(false);
-  const { t, i18n } = useTranslation(["home", "nav"]);
+  const { t, i18n } = useTranslation(["home", "nav", "legal"]);
   const lang = String(i18n.language || "he").split("-")[0].toLowerCase();
   const dir = lang === "he" || lang === "ar" ? "rtl" : "ltr";
   const devUrl = (DEVELOPER_CREDIT.websiteUrl || "").trim();
@@ -268,6 +269,46 @@ const Footer = () => {
             gap: "8px",
           }}
         >
+          <nav
+            aria-label={t("legal:footer.title")}
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              gap: "8px 14px",
+              maxWidth: "720px"
+            }}
+          >
+            {[
+              { to: LEGAL_ROUTES.terms, label: t("legal:footer.terms") },
+              { to: LEGAL_ROUTES.privacy, label: t("legal:footer.privacy") },
+              { to: LEGAL_ROUTES.shipping, label: t("legal:footer.shipping") },
+              { to: LEGAL_ROUTES.cancellation, label: t("legal:footer.cancellation") },
+              { to: LEGAL_ROUTES.accessibility, label: t("legal:footer.accessibility") },
+              { to: LEGAL_ROUTES.customerClub, label: t("legal:footer.customerClub") },
+              { to: LEGAL_ROUTES.unsubscribe, label: t("legal:footer.unsubscribe") }
+            ].map(({ to, label }) => (
+              <Link
+                key={to}
+                to={to}
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 500,
+                  color: colors.textMuted,
+                  textDecoration: "none",
+                  transition: "color 0.15s"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = colors.primary;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = colors.textMuted;
+                }}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
           <p
             style={{
               margin: 0,

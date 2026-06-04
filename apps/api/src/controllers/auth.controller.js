@@ -11,6 +11,15 @@ const {
 } = require("../services/password-reset-email.service");
 
 const { sanitizeUser } = require("../utils/sanitize-user");
+const { normalizeConsentLanguage } = require("../constants/legal-versions");
+const {
+  applyMarketingConsent,
+  applyLegalAcceptance,
+  applyCustomerClubJoin,
+  applySavedDetailsConsent,
+  getRequestIp,
+  getRequestUserAgent
+} = require("../services/consent.service");
 
 const register = async (req, res, next) => {
   try {
@@ -20,16 +29,38 @@ const register = async (req, res, next) => {
     }
 
     const password = await bcrypt.hash(req.body.password, 12);
-    const marketingConsentWhatsApp = req.body.marketingConsentWhatsApp === true;
-    const user = await User.create({
+    // Accept legacy `marketingConsentWhatsApp` or the new `marketingConsent`.
+    const marketingConsent =
+      req.body.marketingConsent === true || req.body.marketingConsentWhatsApp === true;
+    const language =
+      normalizeConsentLanguage(req.body.consentLanguage) ||
+      normalizeConsentLanguage(req.headers?.["x-app-language"]);
+
+    const user = new User({
       name: req.body.name,
       phone: req.body.phone,
       email: req.body.email.toLowerCase(),
-      password,
-      marketingConsentWhatsApp,
-      marketingConsentWhatsAppAt: marketingConsentWhatsApp ? new Date() : null,
-      marketingConsentSource: marketingConsentWhatsApp ? "account_creation" : null
+      password
     });
+
+    // Required terms/privacy acceptance is guaranteed by the validator.
+    applyLegalAcceptance(user, {
+      from: "register",
+      language,
+      ipAddress: getRequestIp(req),
+      userAgent: getRequestUserAgent(req)
+    });
+    applyMarketingConsent(user, marketingConsent, {
+      source: "register",
+      language,
+      channels: { whatsapp: true, sms: true }
+    });
+    if (req.body.joinCustomerClub === true) {
+      applyCustomerClubJoin(user, { language });
+    }
+    applySavedDetailsConsent(user, req.body.saveDetailsConsent === true);
+
+    await user.save();
 
     const accessToken = signAccessToken(user);
     const refreshToken = signRefreshToken(user);

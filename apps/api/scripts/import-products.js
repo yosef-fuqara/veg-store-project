@@ -19,6 +19,7 @@ const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
 const env = require("../src/config/env");
+const { normalizeCategorySlug } = require("../src/constants/category-slug-aliases");
 
 const PHOTOS_DIR = path.join(__dirname, "..", "..", "..", "photos");
 const CATALOG_PATH = path.join(__dirname, "products-to-import.json");
@@ -137,7 +138,7 @@ function resolveCategorySlug(raw, settings) {
       `Missing slug for ${raw}. Set settings in products-to-import.json or IMPORT_LEMON_JUICE_SLUG / IMPORT_POM_JUICE_SLUG.`
     );
   }
-  return resolved.toLowerCase();
+  return normalizeCategorySlug(resolved);
 }
 
 function mimeForImagePath(absPath) {

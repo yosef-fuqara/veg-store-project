@@ -115,8 +115,7 @@ describe("Cart", () => {
     expect(patch.status).toBe(200);
     expect(patch.body.data.cart.items[0].purchaseMode).toBe("amount");
     expect(patch.body.data.cart.items[0].requestedAmountIls).toBe(55);
-    const expectedQty = Math.round((55 / 7) * 10000) / 10000;
-    expect(patch.body.data.cart.items[0].quantity).toBe(expectedQty);
+    expect(patch.body.data.cart.items[0].quantity).toBe(8);
   });
 
   it("returns 400 when PATCH sends both quantity and purchaseAmountIls", async () => {
@@ -305,7 +304,8 @@ describe("Cart", () => {
     const product = await createProduct({
       unit: "gram",
       price: 0.02,
-      allowPurchaseByAmount: false
+      allowPurchaseByAmount: false,
+      minimumOrderWeight: 0.5
     });
 
     const res = await request(getApp())
@@ -324,7 +324,8 @@ describe("Cart", () => {
     const product = await createProduct({
       unit: "kg",
       price: 20,
-      allowPurchaseByAmount: false
+      allowPurchaseByAmount: false,
+      minimumOrderWeight: 0.5
     });
 
     const res = await request(getApp())
@@ -337,7 +338,7 @@ describe("Cart", () => {
     expect(res.body.data.cart.items[0].lineProductSubtotal).toBe(10);
   });
 
-  it("accepts quarter-kg quantities (0.25 and 1) for kg products", async () => {
+  it("accepts half-kg quantities (1 and 1.5) for kg products with default minimum 1 kg", async () => {
     const user = await createCustomerUser();
     const token = await loginAndGetAccessToken(user.email, DEFAULT_PASSWORD);
     const product = await createProduct({
@@ -346,21 +347,28 @@ describe("Cart", () => {
       allowPurchaseByAmount: false
     });
 
-    const first = await request(getApp())
+    const rejected = await request(getApp())
       .post(apiUrl("/cart/items"))
       .set("Authorization", `Bearer ${token}`)
       .send({ productId: String(product._id), quantity: 0.25 });
 
+    expect(rejected.status).toBe(400);
+
+    const first = await request(getApp())
+      .post(apiUrl("/cart/items"))
+      .set("Authorization", `Bearer ${token}`)
+      .send({ productId: String(product._id), quantity: 1 });
+
     expect(first.status).toBe(200);
-    expect(first.body.data.cart.items[0].quantity).toBe(0.25);
+    expect(first.body.data.cart.items[0].quantity).toBe(1);
 
     const second = await request(getApp())
       .patch(apiUrl(`/cart/items/${product._id}`))
       .set("Authorization", `Bearer ${token}`)
-      .send({ quantity: 1 });
+      .send({ quantity: 1.5 });
 
     expect(second.status).toBe(200);
-    expect(second.body.data.cart.items[0].quantity).toBe(1);
+    expect(second.body.data.cart.items[0].quantity).toBe(1.5);
   });
 
   it("keeps amount-mode working for legacy gram unit products", async () => {
@@ -369,7 +377,8 @@ describe("Cart", () => {
     const product = await createProduct({
       unit: "gram",
       price: 0.02,
-      allowPurchaseByAmount: true
+      allowPurchaseByAmount: true,
+      minimumOrderWeight: 0.5
     });
 
     const res = await request(getApp())

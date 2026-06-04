@@ -1,8 +1,8 @@
 /**
  * Ensure storefront/public Category rows exist (public GET /categories + admin dropdown).
  *
- * - Creates canonical slugs: fruits, vegetables, herbs, spices, platters, pickles,
- *   natural-juices (nav slot "other" has no DB row).
+ * - Creates canonical slugs: fruits, vegetables, ready-stuffed-vegetables, herbs,
+ *   spices, platters, pickles, natural-juices (nav slot "other" has no DB row).
  * - Updates an existing category when it already uses that slug, a known alias, or the same localized name.
  * - Idempotent: safe to run multiple times.
  *
@@ -29,6 +29,27 @@ const CANONICAL = [
     aliases: ["vegetable", "vegetables", "veggie", "veggies", "seed-vegetables", "ירקות"],
     name: { ar: "خضروات", he: "ירקות", en: "Vegetables" },
     description: "Vegetables"
+  },
+  {
+    slug: "ready-stuffed-vegetables",
+    aliases: [
+      "mahashi",
+      "ready-stuffed",
+      "ready-to-cook-stuffed-vegetables",
+      "stuffed-vegetables",
+      "ready-stuffed-vegetables",
+      "ממולאים-מוכנים",
+      "ממולאים",
+      "محاشي-جاهزة",
+      "محاشي"
+    ],
+    name: {
+      ar: "محاشي جاهزة",
+      he: "ממולאים מוכנים",
+      en: "Ready-to-Cook Stuffed Vegetables"
+    },
+    description:
+      "Prepared ready-to-cook items such as hollowed zucchini, rolled grape leaves, and vegetables prepared for stuffing."
   },
   {
     slug: "herbs",

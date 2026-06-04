@@ -15,6 +15,7 @@
     "migrate:order-status-prune": "node scripts/migrate-order-status-prune.js",
     "seed:storefront-categories": "node scripts/seed-storefront-categories.js",
     "import:products": "node scripts/import-products.js",
+    "backfill:product-names": "node scripts/backfill-product-names-from-catalog.js",
     "test:email": "node scripts/test-email.js",
     "test:whatsapp": "node scripts/test-whatsapp.js"
   },

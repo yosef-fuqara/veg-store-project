@@ -1,0 +1,153 @@
+{
+  "list": {
+    "pageTitle": "الطلبات",
+    "pageSubtitle": "متابعة ومعالجة طلبات العملاء",
+    "refresh": "تحديث",
+    "refreshing": "جارٍ التحديث…",
+    "refreshAria": "تحديث الطلبات",
+    "refreshingAria": "جارٍ تحديث الطلبات",
+    "searchPlaceholder": "بحث برقم الطلب أو العميل…",
+    "searchAria": "بحث في الطلبات",
+    "loadFailed": "تعذّر تحميل الطلبات",
+    "empty": {
+      "title": "لا توجد طلبات",
+      "withSearch": "جرّب تعديل البحث أو التصفية.",
+      "withoutSearch": "ستظهر الطلبات الجديدة هنا عند وصولها."
+    },
+    "tableHeaders": {
+      "actions": "إجراءات",
+      "status": "الحالة",
+      "payment": "الدفع",
+      "total": "المجموع",
+      "date": "التاريخ",
+      "customer": "العميل",
+      "orderNumber": "# الطلب"
+    },
+    "view": "عرض",
+    "preorder": "طلب مسبق",
+    "footer_one": "طلب واحد",
+    "footer_other": "{{count}} طلبات"
+  },
+  "details": {
+    "pageTitle": "تفاصيل الطلب",
+    "allOrders": "كل الطلبات",
+    "preorderBadge": "طلب مسبق",
+    "preorderBanner": "يحتوي على عناصر تتطلب تحضيراً مسبقاً.",
+    "preferredLabel": "مفضل: {{value}}",
+    "notFound": "الطلب غير موجود.",
+    "loadFailed": "تعذّر تحميل الطلب",
+    "cards": {
+      "customer": "العميل",
+      "items": "العناصر",
+      "delivery": "التوصيل",
+      "paymentStatus": "الدفع والحالة",
+      "consent": "الموافقات والمعلومات القانونية"
+    },
+    "consent": {
+      "yes": "نعم",
+      "no": "لا",
+      "snapshotTitle": "وقت الطلب",
+      "accountTitle": "حالة الحساب الحالية",
+      "termsAccepted": "تمت الموافقة على الشروط",
+      "acceptedAt": "تاريخ الموافقة",
+      "acceptedLanguage": "لغة الموافقة",
+      "acceptedFrom": "مصدر الموافقة",
+      "termsVersion": "إصدار الشروط",
+      "privacyVersion": "إصدار الخصوصية",
+      "shippingVersion": "إصدار الشحن",
+      "cancellationVersion": "إصدار الإلغاء",
+      "customerClubVersion": "إصدار النادي",
+      "marketingAtOrder": "موافقة التسويق وقت الطلب",
+      "saveDetailsAtOrder": "موافقة حفظ التفاصيل وقت الطلب",
+      "clubJoinedAtOrder": "الانضمام للنادي وقت الطلب",
+      "marketingConsent": "موافقة التسويق",
+      "marketingConsentDate": "تاريخ موافقة التسويق",
+      "unsubscribed": "ملغى الاشتراك",
+      "unsubscribeSource": "مصدر الإلغاء",
+      "unsubscribeDate": "تاريخ الإلغاء",
+      "savedDetails": "حفظ تفاصيل التوصيل",
+      "clubJoined": "عضو في النادي",
+      "clubJoinedDate": "تاريخ الانضمام للنادي",
+      "clubStatus": "حالة النادي"
+    },
+    "customer": {
+      "name": "الاسم",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "marketingConsentStatus": "موافقة تسويق واتساب",
+      "marketingConsentYes": "وافق (واتساب)",
+      "marketingConsentNo": "بدون موافقة",
+      "marketingConsentDate": "تاريخ موافقة واتساب",
+      "marketingConsentSource": "مصدر موافقة واتساب",
+      "orderPlaced": "تاريخ الطلب",
+      "lastUpdated": "آخر تحديث",
+      "customerNotes": "ملاحظات العميل",
+      "customRequest": "طلب مخصص"
+    },
+    "itemsTable": {
+      "product": "المنتج",
+      "qty": "الكمية",
+      "unitPrice": "سعر الوحدة",
+      "lineTotal": "المجموع",
+      "noImage": "لا توجد صورة للمنتج"
+    },
+    "itemBadges": {
+      "preorder": "طلب مسبق",
+      "wrap": "تغليف",
+      "wrapWithFee": "تغليف (+{{fee}})"
+    },
+    "requestedAmount": "المطلوب: {{value}} · الوضع: مبلغ",
+    "totals": {
+      "subtotal": "المجموع الفرعي",
+      "wrapFees": "رسوم التغليف",
+      "deliveryFee": "رسوم التوصيل",
+      "total": "المجموع"
+    },
+    "delivery": {
+      "area": "المنطقة",
+      "city": "المدينة",
+      "street": "الشارع",
+      "houseNumber": "رقم البيت",
+      "apartment": "الشقة",
+      "floor": "الطابق",
+      "entrance": "المدخل",
+      "address": "العنوان الكامل",
+      "addressLabel": "تسمية العنوان",
+      "preferredDelivery": "التوصيل المفضل",
+      "housePrefix": "رقم",
+      "buildingPrefix": "مبنى",
+      "apartmentPrefix": "شقة",
+      "floorPrefix": "طابق",
+      "entrancePrefix": "مدخل"
+    },
+    "payment": {
+      "orderStatus": "حالة الطلب",
+      "paymentStatus": "حالة الدفع",
+      "methodPrefix": "الطريقة:",
+      "update": "تحديث",
+      "bankProofTitle": "إثبات تحويل بنكي (رفع العميل)",
+      "bankProofAlt": "إثبات تحويل بنكي"
+    },
+    "toasts": {
+      "orderStatusUpdated": "تم تحديث حالة الطلب.",
+      "orderStatusFailed": "تعذّر تحديث حالة الطلب",
+      "paymentStatusUpdated": "تم تحديث حالة الدفع.",
+      "paymentStatusFailed": "تعذّر تحديث حالة الدفع"
+    }
+  },
+  "orderStatuses": {
+    "new": "جديد",
+    "confirmed": "مؤكد",
+    "sent_with_delivery_company": "أُرسل مع شركة التوصيل",
+    "delivered": "تم التسليم",
+    "cancelled": "ملغى"
+  },
+  "paymentStatuses": {
+    "pending_payment": "بانتظار الدفع",
+    "paid": "مدفوع",
+    "failed": "فشل",
+    "cancelled": "ملغى",
+    "bank_transfer_pending": "تحويل بنكي قيد الانتظار",
+    "bank_transfer_approved": "تحويل بنكي موافق عليه"
+  }
+}

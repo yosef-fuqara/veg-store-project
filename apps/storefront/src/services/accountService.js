@@ -5,11 +5,40 @@ export const updateProfile = async (payload) => {
   return data.data.user;
 };
 
-export const updateMarketingConsent = async (marketingConsentWhatsApp) => {
-  const { data } = await apiClient.patch("/auth/me/marketing-consent", {
-    marketingConsentWhatsApp
+export const updateMarketingConsent = async (marketingConsentWhatsApp, consentLanguage) => {
+  const body = { marketingConsentWhatsApp };
+  if (consentLanguage) {
+    body.consentLanguage = consentLanguage;
+  }
+  const { data } = await apiClient.patch("/auth/me/marketing-consent", body);
+  return data.data.user;
+};
+
+export const joinCustomerClub = async (consentLanguage) => {
+  const { data } = await apiClient.post("/auth/me/customer-club", {
+    ...(consentLanguage ? { consentLanguage } : {})
   });
   return data.data.user;
+};
+
+export const leaveCustomerClub = async () => {
+  const { data } = await apiClient.delete("/auth/me/customer-club");
+  return data.data.user;
+};
+
+export const updateSavedDetailsConsent = async (saveForNextOrder) => {
+  const { data } = await apiClient.patch("/auth/me/saved-details", { saveForNextOrder });
+  return data.data.user;
+};
+
+export const deleteSavedDeliveryDetails = async () => {
+  const { data } = await apiClient.delete("/auth/me/saved-details");
+  return data.data.user;
+};
+
+export const requestAccountDeletion = async () => {
+  const { data } = await apiClient.post("/auth/me/deletion-request");
+  return data;
 };
 
 export const changePassword = async ({ currentPassword, newPassword }) => {

@@ -1,0 +1,95 @@
+{
+  "pageTitle": "النوافذ المنبثقة / العروض",
+  "pageSubtitle": "أنشئ نوافذ منبثقة في المتجر مع وقت بداية وإما وقت نهاية أو مدة. يُعرض للعملاء عرض واحد نشط داخل النافذة في كل مرة (الأحدث تحديثاً يفوز).",
+  "showArchived": "عرض المؤرشف",
+  "form": {
+    "titleNew": "عرض جديد",
+    "titleEdit": "تعديل العرض",
+    "fields": {
+      "title": "العنوان",
+      "message": "الرسالة",
+      "image": "صورة العرض (اختيارية)",
+      "imageHint": "JPEG أو PNG أو WebP حتى 3 ميجابايت. يمكن اختيار ملف من الجهاز؛ على الهاتف قد تُفتح المعرض أو الكاميرا حسب المتصفح.",
+      "ctaSection": "زر الدعوة للإجراء",
+      "ctaHint": "اختياري. وجّه العملاء إلى منتج أو فئة أو مسار أو رابط خارجي. يمكن تعيين نص الزر لكل لغة (עברית، English، العربية).",
+      "ctaTarget": "هدف الزر",
+      "ctaTargetOptions": {
+        "none": "بدون زر",
+        "product": "منتج",
+        "category": "فئة",
+        "custom": "رابط أو مسار مخصص"
+      },
+      "btnHe": "نص الزر (HE)",
+      "btnEn": "نص الزر (EN)",
+      "btnAr": "نص الزر (AR)",
+      "btnHePlaceholder": "مثال: اشترِ الآن",
+      "btnEnPlaceholder": "e.g. Shop now",
+      "product": "المنتج",
+      "category": "الفئة",
+      "loadingProducts": "جارٍ تحميل المنتجات…",
+      "loadingCategories": "جارٍ تحميل الفئات…",
+      "selectProduct": "اختر منتجاً",
+      "selectCategory": "اختر فئة",
+      "urlOrPath": "رابط أو مسار",
+      "urlOrPathPlaceholder": "https://… أو /cart",
+      "startsAt": "يبدأ في",
+      "scheduleSection": "مدة الصلاحية",
+      "scheduleDuration": "التشغيل لعدد ساعات من البداية",
+      "scheduleEnd": "الانتهاء في تاريخ ووقت محددين",
+      "activeCheckbox": "نشط (يظهر في المتجر داخل نافذة الوقت)",
+      "clearNewSelection": "مسح الاختيار الجديد",
+      "removeSavedImage": "إزالة الصورة المحفوظة"
+    },
+    "buttons": {
+      "submitNew": "إنشاء عرض",
+      "submitEdit": "حفظ التغييرات",
+      "saving": "جارٍ الحفظ…",
+      "cancelEdit": "إلغاء التعديل"
+    },
+    "errors": {
+      "schedule": "تحقق من حقول الجدولة",
+      "ctaProduct": "اختر منتجاً للزر.",
+      "ctaCategory": "اختر فئة للزر.",
+      "ctaUrl": "أدخل رابطاً أو مساراً للزر.",
+      "saveFailed": "تعذّر حفظ العرض"
+    },
+    "toasts": {
+      "updated": "تم تحديث العرض.",
+      "created": "تم إنشاء العرض.",
+      "turnedOn": "تم تفعيل العرض.",
+      "turnedOff": "تم إيقاف العرض.",
+      "statusFailed": "تعذّر تحديث الحالة",
+      "archived": "تم أرشفة العرض.",
+      "archiveFailed": "تعذّر الأرشفة",
+      "deleted": "تم حذف العرض.",
+      "deleteFailed": "تعذّر الحذف"
+    }
+  },
+  "loadFailed": "تعذّر تحميل العروض",
+  "table": {
+    "title": "العنوان",
+    "window": "النافذة",
+    "status": "الحالة",
+    "actions": "إجراءات",
+    "empty": "لا توجد عروض بعد."
+  },
+  "row": {
+    "archived": "مؤرشف",
+    "on": "مفعّل",
+    "off": "متوقف",
+    "turnOn": "تفعيل",
+    "turnOff": "إيقاف",
+    "edit": "تعديل",
+    "archive": "أرشفة",
+    "delete": "حذف"
+  },
+  "modal": {
+    "deleteTitle": "حذف العرض؟",
+    "archiveTitle": "أرشفة العرض؟",
+    "deleteBody": "يزيل هذا العرض نهائياً. لن يراه العملاء بعد الآن.",
+    "archiveBody": "تبقى العروض المؤرشفة في القائمة (إذا كان «عرض المؤرشف» مفعّلاً) لكنها لا تظهر في المتجر.",
+    "cancel": "إلغاء",
+    "confirmDelete": "حذف",
+    "confirmArchive": "أرشفة"
+  }
+}

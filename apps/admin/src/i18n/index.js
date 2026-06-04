@@ -11,6 +11,7 @@ import enOrders from "./locales/en/orders.json";
 import enSales from "./locales/en/sales.json";
 import enPromotions from "./locales/en/promotions.json";
 import enStoreStatus from "./locales/en/storeStatus.json";
+import enMarketing from "./locales/en/marketing.json";
 
 import heCommon from "./locales/he/common.json";
 import heNav from "./locales/he/nav.json";
@@ -21,6 +22,18 @@ import heOrders from "./locales/he/orders.json";
 import heSales from "./locales/he/sales.json";
 import hePromotions from "./locales/he/promotions.json";
 import heStoreStatus from "./locales/he/storeStatus.json";
+import heMarketing from "./locales/he/marketing.json";
+
+import arCommon from "./locales/ar/common.json";
+import arNav from "./locales/ar/nav.json";
+import arAuth from "./locales/ar/auth.json";
+import arProducts from "./locales/ar/products.json";
+import arCategories from "./locales/ar/categories.json";
+import arOrders from "./locales/ar/orders.json";
+import arSales from "./locales/ar/sales.json";
+import arPromotions from "./locales/ar/promotions.json";
+import arStoreStatus from "./locales/ar/storeStatus.json";
+import arMarketing from "./locales/ar/marketing.json";
 
 /** localStorage key — independent from the storefront so admin/customer language don't collide. */
 export const ADMIN_LANG_STORAGE_KEY = "admin.lang";
@@ -35,7 +48,8 @@ const resources = {
     orders: enOrders,
     sales: enSales,
     promotions: enPromotions,
-    storeStatus: enStoreStatus
+    storeStatus: enStoreStatus,
+    marketing: enMarketing
   },
   he: {
     common: heCommon,
@@ -46,7 +60,20 @@ const resources = {
     orders: heOrders,
     sales: heSales,
     promotions: hePromotions,
-    storeStatus: heStoreStatus
+    storeStatus: heStoreStatus,
+    marketing: heMarketing
+  },
+  ar: {
+    common: arCommon,
+    nav: arNav,
+    auth: arAuth,
+    products: arProducts,
+    categories: arCategories,
+    orders: arOrders,
+    sales: arSales,
+    promotions: arPromotions,
+    storeStatus: arStoreStatus,
+    marketing: arMarketing
   }
 };
 
@@ -55,8 +82,12 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    supportedLngs: ["en", "he"],
-    fallbackLng: "en",
+    supportedLngs: ["en", "he", "ar"],
+    fallbackLng: {
+      ar: ["he", "en"],
+      he: ["en"],
+      default: ["en"]
+    },
     nonExplicitSupportedLngs: true,
     load: "languageOnly",
     ns: [
@@ -68,7 +99,8 @@ i18n
       "orders",
       "sales",
       "promotions",
-      "storeStatus"
+      "storeStatus",
+      "marketing"
     ],
     defaultNS: "common",
     interpolation: {
@@ -81,6 +113,12 @@ i18n
     },
     react: {
       useSuspense: false
+    },
+    parseMissingKeyHandler: (key) => {
+      if (import.meta.env.DEV) {
+        console.warn(`[admin i18n] Missing translation key: ${key}`);
+      }
+      return key;
     }
   });
 

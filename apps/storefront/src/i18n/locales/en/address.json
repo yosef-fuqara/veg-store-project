@@ -1,0 +1,21 @@
+{
+  "city": "City / Village *",
+  "cityPlaceholder": "Choose a city or village from the list",
+  "searchCity": "Search city or village",
+  "street": "Street *",
+  "houseNumber": "House number *",
+  "building": "Building (optional)",
+  "apartment": "Apartment (optional)",
+  "floor": "Floor (optional)",
+  "entrance": "Entrance (optional)",
+  "notes": "Delivery notes (optional)",
+  "streetPlaceholder": "Enter street name",
+  "noCitiesFound": "No results found",
+  "deliveryUnavailable": "Delivery to this city is currently unavailable.",
+  "cityMustSelectFromList": "Please choose a city or village from the list",
+  "cityRequired": "Please choose a city or village from the list",
+  "streetRequired": "Please enter a street",
+  "houseNumberRequired": "Please enter a house number",
+  "deliveryAreaHelper": "Bu'eine Nujeidat (local): free delivery over ₪{{localMin}}, otherwise ₪{{localFee}}.\nOther supported areas: free delivery over ₪{{outsideMin}}, otherwise ₪{{outsideFee}}.",
+  "localAreaBadge": "Local area"
+}

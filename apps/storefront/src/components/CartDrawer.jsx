@@ -9,7 +9,7 @@ import { useCartDrawer } from "../features/cart/CartDrawerContext";
 import { useStoreSettings } from "../features/store/StoreSettingsContext";
 import { useCartVisualFeedback } from "../features/cart/CartVisualFeedbackContext";
 import { formatPrice, formatChargedTotal } from "../utils/formatPrice";
-import { getLocalizedProductName } from "../utils/localizedProduct";
+import { getLocalizedProductName, textDirectionForLang } from "../utils/localizedProduct";
 import {
   formatQtyDisplay,
   formatApproxWeightQuantity,
@@ -19,6 +19,7 @@ import {
   weightCartQuantityStep
 } from "../utils/cartLineQuantity";
 import { displayPricePerKg, isWeightBasedUnit } from "../utils/storefrontWeight";
+import GuestCheckoutProceedButton from "./GuestCheckoutProceedButton";
 import { WhatsAppFabDismissible } from "./WhatsAppFloat";
 import { FloatingStoreNavigationFab } from "./StoreNavigation";
 import {
@@ -90,7 +91,7 @@ const CartAnchorPulse = ({ bumpKey, anchorRef, inlineFlexStyle, children }) => {
 };
 
 export function CartDrawerHost() {
-  const { user, initializing } = useAuth();
+  const { initializing } = useAuth();
   const { open, openCartDrawer, closeCartDrawer } = useCartDrawer();
   const location = useLocation();
   const { cart, loading, error, refreshCart, updateItem, setWrap, removeItem } = useCart();
@@ -115,10 +116,10 @@ export function CartDrawerHost() {
   const cartFabIconSize = Math.max(22, Math.round((auxFabSize * 24) / 56));
 
   useEffect(() => {
-    if (open && user && !initializing) {
+    if (open && !initializing) {
       refreshCart();
     }
-  }, [open, user, initializing, refreshCart]);
+  }, [open, initializing, refreshCart]);
 
   useEffect(() => {
     closeCartDrawer();
@@ -257,40 +258,7 @@ export function CartDrawerHost() {
                   gap: 16,
                 }}
               >
-                {!user && !initializing ? (
-                  <div
-                    style={{
-                      padding: "20px 16px",
-                      borderRadius: 12,
-                      background: colors.surface,
-                      border: `1px solid ${colors.border}`,
-                      textAlign: "center",
-                    }}
-                  >
-                    <p style={{ margin: "0 0 14px", fontSize: 15, color: colors.textSecondary, lineHeight: 1.5 }}>
-                      {t("cart:drawerSignInHint")}
-                    </p>
-                    <Link
-                      to={`/login?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`}
-                      onClick={closeCartDrawer}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: "10px 22px",
-                        borderRadius: 9999,
-                        background: colors.primary,
-                        color: colors.textInverse,
-                        fontSize: 14,
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        boxShadow: shadowPrimary,
-                      }}
-                    >
-                      {t("nav:login")}
-                    </Link>
-                  </div>
-                ) : initializing ? (
+                {initializing ? (
                   <p style={{ color: colors.textMuted, fontSize: 14, margin: 0 }}>{t("common:loading")}</p>
                 ) : (
                   <>
@@ -395,7 +363,9 @@ export function CartDrawerHost() {
                               </div>
                               <div style={{ minWidth: 0 }}>
                                 <div style={{ fontSize: 15, fontWeight: 600, color: colors.textPrimary, lineHeight: 1.3 }}>
-                                  {getLocalizedProductName({ name: item.productSnapshot?.name }, lang) || String(item.product)}
+                                  <span dir={textDirectionForLang(lang)}>
+                                    {getLocalizedProductName(item, lang)}
+                                  </span>
                                 </div>
                                 {isAmountLine ? (
                                   <div style={{ fontSize: 12, color: colors.primary, marginTop: 4, fontWeight: 600 }}>
@@ -563,7 +533,7 @@ export function CartDrawerHost() {
                       </ul>
                     )}
 
-                    {user && cart.items.length > 0 ? (
+                    {cart.items.length > 0 ? (
                       <div
                         style={{
                           marginTop: "auto",
@@ -618,29 +588,20 @@ export function CartDrawerHost() {
                               {t("cart:drawerCheckout")}
                             </span>
                           ) : (
-                            <Link
-                              to="/checkout"
-                              state={{ scrollToDelivery: true }}
-                              onClick={closeCartDrawer}
+                            <GuestCheckoutProceedButton
+                              label={t("cart:drawerCheckout")}
+                              lang={lang}
+                              onBeforeNavigate={closeCartDrawer}
                               style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
                                 padding: "12px 28px",
                                 borderRadius: 9999,
-                                background: colors.primary,
-                                color: colors.textInverse,
                                 fontSize: 14,
                                 fontWeight: 700,
                                 letterSpacing: "0.06em",
                                 textTransform: "uppercase",
-                                textDecoration: "none",
-                                boxShadow: shadowPrimary,
                                 whiteSpace: "nowrap",
                               }}
-                            >
-                              {t("cart:drawerCheckout")}
-                            </Link>
+                            />
                           )}
                         </div>
                       </div>

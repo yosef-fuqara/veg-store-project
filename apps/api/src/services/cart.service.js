@@ -67,51 +67,12 @@ const floorPayableIls = (value) => {
 const allowsFractionalQuantityByUnit = (unit) =>
   unit === PRODUCT_UNITS.KG || unit === PRODUCT_UNITS.GRAM;
 
-const QUARTER_KG = 0.25;
-const QUARTER_GRAM = 250;
-const INTEGRAL_WEIGHT_EPS = 1e-6;
-
-const isMultipleOf = (value, step) => {
-  const ratio = Number(value) / step;
-  return Math.abs(ratio - Math.round(ratio)) <= INTEGRAL_WEIGHT_EPS;
-};
-
-const isValidQuarterKg = (value) =>
-  Number.isFinite(value) &&
-  value >= QUARTER_KG &&
-  value <= MAX_CART_LINE_QUANTITY &&
-  isMultipleOf(value, QUARTER_KG);
-
-/**
- * Cart stores weight in kg. For legacy gram-unit rows, accept either:
- * - kg quarter steps (new format)
- * - gram quarter steps (legacy format, e.g. 250, 500, 750)
- */
-const coerceCartWeightQuantityKg = (product, quantity) => {
-  const q = Number(quantity);
-  if (!Number.isFinite(q)) return q;
-
-  if (product.unit !== PRODUCT_UNITS.GRAM) return q;
-
-  if (q >= QUARTER_GRAM && isMultipleOf(q, QUARTER_GRAM)) {
-    return roundHalfUp(q / 1000, 4);
-  }
-  if (isValidQuarterKg(q)) {
-    return q;
-  }
-
-  return q;
-};
-
-const assertWeightQuantityAllowed = (product, quantityKg) => {
-  const q = coerceCartWeightQuantityKg(product, quantityKg);
-  if (!Number.isFinite(q) || q < QUARTER_KG || q > MAX_CART_LINE_QUANTITY) {
-    throw new AppError("Invalid weight for this product", StatusCodes.BAD_REQUEST);
-  }
-  if (!isMultipleOf(q, QUARTER_KG)) {
-    throw new AppError("Weight must be in steps of 0.25 kg", StatusCodes.BAD_REQUEST);
-  }
-};
+const {
+  assertProductWeightAllowed,
+  coerceCartWeightQuantityKg,
+  resolveProductWeightRules,
+  snapDerivedWeightKgForAmount
+} = require("../utils/product-weight");
 
 const assertQuantityAllowedForProduct = (product, quantity, purchaseMode = PURCHASE_MODE_QUANTITY) => {
   let q = Number(quantity);
@@ -126,12 +87,7 @@ const assertQuantityAllowedForProduct = (product, quantity, purchaseMode = PURCH
   }
 
   if (allowsFractionalQuantityByUnit(product.unit)) {
-    // Quarter-kg increments are enforced only for classic "quantity" purchases.
-    // For "amount" (₪) purchases we derive quantity from money and accept any
-    // fractional result (existing behavior relies on this).
-    if (purchaseMode === PURCHASE_MODE_QUANTITY) {
-      assertWeightQuantityAllowed(product, q);
-    }
+    assertProductWeightAllowed(product, q);
     return;
   }
 
@@ -222,7 +178,7 @@ const normalizeCartLineMeta = (item, product, unitPriceSnapshot) => {
       product
     );
     const quantity = allowsFractionalQuantityByUnit(product.unit)
-      ? coerceCartWeightQuantityKg(product, derivedQty)
+      ? snapDerivedWeightKgForAmount(coerceCartWeightQuantityKg(product, derivedQty), product)
       : derivedQty;
     return {
       quantity,
@@ -250,7 +206,7 @@ const computeCartTotals = async (items) => {
 
   const ids = items.map((item) => item.product);
   const products = await Product.find(buildCartProductQuery(ids)).select(
-    "name price salePrice unit imageUrl stockStatus isActive isFrozen isDeleted isPreorderOnly minAdvanceHours allowPurchaseByAmount"
+    "name price salePrice unit imageUrl stockStatus isActive isFrozen isDeleted isPreorderOnly minAdvanceHours allowPurchaseByAmount minimumOrderWeight weightStep"
   );
   const productMap = new Map(products.map((p) => [String(p._id), p]));
 
@@ -282,6 +238,7 @@ const computeCartTotals = async (items) => {
       unit: product.unit
     });
     const lineSubtotal = lineProductSubtotal(quantity, unitPriceSnapshot, product.unit);
+    const { minimumOrderWeight, weightStep } = resolveProductWeightRules(product);
     return {
       product: product._id,
       quantity,
@@ -300,7 +257,9 @@ const computeCartTotals = async (items) => {
         minAdvanceHours: Number(product.minAdvanceHours) || 0,
         wrapAvailable,
         wrapPricePerKg: WRAP_PRICE_PER_KG,
-        allowPurchaseByAmount: Boolean(product.allowPurchaseByAmount)
+        allowPurchaseByAmount: Boolean(product.allowPurchaseByAmount),
+        minimumOrderWeight,
+        weightStep
       }
     };
   });
@@ -331,7 +290,9 @@ const buildCheckoutPreview = async (cartItems) => {
       wrapFee: item.wrapFee,
       wrapAvailable: item.productSnapshot.wrapAvailable,
       wrapPricePerKg: item.productSnapshot.wrapPricePerKg,
-      imageUrl: item.productSnapshot.imageUrl || ""
+      imageUrl: item.productSnapshot.imageUrl || "",
+      minimumOrderWeight: item.productSnapshot.minimumOrderWeight,
+      weightStep: item.productSnapshot.weightStep
     })),
     subtotal,
     wrapTotal,

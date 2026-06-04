@@ -23,6 +23,7 @@ const {
   OUTSIDE_DELIVERY_FEE,
   snapshotCityForOrder
 } = require("../constants/delivery");
+const { normalizeStructuredAddress } = require("../utils/structured-address");
 const { ORDER_STATUS, PAYMENT_METHOD } = require("../constants/order");
 const { scheduleBankTransferOrderCreated } = require("../services/order-email.service");
 const {
@@ -30,6 +31,18 @@ const {
   destroyCloudinaryImage
 } = require("../services/image-upload.service");
 const { getOrderCreationBlockResponse } = require("../services/store-settings.service");
+const User = require("../models/user.model");
+const {
+  buildOrderLegalSnapshot,
+  applyMarketingConsent,
+  applyLegalAcceptance,
+  applyCustomerClubJoin,
+  applySavedDetailsConsent,
+  coerceBool,
+  getRequestIp,
+  getRequestUserAgent
+} = require("../services/consent.service");
+const { normalizeConsentLanguage } = require("../constants/legal-versions");
 
 /**
  * Admin order JSON: join user + each line's Product so `items[].product.imageUrl`
@@ -39,7 +52,8 @@ const { getOrderCreationBlockResponse } = require("../services/store-settings.se
 const ADMIN_ORDER_RESPONSE_POPULATE = [
   {
     path: "user",
-    select: "name email phone marketingConsentWhatsApp marketingConsentWhatsAppAt marketingConsentSource"
+    select:
+      "name email phone marketingConsentWhatsApp marketingConsentWhatsAppAt marketingConsentSource marketing customerClub legal savedDetails"
   },
   { path: "items.product", select: "imageUrl" }
 ];
@@ -52,6 +66,191 @@ const getOrCreateCart = async (userId) => {
   return cart;
 };
 
+const guestPayloadItemsToCartLines = (items) =>
+  items.map((line) => {
+    if (typeof line.purchaseAmountIls === "number") {
+      return {
+        product: line.product,
+        quantity: typeof line.quantity === "number" ? line.quantity : 1,
+        wrap: Boolean(line.wrap),
+        purchaseMode: "amount",
+        requestedAmountIls: line.purchaseAmountIls
+      };
+    }
+    return {
+      product: line.product,
+      quantity: line.quantity,
+      wrap: Boolean(line.wrap)
+    };
+  });
+
+const buildDeliveryAddressFromBody = (deliveryArea, submittedAddress = {}, lang = "he") => {
+  const area = getDeliveryArea(deliveryArea);
+  const cityFromArea = snapshotCityForOrder(area);
+  const normalized = normalizeStructuredAddress(
+    {
+      ...submittedAddress,
+      city: submittedAddress.city || cityFromArea
+    },
+    { lang, cityKey: deliveryArea }
+  );
+  const key = typeof deliveryArea === "string" ? deliveryArea.trim() : "";
+  return {
+    label: normalized.label || "",
+    city: normalized.city || cityFromArea,
+    cityKey: key,
+    cityId: key,
+    citySlug: key,
+    street: normalized.street,
+    houseNumber: normalized.houseNumber,
+    building: normalized.building || "",
+    apartment: normalized.apartment || "",
+    floor: normalized.floor || "",
+    entrance: normalized.entrance || "",
+    notes: normalized.notes || "",
+    fullAddress: normalized.fullAddress
+  };
+};
+
+const createOrderFromPreview = async ({
+  preview,
+  req,
+  body,
+  userId,
+  customerName,
+  customerEmail,
+  file
+}) => {
+  const orderBlock = await getOrderCreationBlockResponse();
+  if (orderBlock) {
+    return { blocked: orderBlock };
+  }
+
+  let orderLegalSnapshot;
+  if (userId) {
+    const accountUser = await User.findById(userId).select("legal marketing customerClub");
+    orderLegalSnapshot = buildOrderLegalSnapshot(req, {
+      acceptedFrom: "checkout",
+      user: accountUser
+    });
+  } else {
+    orderLegalSnapshot = buildOrderLegalSnapshot(req, { acceptedFrom: "checkout" });
+  }
+
+  const { deliveryArea } = body;
+  assertDeliveryAreaAllowed(deliveryArea);
+
+  const subtotal = preview.subtotal;
+  const wrapTotal = Number(preview.wrapTotal) || 0;
+  const deliveryFee = calculateDeliveryFee(deliveryArea, subtotal);
+  const total = floorPayableIls(subtotal + wrapTotal + deliveryFee);
+
+  const { hasPreorderItems, preferredDeliveryAt } = assertPreorderTiming(
+    preview.items,
+    body.preferredDeliveryAt
+  );
+
+  const items = buildOrderItemsFromPreview(preview.items);
+  const paymentStatus = getInitialPaymentStatus(body.paymentMethod);
+  const deliveryAddress = buildDeliveryAddressFromBody(
+    deliveryArea,
+    body.deliveryAddress || {},
+    normalizeConsentLanguage(body.consentLanguage) || "he"
+  );
+
+  let bankTransferProofUrl = "";
+  let bankTransferProofPublicId = "";
+  if (file) {
+    if (body.paymentMethod !== PAYMENT_METHOD.BANK_TRANSFER) {
+      throw new AppError(
+        "Payment proof image is only allowed for bank transfer orders",
+        StatusCodes.BAD_REQUEST
+      );
+    }
+    const folderBase = process.env.CLOUDINARY_FOLDER || "veg-store";
+    const folder = `${folderBase}/bank-transfer-proofs`;
+    const uploadResult = await uploadBufferToCloudinary(file.buffer, folder);
+    bankTransferProofUrl = uploadResult.secure_url;
+    bankTransferProofPublicId = uploadResult.public_id;
+  }
+
+  const emailTrimmed =
+    typeof customerEmail === "string" && customerEmail.trim() ? customerEmail.trim() : "";
+
+  let order;
+  try {
+    order = await Order.create({
+      user: userId || null,
+      customerName: customerName || undefined,
+      customerEmail: emailTrimmed || undefined,
+      items,
+      subtotal,
+      wrapTotal,
+      deliveryFee,
+      total,
+      deliveryAddress,
+      deliveryArea,
+      customerPhone: body.customerPhone,
+      notes: body.notes || "",
+      customRequest: body.customRequest || "",
+      preferredDeliveryAt,
+      hasPreorderItems,
+      paymentMethod: body.paymentMethod,
+      paymentStatus,
+      orderStatus: ORDER_STATUS.NEW,
+      orderLegalSnapshot,
+      ...(bankTransferProofUrl ? { bankTransferProofUrl, bankTransferProofPublicId } : {})
+    });
+  } catch (err) {
+    if (bankTransferProofPublicId) {
+      await destroyCloudinaryImage(bankTransferProofPublicId).catch(() => {});
+    }
+    throw err;
+  }
+
+  return { order, bankTransferProofPublicId };
+};
+
+/**
+ * Persist consent choices made during checkout onto the registered user's
+ * profile. Best-effort: never blocks order completion. Marketing/club/saved
+ * details are opt-in; the required terms acceptance is also recorded.
+ */
+const applyCheckoutConsentToUser = async (req) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return;
+
+    const language =
+      normalizeConsentLanguage(req.body.consentLanguage) ||
+      normalizeConsentLanguage(req.headers?.["x-app-language"]);
+    const ipAddress = getRequestIp(req);
+    const userAgent = getRequestUserAgent(req);
+
+    applyLegalAcceptance(user, { from: "checkout", language, ipAddress, userAgent });
+
+    // Only flip marketing consent ON from checkout (never silently turn it off).
+    if (coerceBool(req.body.marketingConsent)) {
+      applyMarketingConsent(user, true, {
+        source: "checkout",
+        language,
+        channels: { whatsapp: true, sms: true }
+      });
+    }
+    if (coerceBool(req.body.joinCustomerClub)) {
+      applyCustomerClubJoin(user, { language });
+    }
+    if ("saveDetailsConsent" in req.body) {
+      applySavedDetailsConsent(user, coerceBool(req.body.saveDetailsConsent));
+    }
+
+    await user.save();
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn(`[order] failed to persist checkout consent: ${err?.message}`);
+  }
+};
+
 const createOrder = async (req, res, next) => {
   try {
     const cart = await getOrCreateCart(req.user._id);
@@ -59,98 +258,84 @@ const createOrder = async (req, res, next) => {
       throw new AppError("Cart is empty", StatusCodes.BAD_REQUEST);
     }
 
-    const orderBlock = await getOrderCreationBlockResponse();
-    if (orderBlock) {
-      return res.status(orderBlock.statusCode).json(orderBlock.body);
-    }
-
-    const { deliveryArea } = req.body;
-
-    // Reject unsupported delivery areas before doing any expensive work.
-    assertDeliveryAreaAllowed(deliveryArea);
-
     const preview = await buildCheckoutPreview(cart.items);
-    const subtotal = preview.subtotal;
-    const wrapTotal = Number(preview.wrapTotal) || 0;
+    const result = await createOrderFromPreview({
+      preview,
+      req,
+      body: req.body,
+      userId: req.user._id,
+      file: req.file
+    });
 
-    // Delivery fee thresholds are evaluated against item subtotal only —
-    // wrap is a service surcharge and shouldn't push an order over the
-    // "free delivery" line.
-    const deliveryFee = calculateDeliveryFee(deliveryArea, subtotal);
-    const total = floorPayableIls(subtotal + wrapTotal + deliveryFee);
-
-    const { hasPreorderItems, preferredDeliveryAt } = assertPreorderTiming(
-      preview.items,
-      req.body.preferredDeliveryAt
-    );
-
-    const items = buildOrderItemsFromPreview(preview.items);
-    const paymentStatus = getInitialPaymentStatus(req.body.paymentMethod);
-
-    // City label is derived from the chosen area, not trusted from client.
-    const area = getDeliveryArea(deliveryArea);
-    const submittedAddress = req.body.deliveryAddress || {};
-    const deliveryAddress = {
-      label: submittedAddress.label || "",
-      city: snapshotCityForOrder(area),
-      street: submittedAddress.street,
-      building: submittedAddress.building || "",
-      apartment: submittedAddress.apartment || "",
-      notes: submittedAddress.notes || ""
-    };
-
-    let bankTransferProofUrl = "";
-    let bankTransferProofPublicId = "";
-    if (req.file) {
-      if (req.body.paymentMethod !== PAYMENT_METHOD.BANK_TRANSFER) {
-        throw new AppError(
-          "Payment proof image is only allowed for bank transfer orders",
-          StatusCodes.BAD_REQUEST
-        );
-      }
-      const folderBase = process.env.CLOUDINARY_FOLDER || "veg-store";
-      const folder = `${folderBase}/bank-transfer-proofs`;
-      const uploadResult = await uploadBufferToCloudinary(req.file.buffer, folder);
-      bankTransferProofUrl = uploadResult.secure_url;
-      bankTransferProofPublicId = uploadResult.public_id;
+    if (result.blocked) {
+      return res.status(result.blocked.statusCode).json(result.blocked.body);
     }
 
-    let order;
-    try {
-      order = await Order.create({
-        user: req.user._id,
-        items,
-        subtotal,
-        wrapTotal,
-        deliveryFee,
-        total,
-        deliveryAddress,
-        deliveryArea,
-        customerPhone: req.body.customerPhone,
-        notes: req.body.notes || "",
-        customRequest: req.body.customRequest || "",
-        preferredDeliveryAt,
-        hasPreorderItems,
-        paymentMethod: req.body.paymentMethod,
-        paymentStatus,
-        orderStatus: ORDER_STATUS.NEW,
-        ...(bankTransferProofUrl
-          ? { bankTransferProofUrl, bankTransferProofPublicId }
-          : {})
-      });
-    } catch (err) {
-      if (bankTransferProofPublicId) {
-        await destroyCloudinaryImage(bankTransferProofPublicId).catch(() => {});
-      }
-      throw err;
-    }
-
+    const { order } = result;
     cart.items = [];
     await cart.save();
+
+    await applyCheckoutConsentToUser(req);
 
     // eslint-disable-next-line no-console
     console.info(`[order] created id=${order._id} total=${order.total} payment=${order.paymentMethod}`);
     notifyOrderCreated(order, req.user);
+
+    if (req.body.paymentMethod === PAYMENT_METHOD.BANK_TRANSFER) {
+      scheduleBankTransferOrderCreated(order._id);
+    }
+
+    return res.status(StatusCodes.CREATED).json({
+      success: true,
+      message: "Order created successfully",
+      data: { order }
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const guestCheckoutPreview = async (req, res, next) => {
+  try {
+    const cartLines = guestPayloadItemsToCartLines(req.body.items);
+    const preview = await buildCheckoutPreview(cartLines);
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      message: "Checkout data revalidated",
+      data: { checkout: preview }
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const createGuestOrder = async (req, res, next) => {
+  try {
+    const cartLines = guestPayloadItemsToCartLines(req.body.items);
+    if (!cartLines.length) {
+      throw new AppError("Cart is empty", StatusCodes.BAD_REQUEST);
+    }
+
+    const preview = await buildCheckoutPreview(cartLines);
+    const result = await createOrderFromPreview({
+      preview,
+      req,
+      body: req.body,
+      userId: null,
+      customerName: req.body.customerName,
+      customerEmail: req.body.customerEmail,
+      file: req.file
+    });
+
+    if (result.blocked) {
+      return res.status(result.blocked.statusCode).json(result.blocked.body);
+    }
+
+    const { order } = result;
+
+    // eslint-disable-next-line no-console
+    console.info(`[order] guest created id=${order._id} total=${order.total} payment=${order.paymentMethod}`);
+    notifyOrderCreated(order, null);
 
     if (req.body.paymentMethod === PAYMENT_METHOD.BANK_TRANSFER) {
       scheduleBankTransferOrderCreated(order._id);
@@ -312,6 +497,8 @@ const adminUpdatePaymentStatus = async (req, res, next) => {
 
 module.exports = {
   createOrder,
+  guestCheckoutPreview,
+  createGuestOrder,
   getDeliveryAreas,
   listMyOrders,
   getMyOrder,

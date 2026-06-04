@@ -13,7 +13,8 @@ describe("Seed bootstrap flow", () => {
       name: "Seed Customer",
       phone: "0501234567",
       email: customerEmail,
-      password: DEFAULT_PASSWORD
+      password: DEFAULT_PASSWORD,
+      acceptTerms: true
     });
 
     expect(registerRes.status).toBe(201);

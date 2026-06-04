@@ -19,6 +19,7 @@
   "yes": "כן",
   "no": "לא",
   "search": "חיפוש",
+  "clearSearch": "נקה חיפוש",
   "filter": "סינון",
   "allStatuses": "כל הסטטוסים",
   "actions": "פעולות",
@@ -35,5 +36,32 @@
   "somethingWentWrong": "משהו השתבש",
   "errorGeneric": "משהו השתבש. נסה שוב.",
   "currencySymbol": "₪",
-  "unnamedProduct": "מוצר ללא שם"
+  "unnamedProduct": "מוצר ללא שם",
+  "productSearchSelect": {
+    "placeholder": "חפשו מוצר או בחרו מהרשימה",
+    "noResults": "לא נמצאו מוצרים",
+    "loading": "טוען מוצרים...",
+    "clearSelection": "נקה בחירת מוצר",
+    "required": "יש לבחור מוצר"
+  },
+  "submit": "שליחה",
+  "confirm": "אישור",
+  "clear": "ניקוי",
+  "reset": "איפוס",
+  "required": "שדה חובה",
+  "optional": "אופציונלי",
+  "active": "פעיל",
+  "inactive": "לא פעיל",
+  "enabled": "מופעל",
+  "disabled": "מושבת",
+  "success": "הצלחה",
+  "error": "שגיאה",
+  "noData": "אין נתונים",
+  "apiErrors": {
+    "unknown": "שגיאה לא ידועה",
+    "rateLimit": "יותר מדי בקשות. המתן מספר דקות ונסה שוב.",
+    "requestFailed": "הבקשה נכשלה (HTTP {{status}}{{statusText}})",
+    "network": "שגיאת רשת — ודא שה-API פועל וש-CORS מאפשר את המקור.",
+    "timeout": "פג תוקף הבקשה."
+  }
 }

@@ -45,6 +45,8 @@ describe("Products", () => {
     expect(res.status).toBe(201);
     expect(res.body.data.product.name).toBe("Tomato Box");
     expect(res.body.data.product.imageUrl).toContain("test.invalid");
+    expect(res.body.data.product.minimumOrderWeight).toBe(1);
+    expect(res.body.data.product.weightStep).toBe(0.5);
   });
 
   it("POST /products accepts trilingual JSON name (multipart)", async () => {

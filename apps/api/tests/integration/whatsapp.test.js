@@ -8,10 +8,11 @@ const {
 } = require("../helpers/factories");
 
 const orderPayload = {
-  deliveryAddress: { street: "Main", building: "1" },
+  deliveryAddress: { street: "Main", houseNumber: "1" },
   deliveryArea: "eilabun",
   customerPhone: "0501234567",
-  paymentMethod: "credit_card"
+  paymentMethod: "credit_card",
+  acceptTerms: true
 };
 
 async function seedCart(token, productId) {

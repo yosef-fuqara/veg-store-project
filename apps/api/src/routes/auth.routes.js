@@ -4,6 +4,11 @@ const { register, login, getMe, forgotPassword, resetPassword } = require("../co
 const {
   updateProfile,
   updateMarketingConsent,
+  joinCustomerClub,
+  leaveCustomerClub,
+  updateSavedDetailsConsent,
+  deleteSavedDeliveryDetails,
+  requestAccountDeletion,
   changePassword,
   createAddress,
   updateAddress,
@@ -22,6 +27,8 @@ const {
 const {
   updateProfileSchema,
   updateMarketingConsentSchema,
+  customerClubJoinSchema,
+  savedDetailsConsentSchema,
   changePasswordSchema,
   addressBodySchema,
   addressPatchSchema,
@@ -69,6 +76,21 @@ router.patch(
   validate(updateMarketingConsentSchema),
   updateMarketingConsent
 );
+router.post(
+  "/me/customer-club",
+  requireAuth,
+  validate(customerClubJoinSchema),
+  joinCustomerClub
+);
+router.delete("/me/customer-club", requireAuth, leaveCustomerClub);
+router.patch(
+  "/me/saved-details",
+  requireAuth,
+  validate(savedDetailsConsentSchema),
+  updateSavedDetailsConsent
+);
+router.delete("/me/saved-details", requireAuth, deleteSavedDeliveryDetails);
+router.post("/me/deletion-request", requireAuth, requestAccountDeletion);
 router.patch("/me/password", requireAuth, validate(changePasswordSchema), changePassword);
 router.post("/me/addresses", requireAuth, validate(addressBodySchema), createAddress);
 router.patch(

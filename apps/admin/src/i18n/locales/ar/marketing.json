@@ -1,0 +1,35 @@
+{
+  "campaigns": {
+    "title": "الحملات التسويقية",
+    "subtitle": "إرسال رسائل واتساب ترويجية فقط للعملاء الذين وافقوا على تلقي التحديثات التسويقية.",
+    "campaignTitle": "اسم الحملة",
+    "campaignTitlePlaceholder": "عروض أسبوعية — فواكه وخضروات طازجة",
+    "messageBody": "نص الرسالة",
+    "messageBodyPlaceholder": "وصلت منتجات طازجة جديدة. اطلب اليوم واستمتع بعروض موسمية.",
+    "channel": "القناة",
+    "whatsapp": "WhatsApp",
+    "preview": "معاينة",
+    "sendCampaign": "إرسال الحملة",
+    "previewSectionTitle": "معاينة الحملة",
+    "totalRecipients": "إجمالي المستلمين",
+    "loadingRecipients": "جارٍ التحميل…",
+    "previewEmpty": "انقر «معاينة» لمراجعة رسالة واتساب النهائية قبل الإرسال.",
+    "noRecipients": "لا يوجد مستلمون متاحون.",
+    "confirmSend": "هل تريد إرسال هذه الحملة إلى {{count}} عميل؟",
+    "sendSuccess": "تم إرسال حملة واتساب. تم التسليم: {{delivered}}/{{total}}.",
+    "consentNotice": "يُدرَج فقط العملاء ذوو الموافقة التسويقية النشطة. يمكن إلغاء الاشتراك في أي وقت."
+  },
+  "customers": {
+    "title": "عملاء التسويق",
+    "subtitle": "عملاء وافقوا على تلقي العروض والتخفيضات عبر واتساب.",
+    "exportCsv": "تصدير CSV",
+    "empty": "لا يوجد عملاء منحوا موافقة بعد.",
+    "loadFailed": "تعذّر تحميل عملاء التسويق.",
+    "tableHeaders": {
+      "name": "الاسم",
+      "phone": "الهاتف",
+      "consentDate": "تاريخ موافقة واتساب",
+      "consentSource": "مصدر الموافقة"
+    }
+  }
+}

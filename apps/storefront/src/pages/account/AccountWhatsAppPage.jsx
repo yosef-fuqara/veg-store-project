@@ -30,7 +30,7 @@ const AccountWhatsAppPage = () => {
     setError("");
     setMessage("");
     try {
-      const next = await accountService.updateMarketingConsent(!consent);
+      const next = await accountService.updateMarketingConsent(!consent, lang);
       updateUser(next);
       setMessage(t("whatsapp.saved"));
     } catch (err) {

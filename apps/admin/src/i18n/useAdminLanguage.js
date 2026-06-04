@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-const SUPPORTED = ["en", "he"];
-const RTL_LANGS = new Set(["he"]);
+const SUPPORTED = ["en", "he", "ar"];
+const RTL_LANGS = new Set(["he", "ar"]);
 
 const normalizeLang = (raw) => {
   const base = String(raw || "en").split("-")[0].toLowerCase();
@@ -11,7 +11,7 @@ const normalizeLang = (raw) => {
 
 /**
  * Syncs the active admin language with <html lang>/<html dir>, exposes a setter,
- * and reports the current direction. RTL for Hebrew.
+ * and reports the current direction. RTL for Hebrew and Arabic.
  */
 export function useAdminLanguage() {
   const { i18n } = useTranslation();

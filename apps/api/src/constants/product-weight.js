@@ -1,0 +1,14 @@
+/** Allowed admin values for minimum order weight (kg). */
+const ALLOWED_MINIMUM_ORDER_WEIGHTS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4];
+
+const DEFAULT_MINIMUM_ORDER_WEIGHT = 1;
+const DEFAULT_WEIGHT_STEP = 0.5;
+
+const MAX_PRODUCT_WEIGHT_KG = 500;
+
+module.exports = {
+  ALLOWED_MINIMUM_ORDER_WEIGHTS,
+  DEFAULT_MINIMUM_ORDER_WEIGHT,
+  DEFAULT_WEIGHT_STEP,
+  MAX_PRODUCT_WEIGHT_KG
+};

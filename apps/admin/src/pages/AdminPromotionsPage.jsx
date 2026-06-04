@@ -10,7 +10,9 @@ import {
 } from "../services/announcementService";
 import { getAdminProducts } from "../services/productService";
 import { getAdminCategories } from "../services/categoryService";
-import { pickLocalizedName, pickLocalizedProductName } from "../utils/localizedDisplayName";
+import { pickLocalizedName } from "../utils/localizedDisplayName";
+import { ProductSearchSelect } from "../components/common/ProductSearchSelect";
+import { useAdminLanguage } from "../i18n/useAdminLanguage";
 import { useToast } from "../features/toast/ToastContext";
 
 const colors = {
@@ -57,6 +59,7 @@ function emptyForm() {
 
 const AdminPromotionsPage = () => {
   const { t } = useTranslation(["promotions", "common"]);
+  const { lang } = useAdminLanguage();
   const { showToast } = useToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -234,7 +237,7 @@ const AdminPromotionsPage = () => {
       }
 
       if (form.ctaType === "product" && !form.ctaProductId) {
-        showToast(t("promotions:form.errors.ctaProduct"), "error");
+        showToast(t("common:productSearchSelect.required"), "error");
         setSaving(false);
         return;
       }
@@ -544,27 +547,20 @@ const AdminPromotionsPage = () => {
                   </div>
                   {form.ctaType === "product" && (
                     <div>
-                      <label style={labelStyle}>{t("promotions:form.fields.product")}</label>
-                      <select
-                        style={inputStyle}
+                      <label style={labelStyle} htmlFor="promo-cta-product">
+                        {t("promotions:form.fields.product")}
+                      </label>
+                      <ProductSearchSelect
+                        id="promo-cta-product"
+                        products={products}
                         value={form.ctaProductId}
-                        onChange={(e) => setForm((f) => ({ ...f, ctaProductId: e.target.value }))}
-                        required={form.ctaType === "product"}
+                        onChange={(productId) => setForm((f) => ({ ...f, ctaProductId: productId }))}
+                        language={lang}
+                        loading={catalogLoading}
                         disabled={catalogLoading}
-                      >
-                        <option value="">{catalogLoading ? t("promotions:form.fields.loadingProducts") : t("promotions:form.fields.selectProduct")}</option>
-                        {[...products]
-                          .sort((a, b) =>
-                            pickLocalizedProductName(a).localeCompare(pickLocalizedProductName(b), undefined, {
-                              sensitivity: "base"
-                            })
-                          )
-                          .map((p) => (
-                            <option key={p._id} value={p._id}>
-                              {pickLocalizedProductName(p)}
-                            </option>
-                          ))}
-                      </select>
+                        required={form.ctaType === "product"}
+                        inputStyle={inputStyle}
+                      />
                     </div>
                   )}
                   {form.ctaType === "category" && (
@@ -580,7 +576,7 @@ const AdminPromotionsPage = () => {
                         <option value="">{catalogLoading ? t("promotions:form.fields.loadingCategories") : t("promotions:form.fields.selectCategory")}</option>
                         {[...categories]
                           .sort((a, b) =>
-                            pickLocalizedProductName(a).localeCompare(pickLocalizedProductName(b), undefined, {
+                            pickLocalizedName(a.name).localeCompare(pickLocalizedName(b.name), undefined, {
                               sensitivity: "base"
                             })
                           )

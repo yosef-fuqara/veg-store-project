@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { getAccessToken } from "../services/authStorage";
 import * as orderService from "../services/orderService";
 import { formatPrice, formatChargedTotal } from "../utils/formatPrice";
 import { formatQtyDisplay, formatApproxWeightQuantity } from "../utils/cartLineQuantity";
 import { formatOrderDeliveryAreaLabel } from "../utils/deliveryAreaDisplay";
-import { getLocalizedText } from "../utils/localizedProduct";
+import { getLocalizedProductName, textDirectionForLang } from "../utils/localizedProduct";
 
 const colors = {
   primary:        '#1e6b3c',
@@ -111,12 +112,25 @@ const OrderConfirmationPage = () => {
   const { t: tCheckout } = useTranslation("checkout");
   const lang = (i18n.language || "he").split("-")[0];
   const { id } = useParams();
-  const [order, setOrder] = useState(null);
+  const location = useLocation();
+  const guestOrderFromNav = location.state?.guestOrder;
+  const [order, setOrder] = useState(guestOrderFromNav || null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!guestOrderFromNav);
 
   const load = useCallback(async () => {
     if (!id) return;
+    if (guestOrderFromNav && String(guestOrderFromNav._id) === String(id)) {
+      setOrder(guestOrderFromNav);
+      setLoading(false);
+      return;
+    }
+    if (!getAccessToken()) {
+      setOrder(null);
+      setError(t("guestOrderViewRequiresLogin"));
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -128,7 +142,7 @@ const OrderConfirmationPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, t]);
+  }, [id, t, guestOrderFromNav]);
 
   useEffect(() => {
     load();
@@ -165,7 +179,10 @@ const OrderConfirmationPage = () => {
   const statusNote = paymentStatusMessage(order.paymentStatus, t);
   const headerUi = confirmationHeaderPresentation(order.paymentStatus);
   const deliveryAddress = order.deliveryAddress
-    ? [order.deliveryAddress.label, order.deliveryAddress.city, order.deliveryAddress.street, order.deliveryAddress.building, order.deliveryAddress.apartment, order.deliveryAddress.notes].filter(Boolean).join(", ")
+    ? (order.deliveryAddress.fullAddress ||
+        [order.deliveryAddress.label, order.deliveryAddress.city, order.deliveryAddress.street, order.deliveryAddress.houseNumber || order.deliveryAddress.building, order.deliveryAddress.apartment, order.deliveryAddress.floor, order.deliveryAddress.entrance, order.deliveryAddress.notes]
+          .filter(Boolean)
+          .join(", "))
     : "—";
 
   return (
@@ -303,7 +320,9 @@ const OrderConfirmationPage = () => {
               return (
               <div key={`${item.product}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', padding: '10px 0', borderBottom: `1px solid ${colors.border}` }}>
                 <span style={{ fontSize: '14px', color: colors.textPrimary }}>
-                  {getLocalizedText(item.name, lang)}
+                  <span dir={textDirectionForLang(lang)}>
+                  {getLocalizedProductName(item, lang)}
+                  </span>
                   {item.purchaseMode === "amount" && item.requestedAmountIls != null ? (
                     <>
                       {" · "}

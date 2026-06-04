@@ -1,6 +1,15 @@
 {
+  "clearSearch": "مسح البحث",
   "retry": "إعادة المحاولة",
   "currencySymbol": "₪",
   "loading": "جار التحميل...",
-  "unknownError": "حدث خطأ ما."
+  "unknownError": "حدث خطأ ما.",
+  "errorBoundaryTitle": "حدث خطأ في الواجهة",
+  "errorBoundaryReload": "إعادة تحميل الصفحة",
+  "apiErrors": {
+    "unknown": "خطأ غير معروف",
+    "requestFailed": "فشل الطلب (HTTP {{status}}{{statusText}})",
+    "network": "خطأ في الشبكة — تحقق من تشغيل واجهة API وإعدادات CORS.",
+    "timeout": "انتهت مهلة الطلب."
+  }
 }

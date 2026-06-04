@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowDown, Search } from "lucide-react";
+import { ArrowDown } from "lucide-react";
+import { ClearableSearchInput } from "../components/common/ClearableSearchInput";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ProductCard from "../components/ProductCard";
@@ -174,6 +175,76 @@ const HERO_BACKGROUND_IMAGE_URL =
 const HERO_TRUST_KEYS = /** @type {const} */ (['home:hero.trust1', 'home:hero.trust2', 'home:hero.trust3']);
 
 // ── Decorative fruit illustrations (pure CSS — no images, no emoji) ───────────
+
+const Pineapple = ({ size }) => {
+  const bodyW = size * 0.58;
+  const bodyH = size * 0.72;
+  const crownH = size * 0.34;
+  return (
+    <div
+      style={{
+        width: size * 0.68,
+        height: size,
+        position: 'relative',
+        transform: 'rotate(8deg)',
+      }}
+    >
+      {[-28, -14, 0, 14, 28].map((deg, i) => (
+        <div
+          key={i}
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: crownH * 0.08,
+            left: '50%',
+            width: size * 0.09,
+            height: crownH,
+            borderRadius: '40% 40% 12% 12%',
+            background: 'linear-gradient(180deg, #7ecf5a 0%, #3d9a45 55%, #1e6b3c 100%)',
+            transform: `translate(-50%, 0) rotate(${deg}deg)`,
+            transformOrigin: 'center 92%',
+            boxShadow: 'inset 0 2px 5px rgba(255,255,255,0.22), inset 0 -2px 4px rgba(0,0,0,0.18)',
+          }}
+        />
+      ))}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: bodyW,
+          height: bodyH,
+          borderRadius: '22% 22% 26% 26% / 14% 14% 32% 32%',
+          background: `
+            repeating-linear-gradient(
+              -52deg,
+              rgba(160, 95, 10, 0.22) 0px,
+              rgba(160, 95, 10, 0.22) 2px,
+              transparent 2px,
+              transparent 9px
+            ),
+            repeating-linear-gradient(
+              52deg,
+              rgba(160, 95, 10, 0.18) 0px,
+              rgba(160, 95, 10, 0.18) 2px,
+              transparent 2px,
+              transparent 9px
+            ),
+            radial-gradient(ellipse at 32% 22%, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 38%),
+            radial-gradient(ellipse at 50% 78%, #9a5c08 0%, #c88412 32%, #f0b429 68%, #ffe98a 100%)
+          `,
+          boxShadow: `
+            0 28px 48px -22px rgba(70,40,0,0.55),
+            0 14px 26px -14px rgba(180,110,0,0.45),
+            inset 0 -10px 20px rgba(100,55,0,0.32),
+            inset 0 8px 16px rgba(255,255,255,0.22)
+          `,
+        }}
+      />
+    </div>
+  );
+};
 
 const Lemon = ({ size }) => (
   <div
@@ -377,7 +448,7 @@ const Avocado = ({ size }) => (
   </div>
 );
 
-const FRUIT_COMPONENTS = { lemon: Lemon, tomato: Tomato, watermelon: Watermelon, avocado: Avocado };
+const FRUIT_COMPONENTS = { lemon: Lemon, tomato: Tomato, watermelon: Watermelon, avocado: Avocado, pineapple: Pineapple };
 
 // Floating wrapper — same motion API as the old PremiumOrb so layout/perf stays predictable.
 const FruitFloater = ({
@@ -530,13 +601,29 @@ const HeroSection = ({ t, isMobile }) => {
   };
 
   const heroOverlay =
-    'linear-gradient(180deg, rgba(12, 44, 28, 0.62) 0%, rgba(8, 30, 20, 0.92) 100%)';
+    'linear-gradient(180deg, rgba(8, 28, 18, 0.55) 0%, rgba(6, 22, 14, 0.78) 45%, rgba(4, 16, 10, 0.88) 100%)';
 
   // Decorative floating fruit — premium CSS illustrations, not plain spheres.
-  // Order is chosen so mobile (first 2) keeps the most iconic pair (watermelon + lemon).
+  // Mobile keeps watermelon (lower side) + pineapple (upper corner); desktop shows full set.
   const fruits = [
-    { type: 'watermelon', size: isMobile ? 130 : 200, bottom: isMobile ? 40 : 64, insetInlineStart: isMobile ? -28 : 40, floatRange: 12, floatDuration: 6.8, delay: 0.0 },
-    { type: 'lemon',      size: isMobile ? 78  : 120, top:    isMobile ? 36 : 80, insetInlineEnd:   isMobile ? -10 : 90, floatRange: 16, floatDuration: 8.0, delay: 0.6 },
+    {
+      type: 'watermelon',
+      size: isMobile ? 118 : 200,
+      bottom: isMobile ? 172 : 64,
+      insetInlineStart: isMobile ? 8 : 40,
+      floatRange: isMobile ? 10 : 12,
+      floatDuration: 6.8,
+      delay: 0.0,
+    },
+    {
+      type: 'pineapple',
+      size: isMobile ? 78 : 120,
+      top: isMobile ? 36 : 80,
+      insetInlineEnd: isMobile ? -10 : 90,
+      floatRange: 16,
+      floatDuration: 8.0,
+      delay: 0.6,
+    },
     { type: 'tomato',     size: isMobile ? 70  : 110, top:    isMobile ? 150: 200, insetInlineStart: isMobile ? 12 : 130, floatRange: 14, floatDuration: 7.2, delay: 1.1 },
     { type: 'avocado',    size: isMobile ? 80  : 130, bottom: isMobile ? 90 : 110, insetInlineEnd:   isMobile ? 10 : 64, floatRange: 10, floatDuration: 6.4, delay: 1.6 },
   ];
@@ -670,30 +757,9 @@ const HeroSection = ({ t, isMobile }) => {
             maxWidth: 'min(100%, 760px)',
             marginInline: 'auto',
             width: '100%',
-            padding: isMobile ? '28px 22px 30px' : '40px 44px 44px',
             boxSizing: 'border-box',
-            borderRadius: isMobile ? '22px' : '28px',
-            border: '1px solid rgba(255,255,255,0.16)',
-            background:
-              'linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)',
-            backdropFilter: 'blur(18px)',
-            WebkitBackdropFilter: 'blur(18px)',
-            boxShadow:
-              '0 50px 100px -30px rgba(0,0,0,0.55), 0 20px 50px -20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.18)',
           }}
         >
-          {/* inner highlight stroke */}
-          <span
-            aria-hidden
-            style={{
-              position: 'absolute',
-              inset: 0,
-              borderRadius: 'inherit',
-              pointerEvents: 'none',
-              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)',
-            }}
-          />
-
           <motion.span
             variants={{
               hidden: { opacity: 0, y: 12 },
@@ -1379,61 +1445,38 @@ const HomePage = () => {
                 {t('home:products.heading')}
               </h2>
               {!isMobile && (
-                <div
-                  style={{
-                    position: 'relative',
+                <ClearableSearchInput
+                  value={productSearchQuery}
+                  onChange={setProductSearchQuery}
+                  placeholder={t('home:products.searchPlaceholder')}
+                  ariaLabel={t('home:products.searchPlaceholder')}
+                  centerPlaceholderWhenEmpty
+                  wrapperStyle={{
                     width: '100%',
                     flex: '1 1 240px',
                     maxWidth: '320px',
                     minWidth: 0,
                   }}
-                >
-                  <Search
-                    aria-hidden
-                    size={18}
-                    strokeWidth={2}
-                    style={{
-                      position: 'absolute',
-                      insetInlineStart: '12px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: colors.textMuted,
-                      pointerEvents: 'none',
-                    }}
-                  />
-                  <input
-                    type="search"
-                    value={productSearchQuery}
-                    onChange={(e) => setProductSearchQuery(e.target.value)}
-                    placeholder={t('home:products.searchPlaceholder')}
-                    aria-label={t('home:products.searchPlaceholder')}
-                    autoComplete="off"
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = colors.primaryBorder;
-                      e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.primarySurface}`;
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = colors.border;
-                      e.currentTarget.style.boxShadow = shadow.sm;
-                    }}
-                    style={{
-                      width: '100%',
-                      boxSizing: 'border-box',
-                      paddingBlock: '10px',
-                      paddingInlineStart: '40px',
-                      paddingInlineEnd: '14px',
-                      borderRadius: '10px',
-                      border: `1px solid ${colors.border}`,
-                      background: colors.surface,
-                      color: colors.textPrimary,
-                      fontSize: '15px',
-                      lineHeight: 1.4,
-                      boxShadow: shadow.sm,
-                      outline: 'none',
-                      textAlign: productSearchQuery ? 'start' : 'center',
-                    }}
-                  />
-                </div>
+                  searchIconColor={colors.textMuted}
+                  clearButtonColor={colors.textMuted}
+                  inputStyle={{
+                    border: `1px solid ${colors.border}`,
+                    background: colors.surface,
+                    color: colors.textPrimary,
+                    fontSize: '15px',
+                    lineHeight: 1.4,
+                    boxShadow: shadow.sm,
+                    fontFamily: 'inherit',
+                  }}
+                  onInputFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.primaryBorder;
+                    e.currentTarget.style.boxShadow = `0 0 0 3px ${colors.primarySurface}`;
+                  }}
+                  onInputBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.border;
+                    e.currentTarget.style.boxShadow = shadow.sm;
+                  }}
+                />
               )}
             </div>
           </motion.div>
@@ -1533,7 +1576,7 @@ const HomePage = () => {
                 ) : catalogProducts.length === 0 && productSearchQuery.trim() ? (
                   <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:products.searchNoResults')}</p>
                 ) : catalogProducts.length === 0 && categoryIdParam ? (
-                  <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:categories.filterEmpty')}</p>
+                  <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:categories.categoryEmpty')}</p>
                 ) : renderedSectionNavIds.length === 0 ? (
                   <p style={{ color: colors.textMuted, fontSize: '15px' }}>{t('home:empty')}</p>
                 ) : (
@@ -1561,7 +1604,7 @@ const HomePage = () => {
                       </h3>
                       {(productsByNavSection[navId] ?? []).length === 0 ? (
                         <p style={{ color: colors.textMuted, fontSize: '15px', margin: 0 }}>
-                          {t('home:categories.filterEmpty')}
+                          {t('home:categories.categoryEmpty')}
                         </p>
                       ) : (
                         <motion.div
